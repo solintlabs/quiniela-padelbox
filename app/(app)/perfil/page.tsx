@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { revalidatePath } from 'next/cache';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -85,7 +86,78 @@ export default async function PerfilPage() {
         <Stat label="Partidos jugados" value={stats._count._all ?? 0} />
         <Stat label="Marcadores exactos" value={exact} />
       </section>
+
+      <MyPredictions userId={user!.id} />
     </div>
+  );
+}
+
+async function MyPredictions({ userId }: { userId: string }) {
+  const predictions = await prisma.prediction.findMany({
+    where: { userId },
+    include: { match: true },
+    orderBy: { match: { kickoff: 'asc' } },
+  });
+
+  return (
+    <section>
+      <h2 className="font-display text-2xl mb-4">Mis pronósticos</h2>
+      {predictions.length === 0 ? (
+        <p className="text-sm text-muted">
+          Aún no has hecho ningún pronóstico. Ve a{' '}
+          <Link href="/partidos" className="text-accent underline">
+            /partidos
+          </Link>{' '}
+          para empezar.
+        </p>
+      ) : (
+        <ul className="divide-y divide-line rounded-xl border border-line bg-bg-elev">
+          {predictions.map((p) => {
+            const m = p.match;
+            const isLockedByTime = new Date(m.kickoff).getTime() - 15 * 60_000 <= Date.now();
+            const isLocked = !!m.lockedAt || m.status !== 'SCHEDULED' || isLockedByTime;
+            const isFinished = m.status === 'FINISHED';
+            return (
+              <li key={p.id} className="px-4 py-3 flex items-center gap-3">
+                {m.homeFlag && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={m.homeFlag} alt="" className="w-6 h-6 rounded-sm shrink-0 object-cover" />
+                )}
+                <span className="text-sm flex-1 truncate">
+                  {m.homeTeam} <span className="text-muted">vs</span> {m.awayTeam}
+                </span>
+                {m.awayFlag && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={m.awayFlag} alt="" className="w-6 h-6 rounded-sm shrink-0 object-cover" />
+                )}
+                <span className="font-display tabular-nums w-16 text-center">
+                  {p.homeScore}–{p.awayScore}
+                </span>
+                <span className="w-24 text-right text-xs">
+                  {isFinished && p.points !== null ? (
+                    <span
+                      className={
+                        p.points === 3
+                          ? 'text-success font-semibold'
+                          : p.points === 1
+                            ? 'text-warning'
+                            : 'text-muted'
+                      }
+                    >
+                      +{p.points} pts
+                    </span>
+                  ) : isLocked ? (
+                    <span className="text-muted">Esperando</span>
+                  ) : (
+                    <span className="text-accent">Abierto</span>
+                  )}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
   );
 }
 

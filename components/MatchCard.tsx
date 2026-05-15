@@ -46,11 +46,35 @@ export function MatchCard({ match, myPrediction, closed }: MatchCardProps) {
       </div>
 
       <div className="flex items-center justify-between gap-3">
-        <span className="font-semibold flex-1 truncate">{match.homeTeam}</span>
-        <span className="font-display tabular-nums text-2xl min-w-[5rem] text-center">
+        <span className="flex items-center gap-2 flex-1 min-w-0">
+          {match.homeFlag && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={match.homeFlag}
+              alt=""
+              width={24}
+              height={24}
+              className="w-6 h-6 shrink-0 rounded-sm object-cover"
+            />
+          )}
+          <span className="font-semibold truncate">{match.homeTeam}</span>
+        </span>
+        <span className="font-display tabular-nums text-2xl min-w-[5rem] text-center shrink-0">
           {isFinished ? `${match.homeScore} – ${match.awayScore}` : <span className="text-muted">– vs –</span>}
         </span>
-        <span className="font-semibold flex-1 truncate text-right">{match.awayTeam}</span>
+        <span className="flex items-center gap-2 flex-1 min-w-0 justify-end">
+          <span className="font-semibold truncate text-right">{match.awayTeam}</span>
+          {match.awayFlag && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={match.awayFlag}
+              alt=""
+              width={24}
+              height={24}
+              className="w-6 h-6 shrink-0 rounded-sm object-cover"
+            />
+          )}
+        </span>
       </div>
 
       {myPrediction && (

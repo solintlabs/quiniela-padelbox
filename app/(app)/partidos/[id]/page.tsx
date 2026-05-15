@@ -40,9 +40,35 @@ export default async function MatchDetailPage({ params }: { params: { id: string
         <p className="text-xs uppercase tracking-[0.18em] text-muted">
           {stageLabel} · {formatDateTime(match.kickoff)}
         </p>
-        <h1 className="font-display text-3xl mt-3">
-          {match.homeTeam} <span className="text-muted">vs</span> {match.awayTeam}
-        </h1>
+        <div className="flex items-center justify-center gap-6 mt-5">
+          <div className="flex flex-col items-center gap-2 w-32">
+            {match.homeFlag && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={match.homeFlag}
+                alt=""
+                width={64}
+                height={64}
+                className="w-16 h-16 rounded-full object-cover"
+              />
+            )}
+            <p className="font-display text-lg leading-tight">{match.homeTeam}</p>
+          </div>
+          <span className="font-display text-2xl text-muted">vs</span>
+          <div className="flex flex-col items-center gap-2 w-32">
+            {match.awayFlag && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={match.awayFlag}
+                alt=""
+                width={64}
+                height={64}
+                className="w-16 h-16 rounded-full object-cover"
+              />
+            )}
+            <p className="font-display text-lg leading-tight">{match.awayTeam}</p>
+          </div>
+        </div>
         {!isLocked ? (
           <p className="text-accent text-sm mt-3">
             Cierra en <Countdown target={match.kickoff} format="clock" warnAtMinutes={120} />
