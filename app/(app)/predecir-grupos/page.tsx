@@ -12,7 +12,10 @@ export default async function PredecirGruposPage() {
   const hasPaid = session!.user.hasPaid;
 
   const matches = await prisma.match.findMany({
-    where: { stage: 'GROUP' },
+    where: {
+      stage: 'GROUP',
+      group: { in: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'] },
+    },
     orderBy: { kickoff: 'asc' },
     include: {
       predictions: {

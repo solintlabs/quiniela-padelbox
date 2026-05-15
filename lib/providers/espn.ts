@@ -19,12 +19,27 @@
 import type { MatchStatus, Stage } from '@prisma/client';
 
 const HOST = 'site.api.espn.com';
-const PATH = '/apis/site/v2/sports/soccer/fifa.world/scoreboard';
 
-// Ventana del Mundial 2026: del partido inaugural (11 jun) a la final (19 jul).
-// Margen +/- 7 días para amistosos previos y eventos relacionados.
-const RANGE_START = '20260601';
-const RANGE_END   = '20260731';
+// Competiciones que sincronizamos. Cada una con su rango.
+// Para tener algo en vivo PRE-Mundial, incluimos también La Liga (jornadas
+// activas). Cuando arranque el Mundial 2026 lo dejaremos único.
+function makeRange(daysBack: number, daysAhead: number): { start: string; end: string } {
+  const fmt = (d: Date) =>
+    `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+  const now = new Date();
+  const start = new Date(now);
+  start.setDate(start.getDate() - daysBack);
+  const end = new Date(now);
+  end.setDate(end.getDate() + daysAhead);
+  return { start: fmt(start), end: fmt(end) };
+}
+
+const COMPETITIONS: Array<{ slug: string; range: () => { start: string; end: string } }> = [
+  // Mundial 2026: ventana fija de las fechas oficiales del torneo.
+  { slug: 'fifa.world', range: () => ({ start: '20260601', end: '20260731' }) },
+  // La Liga: ventana rodante de -2 a +10 días para capturar jornadas en juego/próximas.
+  { slug: 'esp.1', range: () => makeRange(2, 10) },
+];
 
 /** Shape normalizado que devuelve este provider. Es lo único que sync.ts conoce. */
 export interface NormalizedFixture {
@@ -65,19 +80,41 @@ interface EspnEvent {
     venue?: { fullName: string };
     notes?: Array<{ headline: string }>;
   }>;
+  // Custom: lo añadimos en fetchCompetition para saber de qué liga viene
+  __league?: string;
 }
 
-export async function fetchWorldCupFixtures(): Promise<NormalizedFixture[]> {
-  const url = `https://${HOST}${PATH}?dates=${RANGE_START}-${RANGE_END}`;
+async function fetchCompetition(slug: string, start: string, end: string): Promise<EspnEvent[]> {
+  const url = `https://${HOST}/apis/site/v2/sports/soccer/${slug}/scoreboard?dates=${start}-${end}`;
   const res = await fetch(url, {
     headers: { 'User-Agent': 'quiniela-padelbox/1.0' },
     next: { revalidate: 60 },
   });
   if (!res.ok) {
-    throw new Error(`ESPN ${res.status}: ${await res.text()}`);
+    throw new Error(`ESPN ${slug} ${res.status}: ${await res.text()}`);
   }
   const json = (await res.json()) as { events?: EspnEvent[] };
-  const events = json.events ?? [];
+  return (json.events ?? []).map((e) => ({ ...e, __league: slug }));
+}
+
+/**
+ * Trae todos los fixtures de las competiciones registradas. Sigue llamándose
+ * `fetchWorldCupFixtures` por compatibilidad histórica; en realidad ahora trae
+ * Mundial 2026 + cualquier liga adicional configurada en COMPETITIONS.
+ */
+export async function fetchWorldCupFixtures(): Promise<NormalizedFixture[]> {
+  const results = await Promise.allSettled(
+    COMPETITIONS.map(async (c) => {
+      const { start, end } = c.range();
+      return fetchCompetition(c.slug, start, end);
+    }),
+  );
+
+  const events: EspnEvent[] = [];
+  for (const r of results) {
+    if (r.status === 'fulfilled') events.push(...r.value);
+    else console.error('[espn] competition failed:', r.reason);
+  }
   return events.map(toNormalized).filter((f): f is NormalizedFixture => f !== null);
 }
 
@@ -91,14 +128,23 @@ function toNormalized(e: EspnEvent): NormalizedFixture | null {
   const away = comp.competitors.find((c) => c.homeAway === 'away') ?? comp.competitors[1];
   if (!home || !away) return null;
 
-  const finished = e.status.type.name === 'STATUS_FINAL';
+  const finished = isFinishedStatus(e.status.type.name);
   const homeScore = finished ? parseScore(home.score) : null;
   const awayScore = finished ? parseScore(away.score) : null;
 
+  // En ligas regulares (La Liga, Premier...) no hay fase, siempre GROUP con grupo "LIGA".
+  const isWorldCup = e.__league === 'fifa.world';
+  const stage: Stage = isWorldCup ? mapStage(e.season?.slug, comp.notes) : 'GROUP';
+  const group = isWorldCup
+    ? mapGroup(e.season?.slug, comp.notes, home.team.displayName, away.team.displayName)
+    : e.__league === 'esp.1'
+      ? 'LIGA'
+      : (e.__league ?? null);
+
   return {
     externalId,
-    stage: mapStage(e.season?.slug, comp.notes),
-    group: mapGroup(e.season?.slug, comp.notes, home.team.displayName, away.team.displayName),
+    stage,
+    group,
     kickoff: new Date(e.date),
     homeTeam: home.team.displayName,
     awayTeam: away.team.displayName,
@@ -116,7 +162,18 @@ function parseScore(s: string | undefined): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+function isFinishedStatus(name: string): boolean {
+  return (
+    name === 'STATUS_FINAL' ||
+    name === 'STATUS_FULL_TIME' ||
+    name === 'STATUS_FINAL_PEN' ||
+    name === 'STATUS_FINAL_AET' ||
+    name === 'STATUS_AGGREGATE_FINAL'
+  );
+}
+
 function mapStatus(name: string): MatchStatus {
+  if (isFinishedStatus(name)) return 'FINISHED';
   switch (name) {
     case 'STATUS_SCHEDULED':
       return 'SCHEDULED';
@@ -124,9 +181,6 @@ function mapStatus(name: string): MatchStatus {
     case 'STATUS_HALFTIME':
     case 'STATUS_END_PERIOD':
       return 'LIVE';
-    case 'STATUS_FINAL':
-    case 'STATUS_FULL_TIME':
-      return 'FINISHED';
     case 'STATUS_POSTPONED':
       return 'POSTPONED';
     case 'STATUS_CANCELED':
