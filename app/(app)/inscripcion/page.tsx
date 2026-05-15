@@ -150,13 +150,17 @@ export default async function InscripcionPage() {
       {CLUB_INFO.prizes.length > 0 && (
         <section>
           <h2 className="font-display text-2xl mb-3">Premios 🏆</h2>
-          <ul className="space-y-1.5 text-sm">
-            {CLUB_INFO.prizes.map((prize) => (
-              <li key={prize} className="text-muted">
-                · <span className="text-ink">{prize}</span>
-              </li>
+          <div className="rounded-xl border border-line bg-bg-elev overflow-hidden">
+            {CLUB_INFO.prizes.map((prize, i) => (
+              <div
+                key={prize.place}
+                className={'flex items-center justify-between px-5 py-3 ' + (i > 0 ? 'border-t border-line' : '')}
+              >
+                <span className="text-sm">{prize.place}</span>
+                <span className="font-display text-xl tabular-nums text-accent">{prize.amount}</span>
+              </div>
             ))}
-          </ul>
+          </div>
         </section>
       )}
 

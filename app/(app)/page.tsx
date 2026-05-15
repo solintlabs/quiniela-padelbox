@@ -5,6 +5,7 @@ import { computeRanking } from '@/lib/ranking';
 import { PodioHero } from '@/components/PodioHero';
 import { Countdown } from '@/components/Countdown';
 import { formatDateTime } from '@/lib/format';
+import { CLUB_INFO } from '@/lib/club-info';
 
 export const metadata = { title: 'Inicio · Quiniela PADELBOX' };
 export const dynamic = 'force-dynamic';
@@ -146,6 +147,28 @@ export default async function DashboardPage() {
       ) : (
         <section className="text-center text-muted text-sm">
           No hay partidos pendientes. Ve a <Link href="/partidos" className="underline">/partidos</Link>.
+        </section>
+      )}
+
+      {CLUB_INFO.prizes.length > 0 && (
+        <section className="max-w-2xl mx-auto">
+          <header className="text-center mb-4">
+            <p className="text-xs uppercase tracking-[0.18em] text-muted">Premios del campeonato</p>
+            <h2 className="font-display text-3xl mt-1">🏆 ¿Qué se llevan los ganadores?</h2>
+          </header>
+          <div className="rounded-xl border border-line bg-bg-elev overflow-hidden">
+            {CLUB_INFO.prizes.map((prize, i) => (
+              <div
+                key={prize.place}
+                className={'flex items-center justify-between px-5 py-4 ' + (i > 0 ? 'border-t border-line' : '')}
+              >
+                <span className="text-base">{prize.place}</span>
+                <span className={'font-display text-2xl tabular-nums ' + (i === 0 ? 'text-accent' : 'text-ink')}>
+                  {prize.amount}
+                </span>
+              </div>
+            ))}
+          </div>
         </section>
       )}
     </div>

@@ -55,11 +55,11 @@ export const CLUB_INFO = {
     instagram: '',
   },
 
-  /** Premios — texto libre para mostrar a los socios */
+  /** Premios — los socios los ven en el dashboard y en /inscripcion */
   prizes: [
-    'Trofeo para el campeón',
-    'Cena/comida grupal en el club',
-    'Material de pádel (palas, ropa, accesorios)',
+    { place: '🥇 1er lugar', amount: '$1.500' },
+    { place: '🥈 2º lugar', amount: '$500' },
+    { place: '🥉 3er lugar', amount: '$300' },
   ],
 
   rules: {

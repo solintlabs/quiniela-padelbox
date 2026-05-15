@@ -82,7 +82,7 @@ export default async function MatchDetailPage({ params }: { params: { id: string
         )}
       </header>
 
-      {isLocked && <AllPredictions matchId={match.id} myUserId={userId} />}
+      <AllPredictions matchId={match.id} myUserId={userId} isLocked={isLocked} kickoff={match.kickoff} />
 
       <section className="rounded-xl border border-line bg-bg-elev p-4 sm:p-8">
         {isFinished && mine ? (
@@ -109,7 +109,47 @@ export default async function MatchDetailPage({ params }: { params: { id: string
   );
 }
 
-async function AllPredictions({ matchId, myUserId }: { matchId: string; myUserId: string }) {
+async function AllPredictions({
+  matchId,
+  myUserId,
+  isLocked,
+  kickoff,
+}: {
+  matchId: string;
+  myUserId: string;
+  isLocked: boolean;
+  kickoff: Date;
+}) {
+  // Cuántas predicciones hay (lo mostramos siempre, no es info sensible)
+  const count = await prisma.prediction.count({ where: { matchId } });
+
+  // Si aún no está cerrado, NO devolvemos los pronósticos (anti-trampa).
+  if (!isLocked) {
+    const lockTime = new Date(kickoff.getTime() - 15 * 60_000);
+    return (
+      <section>
+        <h2 className="font-display text-xl mb-3">Pronósticos de los demás</h2>
+        <div className="rounded-xl border border-line bg-bg-elev p-5 text-center space-y-2">
+          <p className="text-sm">
+            🔒 Los pronósticos de los demás socios se desbloquean{' '}
+            <strong>15 minutos antes del kickoff</strong>, cuando ya nadie pueda
+            modificarlos.
+          </p>
+          <p className="text-xs text-muted">
+            {count > 0
+              ? `${count} ${count === 1 ? 'socio ha' : 'socios han'} hecho pronóstico para este partido.`
+              : 'Aún no hay pronósticos para este partido.'}
+          </p>
+          <p className="text-xs text-muted">
+            Disponible a partir del{' '}
+            <span className="text-ink">{formatDateTime(lockTime)}</span>.
+          </p>
+        </div>
+      </section>
+    );
+  }
+
+  // Ya está cerrado: lista completa
   const predictions = await prisma.prediction.findMany({
     where: { matchId },
     select: {
@@ -124,15 +164,18 @@ async function AllPredictions({ matchId, myUserId }: { matchId: string; myUserId
 
   if (predictions.length === 0) {
     return (
-      <section className="rounded-xl border border-line bg-bg-elev p-5">
-        <p className="text-sm text-muted text-center">Nadie hizo pronóstico para este partido.</p>
+      <section>
+        <h2 className="font-display text-xl mb-3">Pronósticos de los demás</h2>
+        <div className="rounded-xl border border-line bg-bg-elev p-5">
+          <p className="text-sm text-muted text-center">Nadie hizo pronóstico para este partido.</p>
+        </div>
       </section>
     );
   }
 
   return (
     <section>
-      <h2 className="font-display text-xl mb-3">Pronósticos de todos ({predictions.length})</h2>
+      <h2 className="font-display text-xl mb-3">Pronósticos de los demás ({predictions.length})</h2>
       <div className="rounded-xl border border-line bg-bg-elev overflow-hidden">
         {predictions.map((p, i) => {
           const isMe = p.user.id === myUserId;
