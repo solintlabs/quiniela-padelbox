@@ -38,16 +38,46 @@ export default async function DashboardPage() {
 
       {nextMatch ? (
         <section className="rounded-xl border border-accent/30 bg-accent/5 p-6 shadow-glow-accent max-w-2xl mx-auto">
-          <div className="flex items-center justify-between text-xs text-muted mb-3">
+          <div className="flex items-center justify-between text-xs text-muted mb-5">
             <span className="uppercase tracking-[0.18em]">Siguiente partido</span>
             <span className="text-accent">
               Cierra en <Countdown target={nextMatch.kickoff} />
             </span>
           </div>
-          <p className="text-center font-display text-2xl">
-            {nextMatch.homeTeam} <span className="text-muted">vs</span> {nextMatch.awayTeam}
-          </p>
-          <p className="text-center text-xs text-muted mt-1">
+          <div className="flex items-center justify-around gap-3">
+            <div className="flex flex-col items-center gap-2 flex-1 min-w-0">
+              {nextMatch.homeFlag && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={nextMatch.homeFlag}
+                  alt=""
+                  width={48}
+                  height={48}
+                  className="w-12 h-12 rounded-full object-cover"
+                />
+              )}
+              <p className="font-display text-lg leading-tight text-center truncate w-full">
+                {nextMatch.homeTeam}
+              </p>
+            </div>
+            <span className="font-display text-xl text-muted">vs</span>
+            <div className="flex flex-col items-center gap-2 flex-1 min-w-0">
+              {nextMatch.awayFlag && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={nextMatch.awayFlag}
+                  alt=""
+                  width={48}
+                  height={48}
+                  className="w-12 h-12 rounded-full object-cover"
+                />
+              )}
+              <p className="font-display text-lg leading-tight text-center truncate w-full">
+                {nextMatch.awayTeam}
+              </p>
+            </div>
+          </div>
+          <p className="text-center text-xs text-muted mt-4">
             {formatDateTime(nextMatch.kickoff)}
           </p>
           <div className="mt-5 text-center">
