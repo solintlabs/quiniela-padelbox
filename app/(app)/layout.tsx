@@ -1,5 +1,6 @@
 import { requireUser } from '@/lib/permissions';
 import { Nav } from '@/components/Nav';
+import { Footer } from '@/components/Footer';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
@@ -9,6 +10,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <main className="max-w-6xl mx-auto px-6 py-8">
         {!user.hasPaid && <PaymentBanner />}
         {children}
+        <Footer variant="app" />
       </main>
     </>
   );
