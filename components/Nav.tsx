@@ -21,6 +21,7 @@ export function Nav({ isAdmin, userEmail }: NavProps) {
           <NavLink href="/">Inicio</NavLink>
           <NavLink href="/partidos">Partidos</NavLink>
           <NavLink href="/ranking">Ranking</NavLink>
+          <NavLink href="/inscripcion">Inscripción</NavLink>
           <NavLink href="/perfil">Perfil</NavLink>
           {isAdmin && <NavLink href="/admin" className="text-accent">Admin</NavLink>}
         </nav>
