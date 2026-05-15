@@ -89,7 +89,7 @@ export default async function ReglasPage() {
         </ul>
         <p className="text-sm text-muted">
           Los partidos de eliminatoria aparecen automáticamente conforme se definen los emparejamientos reales.
-          No predices "ganador grupo A vs 2º grupo B" — esperas a saber qué equipos juegan.
+          No predices &quot;ganador grupo A vs 2º grupo B&quot; — esperas a saber qué equipos juegan.
         </p>
       </section>
 
