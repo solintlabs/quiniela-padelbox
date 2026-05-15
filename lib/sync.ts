@@ -1,32 +1,17 @@
 import { prisma } from '@/lib/db';
 import { calcPoints } from '@/lib/scoring';
-import { fetchWorldCupFixtures, mapRound, mapStatus } from '@/lib/api-football';
+import { fetchWorldCupFixtures, type NormalizedFixture } from '@/lib/providers/espn';
 
-/** Sync con API-Football: upsert por apiFootballId. */
+/** Sync con el proveedor externo: upsert por externalId. */
 export async function syncMatchesFromApi() {
   const fixtures = await fetchWorldCupFixtures();
   let created = 0;
   let updated = 0;
 
   for (const fx of fixtures) {
-    const round = mapRound(fx.league.round);
-    const status = mapStatus(fx.fixture.status.short);
-    const data = {
-      apiFootballId: fx.fixture.id,
-      stage: round.stage,
-      group: round.group ?? null,
-      kickoff: new Date(fx.fixture.date),
-      homeTeam: fx.teams.home.name,
-      awayTeam: fx.teams.away.name,
-      homeFlag: fx.teams.home.logo,
-      awayFlag: fx.teams.away.logo,
-      homeScore: fx.goals.home,
-      awayScore: fx.goals.away,
-      status,
-    };
-
+    const data = toDbShape(fx);
     const existing = await prisma.match.findUnique({
-      where: { apiFootballId: data.apiFootballId },
+      where: { externalId: data.externalId },
     });
     if (existing) {
       await prisma.match.update({ where: { id: existing.id }, data });
@@ -40,27 +25,37 @@ export async function syncMatchesFromApi() {
   return { created, updated, total: fixtures.length };
 }
 
+function toDbShape(fx: NormalizedFixture) {
+  return {
+    externalId: fx.externalId,
+    stage: fx.stage,
+    group: fx.group,
+    kickoff: fx.kickoff,
+    homeTeam: fx.homeTeam,
+    awayTeam: fx.awayTeam,
+    homeFlag: fx.homeFlag,
+    awayFlag: fx.awayFlag,
+    homeScore: fx.homeScore,
+    awayScore: fx.awayScore,
+    status: fx.status,
+  };
+}
+
 /**
  * ¿Hay un partido en curso o que terminó hace menos de 4h?
- * Se usa para decidir si lock-and-score debe sincronizar con API-Football
- * (sync inteligente — evita quemar rate limit en horas muertas).
- *
- * Ventana: [kickoff-30min .. kickoff+4h]
- *   - 30 min antes del kickoff para capturar el cambio SCHEDULED → LIVE.
- *   - 4h después del kickoff cubre prórroga, penaltis y delay de API-Football
- *     en publicar el FT (full time).
+ * Se usa para decidir si lock-and-score debe sincronizar con el proveedor
+ * externo (sync inteligente — evita gastar requests en horas muertas).
  */
 async function hasMatchInWindow(): Promise<boolean> {
   const now = Date.now();
-  const windowStart = new Date(now - 4 * 60 * 60 * 1000);  // hace 4h
-  const windowEnd   = new Date(now + 30 * 60 * 1000);       // dentro de 30min
+  const windowStart = new Date(now - 4 * 60 * 60 * 1000); // hace 4h
+  const windowEnd = new Date(now + 30 * 60 * 1000); // dentro de 30min
 
   const count = await prisma.match.count({
     where: {
       AND: [
         { kickoff: { gte: windowStart, lte: windowEnd } },
         { status: { not: 'CANCELLED' } },
-        // Si ya tiene scoredAt, no merece la pena re-sync (puntos ya calculados).
         { OR: [{ scoredAt: null }, { status: 'LIVE' }] },
       ],
     },
@@ -71,9 +66,8 @@ async function hasMatchInWindow(): Promise<boolean> {
 /**
  * Cierra pronósticos de partidos cuyo kickoff - offset ya pasó.
  * Calcula puntos de partidos FINISHED que aún no tengan scoredAt.
- * Si hay un partido en curso o reciente, hace sync con API-Football antes
- * para tener los resultados frescos (sync inteligente — no consume rate
- * limit en horas sin actividad).
+ * Si hay un partido en curso o reciente, hace sync con el proveedor antes
+ * para tener los resultados frescos.
  */
 export async function lockAndScore() {
   const rules = await prisma.rules.findUnique({ where: { id: 1 } });
@@ -84,12 +78,11 @@ export async function lockAndScore() {
 
   // 0. Sync inteligente: solo si hay partido cerca.
   let synced: false | Awaited<ReturnType<typeof syncMatchesFromApi>> = false;
-  if (process.env.API_FOOTBALL_KEY && (await hasMatchInWindow())) {
+  if (await hasMatchInWindow()) {
     try {
       synced = await syncMatchesFromApi();
     } catch (e) {
-      // Si falla, no rompemos el cron: el siguiente intento lo recuperará.
-      console.error('[lock-and-score] sync API-Football fallo:', e instanceof Error ? e.message : e);
+      console.error('[lock-and-score] sync provider fallo:', e instanceof Error ? e.message : e);
     }
   }
 
