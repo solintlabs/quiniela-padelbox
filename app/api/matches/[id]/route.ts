@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { requireUserApi } from '@/lib/permissions';
 
-export async function GET(_req: Request, { params }: { params: { id: string } }) {
-  const user = await requireUserApi();
+export async function GET(req: Request, { params }: { params: { id: string } }) {
+  const user = await requireUserApi(req);
   if (user instanceof Response) return user;
 
   const match = await prisma.match.findUnique({

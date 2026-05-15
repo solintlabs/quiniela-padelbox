@@ -10,7 +10,7 @@ const Schema = z.object({
 });
 
 export async function POST(req: Request) {
-  const user = await requirePaidApi();
+  const user = await requirePaidApi(req);
   if (user instanceof Response) return user;
 
   const body = await req.json().catch(() => null);

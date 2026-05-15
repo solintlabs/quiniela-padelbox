@@ -9,7 +9,7 @@ const Schema = z.object({
 });
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
-  const user = await requireAdminApi();
+  const user = await requireAdminApi(req);
   if (user instanceof Response) return user;
   const parsed = Schema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
