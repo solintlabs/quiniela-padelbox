@@ -18,19 +18,27 @@ export default async function DashboardPage() {
     prisma.match.findFirst({
       where: { status: 'SCHEDULED', lockedAt: null },
       orderBy: { kickoff: 'asc' },
+      include: {
+        predictions: {
+          where: { userId },
+          select: { homeScore: true, awayScore: true },
+        },
+      },
     }),
     (async () => {
       const offsetMs = 15 * 60_000;
       const now = new Date(Date.now() + offsetMs);
       const total = await prisma.match.count({
-        where: { stage: 'GROUP', kickoff: { gt: now } },
+        where: { stage: 'GROUP', kickoff: { gt: now }, group: { in: ['A','B','C','D','E','F','G','H','I','J','K','L'] } },
       });
       const filled = await prisma.prediction.count({
-        where: { userId, match: { stage: 'GROUP', kickoff: { gt: now } } },
+        where: { userId, match: { stage: 'GROUP', kickoff: { gt: now }, group: { in: ['A','B','C','D','E','F','G','H','I','J','K','L'] } } },
       });
       return { total, filled };
     })(),
   ]);
+
+  const myPrediction = nextMatch?.predictions?.[0];
 
   const top3 = ranking.slice(0, 3);
   const position = ranking.findIndex((r) => r.userId === userId);
@@ -118,12 +126,20 @@ export default async function DashboardPage() {
           <p className="text-center text-xs text-muted mt-4">
             {formatDateTime(nextMatch.kickoff)}
           </p>
+          {myPrediction && (
+            <p className="text-center text-sm mt-3">
+              <span className="text-muted">Tu pronóstico:</span>{' '}
+              <span className="font-display tabular-nums text-lg text-accent">
+                {myPrediction.homeScore}–{myPrediction.awayScore}
+              </span>
+            </p>
+          )}
           <div className="mt-5 text-center">
             <Link
               href={`/partidos/${nextMatch.id}`}
               className="inline-flex items-center justify-center h-12 px-8 rounded-lg bg-accent text-accent-fg font-display tracking-tight hover:brightness-95"
             >
-              PREDECIR →
+              {myPrediction ? 'EDITAR PRONÓSTICO →' : 'PREDECIR →'}
             </Link>
           </div>
         </section>
