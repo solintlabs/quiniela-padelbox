@@ -65,4 +65,4 @@ export const CLUB_INFO = {
     pointsChampion: 25,
     closeMin: 15,
   },
-} as const;
+};
