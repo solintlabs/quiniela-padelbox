@@ -80,9 +80,9 @@ export function PredictionForm({
       }}
       className="space-y-6"
     >
-      <div className="grid grid-cols-[1fr_auto_1fr] items-end gap-4">
+      <div className="grid grid-cols-[1fr_auto_1fr] items-end gap-2 sm:gap-4">
         <ScoreInput label={homeTeam} value={home} onChange={setHome} disabled={disabled} side="home" />
-        <span className="font-display text-3xl text-muted pb-3">–</span>
+        <span className="font-display text-2xl sm:text-3xl text-muted pb-3">–</span>
         <ScoreInput label={awayTeam} value={away} onChange={setAway} disabled={disabled} side="away" />
       </div>
 
@@ -120,17 +120,20 @@ interface ScoreInputProps {
 
 function ScoreInput({ label, value, onChange, disabled, side }: ScoreInputProps) {
   return (
-    <div className="flex flex-col items-center gap-3">
-      <label htmlFor={`score-${side}`} className="text-xs uppercase tracking-[0.18em] text-muted text-center min-h-[2em]">
+    <div className="flex flex-col items-center gap-2 sm:gap-3 min-w-0">
+      <label
+        htmlFor={`score-${side}`}
+        className="text-[10px] sm:text-xs uppercase tracking-[0.1em] sm:tracking-[0.18em] text-muted text-center min-h-[1.5em] truncate max-w-full"
+      >
         {label}
       </label>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1 sm:gap-2">
         <button
           type="button"
           aria-label="Restar"
           disabled={disabled || value <= MIN}
           onClick={() => onChange(clamp(value - 1))}
-          className="h-12 w-12 rounded-lg border border-line text-xl hover:bg-bg-elev disabled:opacity-30 disabled:pointer-events-none"
+          className="h-9 w-9 sm:h-12 sm:w-12 rounded-lg border border-line text-lg sm:text-xl hover:bg-bg-elev disabled:opacity-30 disabled:pointer-events-none shrink-0"
         >
           −
         </button>
@@ -147,11 +150,12 @@ function ScoreInput({ label, value, onChange, disabled, side }: ScoreInputProps)
           onFocus={(e) => e.target.select()}
           disabled={disabled}
           className={cn(
-            'h-20 w-20 rounded-xl border bg-bg-elev text-center',
-            'font-display tabular-nums text-5xl',
+            'h-14 w-14 sm:h-20 sm:w-20 rounded-xl border bg-bg-elev text-center',
+            'font-display tabular-nums text-3xl sm:text-5xl',
             'border-accent/40 bg-accent/5',
             'focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent',
             '[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none',
+            'shrink-0',
             disabled && 'opacity-60',
           )}
         />
@@ -160,7 +164,7 @@ function ScoreInput({ label, value, onChange, disabled, side }: ScoreInputProps)
           aria-label="Sumar"
           disabled={disabled || value >= MAX}
           onClick={() => onChange(clamp(value + 1))}
-          className="h-12 w-12 rounded-lg border border-line text-xl hover:bg-bg-elev disabled:opacity-30 disabled:pointer-events-none"
+          className="h-9 w-9 sm:h-12 sm:w-12 rounded-lg border border-line text-lg sm:text-xl hover:bg-bg-elev disabled:opacity-30 disabled:pointer-events-none shrink-0"
         >
           +
         </button>

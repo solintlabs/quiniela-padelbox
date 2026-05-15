@@ -82,7 +82,7 @@ export default async function MatchDetailPage({ params }: { params: { id: string
         )}
       </header>
 
-      <section className="rounded-xl border border-line bg-bg-elev p-8">
+      <section className="rounded-xl border border-line bg-bg-elev p-4 sm:p-8">
         {isFinished && mine ? (
           <FinishedSummary mine={mine} home={match.homeScore!} away={match.awayScore!} />
         ) : (
