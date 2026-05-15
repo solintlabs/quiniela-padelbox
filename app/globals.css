@@ -46,3 +46,17 @@
 @layer utilities {
   .tnum { font-variant-numeric: tabular-nums; }
 }
+
+@media print {
+  :root, .dark {
+    --bg: 0 0% 100%;
+    --bg-elev: 0 0% 100%;
+    --ink: 0 0% 4%;
+    --muted: 0 0% 30%;
+    --border: 0 0% 70%;
+  }
+  body {
+    background: white !important;
+    color: black !important;
+  }
+}

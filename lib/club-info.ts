@@ -48,8 +48,11 @@ export const CLUB_INFO = {
 
   contact: {
     email: 'info@solint.cloud',
-    whatsapp: '',                           // p.ej. '+58 412 000 0000'
-    instagram: '',                          // p.ej. '@padelbox'
+    /** Número internacional sin '+' ni espacios, p.ej. '584120000000' */
+    whatsapp: '',
+    /** Mensaje pre-rellenado al abrir WhatsApp */
+    whatsappPrefill: 'Hola PADELBOX, quiero inscribirme en la quiniela del Mundial 2026.',
+    instagram: '',
   },
 
   /** Premios — texto libre para mostrar a los socios */

@@ -1,10 +1,11 @@
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { auth, signIn } from '@/lib/auth';
-import { prisma } from '@/lib/db';
 import { Logo } from '@/components/Logo';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Footer } from '@/components/Footer';
+import { WhatsappFab } from '@/components/WhatsappFab';
 
 export const metadata = { title: 'Entrar · Quiniela PADELBOX' };
 
@@ -34,9 +35,8 @@ export default async function LoginPage() {
             const name = String(formData.get('name') ?? '').trim();
             if (!email) return;
 
-            // Persistimos el nombre si lo dan (primera vez) o si ya lo tenía,
-            // respetamos el existente y no lo sobrescribimos.
             if (name) {
+              const { prisma } = await import('@/lib/db');
               const existing = await prisma.user.findUnique({ where: { email } });
               if (!existing) {
                 await prisma.user.create({ data: { email, name } });
@@ -101,12 +101,33 @@ export default async function LoginPage() {
           </>
         )}
 
+        {/* Acceso público a info sin necesidad de login */}
+        <div className="mt-10 grid grid-cols-2 gap-3">
+          <Link
+            href="/public/reglas"
+            className="rounded-xl border border-line bg-bg-elev p-4 hover:border-accent/40 transition-colors flex flex-col items-center gap-2 text-center"
+          >
+            <span className="text-2xl">📖</span>
+            <span className="font-semibold text-sm">Reglas</span>
+            <span className="text-xs text-muted">Cómo funciona la quiniela</span>
+          </Link>
+          <Link
+            href="/public/inscripcion"
+            className="rounded-xl border border-line bg-bg-elev p-4 hover:border-accent/40 transition-colors flex flex-col items-center gap-2 text-center"
+          >
+            <span className="text-2xl">💳</span>
+            <span className="font-semibold text-sm">Inscripción</span>
+            <span className="text-xs text-muted">Métodos de pago</span>
+          </Link>
+        </div>
+
         <p className="text-xs text-muted text-center mt-8">
           ¿No estás inscrito? Tu cuenta se crea sola. Después un admin de PADELBOX valida tu pago para activarte.
         </p>
       </div>
 
       <Footer variant="auth" />
+      <WhatsappFab />
     </main>
   );
 }

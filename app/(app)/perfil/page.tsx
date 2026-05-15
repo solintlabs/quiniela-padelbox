@@ -101,7 +101,17 @@ async function MyPredictions({ userId }: { userId: string }) {
 
   return (
     <section>
-      <h2 className="font-display text-2xl mb-4">Mis pronósticos</h2>
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+        <h2 className="font-display text-2xl">Mis pronósticos</h2>
+        {predictions.length > 0 && (
+          <Link
+            href="/mis-pronosticos/print"
+            className="text-xs h-9 px-4 inline-flex items-center rounded-md border border-line hover:border-accent hover:text-accent"
+          >
+            🖨 Descargar / enviar por WhatsApp
+          </Link>
+        )}
+      </div>
       {predictions.length === 0 ? (
         <p className="text-sm text-muted">
           Aún no has hecho ningún pronóstico. Ve a{' '}
