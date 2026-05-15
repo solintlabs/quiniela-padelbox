@@ -13,12 +13,23 @@ export default async function DashboardPage() {
   const session = await auth();
   const userId = session!.user.id;
 
-  const [ranking, nextMatch] = await Promise.all([
+  const [ranking, nextMatch, groupStats] = await Promise.all([
     computeRanking(),
     prisma.match.findFirst({
       where: { status: 'SCHEDULED', lockedAt: null },
       orderBy: { kickoff: 'asc' },
     }),
+    (async () => {
+      const offsetMs = 15 * 60_000;
+      const now = new Date(Date.now() + offsetMs);
+      const total = await prisma.match.count({
+        where: { stage: 'GROUP', kickoff: { gt: now } },
+      });
+      const filled = await prisma.prediction.count({
+        where: { userId, match: { stage: 'GROUP', kickoff: { gt: now } } },
+      });
+      return { total, filled };
+    })(),
   ]);
 
   const top3 = ranking.slice(0, 3);
@@ -35,6 +46,33 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-12">
       <PodioHero top={top3} me={me} />
+
+      {groupStats.total > 0 && groupStats.filled < groupStats.total && (
+        <section className="rounded-xl border border-accent/30 bg-accent/5 p-5 max-w-2xl mx-auto">
+          <div className="flex items-start gap-4">
+            <span className="text-2xl">🎯</span>
+            <div className="flex-1">
+              <p className="font-display text-lg leading-tight">Rellena tu quiniela</p>
+              <p className="text-sm text-muted mt-1">
+                Llevas <span className="text-accent font-semibold tabular-nums">{groupStats.filled}</span>{' '}
+                de <span className="tabular-nums">{groupStats.total}</span> partidos de fase de grupos.
+              </p>
+              <div className="mt-3 h-1.5 rounded-full bg-bg overflow-hidden">
+                <div
+                  className="h-full bg-accent transition-all"
+                  style={{ width: `${(groupStats.filled / Math.max(groupStats.total, 1)) * 100}%` }}
+                />
+              </div>
+              <Link
+                href="/predecir-grupos"
+                className="inline-flex items-center mt-4 h-10 px-5 rounded-lg bg-accent text-accent-fg font-display text-sm hover:brightness-95"
+              >
+                {groupStats.filled === 0 ? 'EMPEZAR →' : 'CONTINUAR →'}
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
 
       {nextMatch ? (
         <section className="rounded-xl border border-accent/30 bg-accent/5 p-6 shadow-glow-accent max-w-2xl mx-auto">

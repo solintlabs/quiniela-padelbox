@@ -82,6 +82,8 @@ export default async function MatchDetailPage({ params }: { params: { id: string
         )}
       </header>
 
+      {isLocked && <AllPredictions matchId={match.id} myUserId={userId} />}
+
       <section className="rounded-xl border border-line bg-bg-elev p-4 sm:p-8">
         {isFinished && mine ? (
           <FinishedSummary mine={mine} home={match.homeScore!} away={match.awayScore!} />
@@ -104,6 +106,57 @@ export default async function MatchDetailPage({ params }: { params: { id: string
         )}
       </section>
     </div>
+  );
+}
+
+async function AllPredictions({ matchId, myUserId }: { matchId: string; myUserId: string }) {
+  const predictions = await prisma.prediction.findMany({
+    where: { matchId },
+    select: {
+      id: true,
+      homeScore: true,
+      awayScore: true,
+      points: true,
+      user: { select: { id: true, name: true, email: true } },
+    },
+    orderBy: [{ points: 'desc' }, { createdAt: 'asc' }],
+  });
+
+  if (predictions.length === 0) {
+    return (
+      <section className="rounded-xl border border-line bg-bg-elev p-5">
+        <p className="text-sm text-muted text-center">Nadie hizo pronóstico para este partido.</p>
+      </section>
+    );
+  }
+
+  return (
+    <section>
+      <h2 className="font-display text-xl mb-3">Pronósticos de todos ({predictions.length})</h2>
+      <div className="rounded-xl border border-line bg-bg-elev overflow-hidden">
+        {predictions.map((p, i) => {
+          const isMe = p.user.id === myUserId;
+          const label = p.points === 3 ? '+3 exacto' : p.points === 1 ? '+1 ganador' : p.points === 0 ? '0' : 'pendiente';
+          const labelColor =
+            p.points === 3 ? 'text-success' : p.points === 1 ? 'text-warning' : 'text-muted';
+          return (
+            <div
+              key={p.id}
+              className={'flex items-center gap-3 px-4 py-3 ' + (i > 0 ? 'border-t border-line ' : '') + (isMe ? 'bg-accent/5' : '')}
+            >
+              <span className="flex-1 text-sm truncate">
+                {p.user.name ?? p.user.email}
+                {isMe && <span className="text-muted text-xs ml-2">· tú</span>}
+              </span>
+              <span className="font-display tabular-nums text-lg w-16 text-center">
+                {p.homeScore}–{p.awayScore}
+              </span>
+              <span className={'text-xs w-20 text-right ' + labelColor}>{label}</span>
+            </div>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 
