@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { requirePaidApi } from '@/lib/permissions';
+import { rateLimit, tooManyRequests } from '@/lib/ratelimit';
 
 const Schema = z.object({
   matchId: z.string().min(1),
@@ -12,6 +13,12 @@ const Schema = z.object({
 export async function POST(req: Request) {
   const user = await requirePaidApi(req);
   if (user instanceof Response) return user;
+
+  // Rate limit: max 60 predicciones por minuto por usuario.
+  // Margen amplio para uso normal (incluso editando varias), pero corta
+  // bots / scripts que martillan el endpoint.
+  const rl = await rateLimit(`predict:user:${user.id}`, 60, 60);
+  if (!rl.allowed) return tooManyRequests(rl.resetAt);
 
   const body = await req.json().catch(() => null);
   const parsed = Schema.safeParse(body);

@@ -3,6 +3,7 @@ import crypto from 'node:crypto';
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { buildLoginCodeEmail } from '@/lib/emails/login-code';
+import { rateLimit, tooManyRequests } from '@/lib/ratelimit';
 
 const Schema = z.object({ email: z.string().email() });
 
@@ -28,6 +29,11 @@ export async function POST(req: Request) {
   }
   const email = parsed.data.email.toLowerCase();
   const identifier = IDENT_PREFIX + email;
+
+  // Rate limit: max 5 emails de codigo por hora a cada direccion.
+  // Anti-spam de emails (cada uno cuesta a Resend) y anti-enumeracion.
+  const rl = await rateLimit(`code-req:email:${email}`, 5, 3600);
+  if (!rl.allowed) return tooManyRequests(rl.resetAt);
 
   // Borrar códigos previos para este email
   await prisma.verificationToken.deleteMany({ where: { identifier } });

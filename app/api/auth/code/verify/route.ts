@@ -3,6 +3,7 @@ import crypto from 'node:crypto';
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { signAppToken } from '@/lib/jwt';
+import { rateLimit, tooManyRequests } from '@/lib/ratelimit';
 
 const Schema = z.object({
   email: z.string().email(),
@@ -27,6 +28,12 @@ export async function POST(req: Request) {
   }
   const email = parsed.data.email.toLowerCase();
   const identifier = IDENT_PREFIX + email;
+
+  // Rate limit: max 10 intentos por hora por email. Brute force del codigo
+  // de 6 digitos requeriria 1M intentos — 10/h hace inviable cualquier ataque.
+  const rl = await rateLimit(`code-verify:email:${email}`, 10, 3600);
+  if (!rl.allowed) return tooManyRequests(rl.resetAt);
+
   const expected = hashCode(parsed.data.code);
 
   const record = await prisma.verificationToken.findFirst({

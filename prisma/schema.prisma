@@ -114,6 +114,17 @@ model User {
 
 // Token Expo push por dispositivo. Un user puede tener varios (iPhone + iPad,
 // etc). Limpiamos cuando Expo devuelve DeviceNotRegistered.
+// Rate limit por bucket (userId+action o ip+action).
+// Borrar registros antiguos por TTL de cron diario.
+model RateLimit {
+  key       String   @id          // ej "predict:user:abc123" o "predict:ip:1.2.3.4"
+  count     Int      @default(0)
+  windowEnd DateTime              // fin del bucket actual
+  updatedAt DateTime @updatedAt
+
+  @@index([windowEnd])
+}
+
 model PushDevice {
   id          String   @id @default(cuid())
   userId      String

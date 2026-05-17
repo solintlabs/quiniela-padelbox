@@ -1,8 +1,10 @@
 import { prisma } from '@/lib/db';
+import { requireAdmin } from '@/lib/permissions';
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminHome() {
+  await requireAdmin();
   const [users, paid, matches, finished, predictions] = await Promise.all([
     prisma.user.count(),
     prisma.user.count({ where: { hasPaid: true } }),

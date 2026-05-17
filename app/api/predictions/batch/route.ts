@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { requirePaidApi } from '@/lib/permissions';
+import { rateLimit, tooManyRequests } from '@/lib/ratelimit';
 
 const ItemSchema = z.object({
   matchId: z.string().min(1),
@@ -30,6 +31,11 @@ const Schema = z.object({
 export async function POST(req: Request) {
   const user = await requirePaidApi(req);
   if (user instanceof Response) return user;
+
+  // Rate limit: max 20 batches por minuto por user (cada batch ya guarda
+  // hasta 120 predicciones, asi que es generoso para uso normal).
+  const rl = await rateLimit(`predict-batch:user:${user.id}`, 20, 60);
+  if (!rl.allowed) return tooManyRequests(rl.resetAt);
 
   const parsed = Schema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {

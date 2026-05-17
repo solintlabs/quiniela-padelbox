@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { verifyCronSecret } from '@/lib/permissions';
 import { syncMatchesFromApi, lockAndScore } from '@/lib/sync';
+import { cleanupRateLimit } from '@/lib/ratelimit';
 
 /**
  * Cron diario combinado — compatible con Vercel Hobby (1 ejecución/día por cron).
@@ -28,6 +29,13 @@ export async function GET(req: Request) {
     result.lock = await lockAndScore();
   } catch (e) {
     result.errors.push(`lock: ${e instanceof Error ? e.message : String(e)}`);
+  }
+
+  // Cleanup buckets caducados del rate limit (TTL 1h)
+  try {
+    await cleanupRateLimit();
+  } catch (e) {
+    result.errors.push(`ratelimit-cleanup: ${e instanceof Error ? e.message : String(e)}`);
   }
 
   return NextResponse.json({ ok: result.errors.length === 0, ...result });
