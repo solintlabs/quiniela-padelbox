@@ -20,26 +20,25 @@ export default async function LoginPage() {
   ]);
   const hasGoogle = !!process.env.GOOGLE_CLIENT_ID && !!process.env.GOOGLE_CLIENT_SECRET;
 
-  // Premios garantizados (fijos)
-  const guaranteedPrizes = '$2.300';
   return (
     <main className="min-h-screen relative overflow-hidden">
-      {/* Hero stadium background — verde cancha */}
+      {/* Foto de tribuna del estadio (asientos) */}
       <div
+        aria-hidden
+        className="absolute inset-0 -z-20 bg-cover bg-center"
+        style={{
+          backgroundImage:
+            "url('https://images.unsplash.com/photo-1577223625816-7546f13df25d?auto=format&fit=crop&w=1600&q=70')",
+          filter: 'brightness(0.55)',
+        }}
+      />
+      {/* Overlay oscuro de legibilidad */}
+      <div
+        aria-hidden
         className="absolute inset-0 -z-10"
         style={{
           background:
-            'radial-gradient(ellipse at center top, rgba(74,124,29,0.35) 0%, transparent 55%), linear-gradient(180deg, #0A1F08 0%, #0A0A0A 50%)',
-        }}
-      />
-      {/* Líneas de cancha sutiles */}
-      <div
-        aria-hidden
-        className="absolute inset-0 -z-10 pointer-events-none opacity-40"
-        style={{
-          backgroundImage:
-            'linear-gradient(transparent 50%, rgba(255,255,255,0.06) 50.5%, transparent 51%), linear-gradient(90deg, transparent 49.5%, rgba(255,255,255,0.04) 50%, transparent 50.5%)',
-          backgroundSize: '100% 120px, 120px 100%',
+            'linear-gradient(180deg, rgba(10,10,10,0.50) 0%, rgba(10,10,10,0.65) 35%, rgba(10,10,10,0.97) 80%, #0A0A0A 100%)',
         }}
       />
 
@@ -47,26 +46,27 @@ export default async function LoginPage() {
         {/* Header con logo */}
         <Logo size={36} priority />
 
-        <p className="text-[10px] uppercase tracking-[0.28em] text-accent font-bold mt-12">
-          El Mundial llega
+        <p className="text-[10px] uppercase tracking-[0.28em] text-accent font-bold mt-10">
+          Mundial 2026
         </p>
-        <h1
-          className="font-display text-5xl sm:text-6xl text-center mt-2 leading-[0.85] uppercase"
-          style={{ letterSpacing: '-0.01em' }}
-        >
-          Predice.<br />Compite.<br />
-          <span className="text-accent">Gana.</span>
-        </h1>
 
-        {/* Premios garantizados + mención patrocinadores */}
-        <div className="mt-6 px-4 py-2 rounded-full bg-white/5 backdrop-blur border border-white/10 text-center">
-          <p className="text-xs">
-            <span className="text-zinc-400">Premios garantizados:</span>{' '}
-            <span className="font-display text-accent tabular-nums">{guaranteedPrizes}</span>
-          </p>
+        {/* Premios garantizados — 3 cuadritos del podio */}
+        <div className="mt-5 grid grid-cols-3 gap-1.5 w-full max-w-[280px] text-[10px]">
+          <div className="rounded-md bg-accent/15 border border-accent/40 py-1.5 px-2 text-center">
+            <p className="text-accent">🥇</p>
+            <p className="font-display tabular-nums text-accent text-xs mt-0.5">$1.5K</p>
+          </div>
+          <div className="rounded-md bg-zinc-900/80 border border-zinc-700 py-1.5 px-2 text-center">
+            <p className="text-zinc-400">🥈</p>
+            <p className="font-display tabular-nums text-xs mt-0.5">$500</p>
+          </div>
+          <div className="rounded-md bg-orange-500/15 border border-orange-500/40 py-1.5 px-2 text-center">
+            <p className="text-orange-300">🥉</p>
+            <p className="font-display tabular-nums text-orange-300 text-xs mt-0.5">$300</p>
+          </div>
         </div>
-        <p className="text-[11px] text-zinc-400 mt-3 text-center max-w-xs">
-          + más premios todas las semanas de nuestros patrocinadores
+        <p className="text-[10px] text-zinc-500 mt-2 text-center max-w-xs">
+          + premios semanales de patrocinadores
         </p>
 
         {/* Card del form */}
