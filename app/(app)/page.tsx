@@ -4,6 +4,7 @@ import { auth } from '@/lib/auth';
 import { computeRanking } from '@/lib/ranking';
 import { PodioHero } from '@/components/PodioHero';
 import { Countdown } from '@/components/Countdown';
+import { AliadosStrip } from '@/components/AliadosStrip';
 import { formatDateTime } from '@/lib/format';
 
 export const metadata = { title: 'Inicio · Quiniela PADELBOX' };
@@ -150,27 +151,10 @@ export default async function DashboardPage() {
         </section>
       )}
 
-      {/* Banda DELISH protagonista — premios semanales son cosa suya */}
-      <section className="max-w-2xl mx-auto rounded-2xl border-2 border-[#f14826]/50 bg-[#f14826]/10 overflow-hidden">
-        <div className="flex items-center gap-4 p-4 sm:p-5">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/partners/delish.svg" alt="DELISH! BURGERS" className="h-14 sm:h-16 w-auto shrink-0" />
-          <div className="flex-1 min-w-0">
-            <p className="text-[10px] uppercase tracking-[0.18em] font-bold" style={{ color: '#f14826' }}>
-              Premios semanales · presentados por
-            </p>
-            <p className="font-display text-base sm:text-lg mt-1 leading-tight">
-              Gift cards y combos en <span className="text-[#f14826]">DELISH!</span> y sus afiliados
-            </p>
-            <p className="text-xs text-muted mt-1">
-              Top pronosticadores de la semana se llevan gift cards canjeables en{' '}
-              <strong className="text-ink">DELISH</strong>, <strong className="text-ink">Sole Mio</strong>,{' '}
-              <strong className="text-ink">Tacoberto</strong>, <strong className="text-ink">Vinny&apos;s</strong> y
-              demás restaurantes afiliados del grupo.
-            </p>
-          </div>
-        </div>
-      </section>
+      {/* Aliados comerciales — premios semanales cortesía de */}
+      <div className="max-w-2xl mx-auto">
+        <AliadosStrip variant="dashboard" />
+      </div>
 
       {/* Premios garantizados (fijos, independiente de inscritos) */}
       <section className="max-w-2xl mx-auto">

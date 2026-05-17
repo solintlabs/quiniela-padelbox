@@ -155,13 +155,26 @@ export default async function LoginPage() {
           </div>
         </div>
 
-        {/* Sponsors slot */}
+        {/* Info-box: como funciona el login passwordless */}
+        <div className="mt-6 w-full rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
+          <p className="text-[11px] text-zinc-300 leading-relaxed">
+            <span className="text-accent font-bold uppercase tracking-[0.18em] text-[10px]">¿Cómo entro?</span>
+            <br />
+            Pones tu correo y te llega un <strong className="text-ink">código de 6 dígitos por email</strong>. Lo introduces aquí y listo —{' '}
+            <strong className="text-ink">sin contraseñas que recordar</strong>. Cada vez que vuelvas a entrar funciona igual.
+          </p>
+          <p className="text-[10px] text-zinc-500 mt-2">
+            Tu cuenta se crea sola al introducir el email por primera vez.
+          </p>
+        </div>
+
+        {/* Aliados comerciales */}
         <section className="mt-8 w-full">
-          <p className="text-center text-[10px] uppercase tracking-[0.18em] text-muted mb-3">
-            Con el apoyo de
+          <p className="text-center text-[10px] uppercase tracking-[0.28em] text-accent font-bold mb-3">
+            Aliados Comerciales
           </p>
           {sponsors.length > 0 ? (
-            <div className="flex items-center justify-center gap-6 flex-wrap opacity-70">
+            <div className="flex items-center justify-center gap-6 flex-wrap opacity-80">
               {sponsors.map((s) =>
                 s.logoUrl ? (
                   <SponsorLogo key={s.id} {...s} />
@@ -172,9 +185,12 @@ export default async function LoginPage() {
             </div>
           ) : (
             <div className="rounded-lg border border-dashed border-zinc-800 p-6 text-center">
-              <p className="text-xs text-muted">Espacio para tus patrocinadores</p>
+              <p className="text-xs text-muted">Espacio para tus aliados comerciales</p>
             </div>
           )}
+          <p className="text-[10px] text-zinc-500 text-center mt-3">
+            Premios semanales cortesía de ellos
+          </p>
         </section>
 
         <p className="text-xs text-muted text-center mt-8 max-w-xs">
