@@ -12,7 +12,13 @@ function initial(row: RankingRow) {
 
 /**
  * Dashboard variante C — podio social.
- * Top-3 visual + tu posición + diferencia al podio.
+ * Layout: 3 columnas. Cada columna tiene la INFO arriba (avatar + nombre + pts)
+ * y el ESCALÓN debajo con altura distinta. Las bases de los escalones siempre
+ * alineadas al fondo del contenedor (items-end en el padre).
+ *
+ * Para garantizar alineación: el contenedor padre tiene altura fija + cada
+ * columna usa flex flex-col justify-end. La info "flota" arriba del escalón
+ * gracias al contenedor info con altura uniforme.
  */
 export function PodioHero({ top, me }: PodioHeroProps) {
   const [first, second, third] = top;
@@ -24,10 +30,10 @@ export function PodioHero({ top, me }: PodioHeroProps) {
         <h1 className="font-display text-4xl mt-1">El Podio</h1>
       </header>
 
-      <div className="grid grid-cols-3 gap-3 max-w-2xl mx-auto mt-10 items-end">
-        <PodioStep row={second} pos={2} accentClass="bg-zinc-300/20 border-zinc-300/40 text-zinc-300" height="h-24" />
-        <PodioStep row={first}  pos={1} accentClass="bg-accent/20 border-accent/50 text-accent" height="h-32" crown />
-        <PodioStep row={third}  pos={3} accentClass="bg-orange-300/10 border-orange-300/40 text-orange-200" height="h-16" />
+      <div className="grid grid-cols-3 gap-2 sm:gap-3 max-w-2xl mx-auto mt-10">
+        <PodioColumn row={second} pos={2} />
+        <PodioColumn row={first} pos={1} crown />
+        <PodioColumn row={third} pos={3} />
       </div>
 
       {me && (
@@ -39,8 +45,8 @@ export function PodioHero({ top, me }: PodioHeroProps) {
             </p>
           </div>
           {me.pointsToPodium > 0 ? (
-            <p className="text-xs text-muted">
-              A <span className="text-ink tabular-nums">{me.pointsToPodium} pts</span> del podio
+            <p className="text-xs text-muted text-right">
+              A <span className="text-ink tabular-nums">{me.pointsToPodium} pts</span><br />del podio
             </p>
           ) : (
             <p className="text-xs text-success">¡Estás en el podio!</p>
@@ -51,41 +57,67 @@ export function PodioHero({ top, me }: PodioHeroProps) {
   );
 }
 
-function PodioStep({
+function PodioColumn({
   row,
   pos,
-  accentClass,
-  height,
   crown,
 }: {
   row?: RankingRow;
-  pos: number;
-  accentClass: string;
-  height: string;
+  pos: 1 | 2 | 3;
   crown?: boolean;
 }) {
-  if (!row) {
-    return (
-      <div className="text-center opacity-40">
-        <div className="w-14 h-14 rounded-full bg-bg-elev mx-auto" />
-        <p className="text-xs text-muted mt-2">—</p>
-        <div className={cn('mt-2 rounded-t-lg border-t border-x', accentClass, height)} />
-      </div>
-    );
-  }
+  // Alturas del escalón en píxeles (1º más alto, 2º medio, 3º más bajo)
+  const stepHeight = pos === 1 ? 'h-32' : pos === 2 ? 'h-24' : 'h-16';
+  const stepColors =
+    pos === 1
+      ? 'bg-accent/15 border-accent/60'
+      : pos === 2
+        ? 'bg-zinc-400/15 border-zinc-400/40'
+        : 'bg-orange-400/10 border-orange-400/40';
+  const stepNumberColor =
+    pos === 1 ? 'text-accent' : pos === 2 ? 'text-zinc-300' : 'text-orange-300';
+  const stepNumberSize = pos === 1 ? 'text-4xl' : 'text-3xl';
+
   return (
-    <div className="text-center">
-      {crown && <div className="text-2xl">🥇</div>}
-      <div className={cn(
-        'rounded-full font-display flex items-center justify-center mx-auto mb-2',
-        pos === 1 ? 'w-16 h-16 bg-accent text-accent-fg text-2xl' : 'w-14 h-14 bg-bg-elev text-ink text-xl border border-line',
-      )}>
-        {initial(row)}
+    <div className="flex flex-col items-center min-w-0">
+      {/* Bloque info arriba (altura uniforme para que el podio esté alineado) */}
+      <div className="flex-1 flex flex-col items-center justify-end gap-1 pb-3 min-w-0 w-full">
+        {/* Corona ocupa espacio incluso si está vacía, para alinear avatares */}
+        <div className="h-6 flex items-center">
+          {crown && <span className="text-xl">🥇</span>}
+        </div>
+        <div
+          className={cn(
+            'rounded-full flex items-center justify-center font-display shrink-0',
+            pos === 1
+              ? 'w-14 h-14 bg-accent text-accent-fg text-xl'
+              : 'w-11 h-11 bg-bg-elev text-ink text-base border border-line',
+          )}
+        >
+          {row ? initial(row) : '—'}
+        </div>
+        <p
+          className={cn(
+            'text-center text-xs truncate w-full',
+            pos === 1 ? 'font-semibold text-sm' : 'text-muted',
+          )}
+        >
+          {row?.name ?? row?.email ?? '—'}
+        </p>
+        <p className="text-[10px] text-muted tabular-nums">{row?.points ?? 0} pts</p>
       </div>
-      <p className={pos === 1 ? 'font-semibold' : 'text-sm font-semibold'}>{row.name ?? row.email}</p>
-      <p className="text-xs text-muted tabular-nums">{row.points} pts</p>
-      <div className={cn('mt-2 rounded-t-lg border-t border-x flex items-end justify-center pb-2 font-display', accentClass, height)}>
-        <span className={pos === 1 ? 'text-4xl' : pos === 2 ? 'text-3xl' : 'text-2xl'}>{pos}</span>
+
+      {/* Escalón */}
+      <div
+        className={cn(
+          'w-full rounded-t-lg border-t border-x flex items-center justify-center',
+          stepHeight,
+          stepColors,
+        )}
+      >
+        <span className={cn('font-display tabular-nums', stepNumberSize, stepNumberColor)}>
+          {pos}
+        </span>
       </div>
     </div>
   );

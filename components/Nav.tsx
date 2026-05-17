@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Logo } from './Logo';
 import { ThemeToggle } from './ThemeToggle';
+import { MobileNav } from './MobileNav';
 import { signOut } from '@/lib/auth';
 
 interface NavProps {
@@ -9,32 +10,42 @@ interface NavProps {
 }
 
 export function Nav({ isAdmin, userEmail }: NavProps) {
+  const links = [
+    { href: '/', label: 'Inicio' },
+    { href: '/partidos', label: 'Partidos' },
+    { href: '/ranking', label: 'Ranking' },
+    { href: '/reglas', label: 'Reglas' },
+    { href: '/inscripcion', label: 'Inscripción' },
+    { href: '/perfil', label: 'Perfil' },
+  ];
+
+  async function signOutAction() {
+    'use server';
+    await signOut({ redirectTo: '/login' });
+  }
+
   return (
     <header className="sticky top-0 z-40 backdrop-blur bg-bg/85 border-b border-line">
-      <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-3">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-2">
+        <Link href="/" className="flex items-center gap-3 shrink-0">
           <Logo size={28} />
-          <span className="text-xs text-muted hidden sm:inline">Quiniela Mundial 2026</span>
+          <span className="text-xs text-muted hidden md:inline">Quiniela Mundial 2026</span>
         </Link>
 
-        <nav className="flex items-center gap-1 text-sm">
-          <NavLink href="/">Inicio</NavLink>
-          <NavLink href="/partidos">Partidos</NavLink>
-          <NavLink href="/ranking">Ranking</NavLink>
-          <NavLink href="/reglas">Reglas</NavLink>
-          <NavLink href="/inscripcion">Inscripción</NavLink>
-          <NavLink href="/perfil">Perfil</NavLink>
+        {/* Desktop nav — solo md+ */}
+        <nav className="hidden md:flex items-center gap-1 text-sm">
+          {links.map((l) => (
+            <NavLink key={l.href} href={l.href}>{l.label}</NavLink>
+          ))}
           {isAdmin && <NavLink href="/admin" className="text-accent">Admin</NavLink>}
         </nav>
 
-        <div className="flex items-center gap-2">
+        {/* Right side — desktop: theme + salir / mobile: theme + hamburger */}
+        <div className="flex items-center gap-2 shrink-0">
           <ThemeToggle />
-          <form
-            action={async () => {
-              'use server';
-              await signOut({ redirectTo: '/login' });
-            }}
-          >
+
+          {/* Salir — solo desktop */}
+          <form className="hidden md:block" action={signOutAction}>
             <button
               type="submit"
               className="text-xs text-muted hover:text-ink px-3 h-9 rounded-md border border-line"
@@ -43,6 +54,14 @@ export function Nav({ isAdmin, userEmail }: NavProps) {
               Salir
             </button>
           </form>
+
+          {/* Hamburger — solo mobile */}
+          <MobileNav
+            links={links}
+            isAdmin={isAdmin}
+            userEmail={userEmail}
+            signOutAction={signOutAction}
+          />
         </div>
       </div>
     </header>

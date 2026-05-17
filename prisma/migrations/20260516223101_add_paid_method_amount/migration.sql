@@ -1,0 +1,2 @@
+ALTER TABLE "User" ADD COLUMN "paidMethod" TEXT;
+ALTER TABLE "User" ADD COLUMN "paidAmount" TEXT;

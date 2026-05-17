@@ -8,6 +8,7 @@ const Schema = z.object({
   email: z.string().email(),
   code: z.string().regex(/^\d{6}$/, 'Código de 6 dígitos'),
   name: z.string().max(60).optional(),
+  phone: z.string().max(20).optional(),
 });
 
 const IDENT_PREFIX = 'code:';
@@ -41,21 +42,29 @@ export async function POST(req: Request) {
   // Consumir el token (un solo uso)
   await prisma.verificationToken.deleteMany({ where: { identifier } });
 
-  // Upsert del usuario. Si llega name y el usuario es nuevo o no tenía nombre, lo guardamos.
+  // Upsert del usuario. name/phone solo se guardan en primer registro
+  // o si el usuario aún no los tenía (no sobrescriben).
   const existing = await prisma.user.findUnique({ where: { email } });
   let user;
   if (!existing) {
     user = await prisma.user.create({
-      data: { email, name: parsed.data.name ?? null, emailVerified: new Date() },
+      data: {
+        email,
+        name: parsed.data.name ?? null,
+        phone: parsed.data.phone ?? null,
+        emailVerified: new Date(),
+      },
     });
   } else {
     user = existing;
     const wantsName = parsed.data.name && !existing.name;
-    if (wantsName || !existing.emailVerified) {
+    const wantsPhone = parsed.data.phone && !existing.phone;
+    if (wantsName || wantsPhone || !existing.emailVerified) {
       user = await prisma.user.update({
         where: { id: existing.id },
         data: {
           name: wantsName ? parsed.data.name : existing.name,
+          phone: wantsPhone ? parsed.data.phone : existing.phone,
           emailVerified: existing.emailVerified ?? new Date(),
         },
       });

@@ -85,6 +85,7 @@ model User {
   email            String    @unique
   emailVerified    DateTime?
   name             String?
+  phone            String?
   image            String?
   role             Role      @default(USER)
 
@@ -92,6 +93,8 @@ model User {
   hasPaid          Boolean   @default(false)
   paidAt           DateTime?
   paidNote         String?
+  paidMethod       String?   // p.ej. "Pago Móvil", "Zelle", etc. (free text para no acoplarse al id de PaymentMethod)
+  paidAmount       String?   // string para permitir "10 USD", "Bs 350", etc.
 
   // Pick de campeón del Mundial (bonus +25 pts)
   championPick     String?
@@ -162,4 +165,22 @@ model Rules {
   lockOffsetMin     Int       @default(15)
   tournamentStartAt DateTime?
   updatedAt         DateTime  @updatedAt
+}
+
+// Métodos de pago configurables desde /admin/pagos.
+// En la fase SaaS multi-tenant se añadirá tenantId (por ahora null = global).
+model PaymentMethod {
+  id        String   @id @default(cuid())
+  tenantId  String?
+  enabled   Boolean  @default(true)
+  sortOrder Int      @default(0)
+  type      String   // "pago_movil" | "bank_transfer" | "zelle" | "binance" | "other"
+  title     String   // "Pago Móvil"
+  subtitle  String?  // "Banesco"
+  icon      String?  // emoji p.ej. "📲"
+  fields    Json     // [{ label, value, mono?: boolean }]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId, enabled, sortOrder])
 }

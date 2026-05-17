@@ -33,15 +33,24 @@ export default async function LoginPage() {
               .trim()
               .toLowerCase();
             const name = String(formData.get('name') ?? '').trim();
+            const phone = String(formData.get('phone') ?? '').trim();
             if (!email) return;
 
-            if (name) {
+            if (name || phone) {
               const { prisma } = await import('@/lib/db');
               const existing = await prisma.user.findUnique({ where: { email } });
               if (!existing) {
-                await prisma.user.create({ data: { email, name } });
-              } else if (!existing.name) {
-                await prisma.user.update({ where: { id: existing.id }, data: { name } });
+                await prisma.user.create({
+                  data: { email, name: name || null, phone: phone || null },
+                });
+              } else {
+                // Solo rellena los campos que NO tenía
+                const data: { name?: string; phone?: string } = {};
+                if (name && !existing.name) data.name = name;
+                if (phone && !existing.phone) data.phone = phone;
+                if (Object.keys(data).length) {
+                  await prisma.user.update({ where: { id: existing.id }, data });
+                }
               }
             }
 
@@ -63,6 +72,20 @@ export default async function LoginPage() {
             />
           </div>
           <div className="space-y-1">
+            <label htmlFor="phone" className="text-xs uppercase tracking-[0.18em] text-muted">
+              Teléfono
+            </label>
+            <Input
+              id="phone"
+              name="phone"
+              type="tel"
+              inputMode="tel"
+              placeholder="+34 600 000 000"
+              autoComplete="tel"
+              maxLength={20}
+            />
+          </div>
+          <div className="space-y-1">
             <label htmlFor="email" className="text-xs uppercase tracking-[0.18em] text-muted">
               Email
             </label>
@@ -79,7 +102,7 @@ export default async function LoginPage() {
             ENVIAR ENLACE MÁGICO
           </Button>
           <p className="text-xs text-muted text-center pt-1">
-            Si ya tienes cuenta, basta con el email — el nombre solo se guarda la primera vez.
+            Si ya tienes cuenta, basta con el email — nombre y teléfono solo se guardan la primera vez.
           </p>
         </form>
 
