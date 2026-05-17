@@ -1,5 +1,6 @@
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/db';
+import { requireAdmin } from '@/lib/permissions';
 import { SponsorsManager } from './SponsorsManager';
 
 export const metadata = { title: 'Sponsors · Admin' };
@@ -7,6 +8,7 @@ export const dynamic = 'force-dynamic';
 
 async function createSponsor(formData: FormData) {
   'use server';
+  await requireAdmin();
   const name = String(formData.get('name') ?? '').trim();
   const logoUrl = String(formData.get('logoUrl') ?? '').trim() || null;
   const url = String(formData.get('url') ?? '').trim() || null;
@@ -28,6 +30,7 @@ async function createSponsor(formData: FormData) {
 
 async function updateSponsor(formData: FormData) {
   'use server';
+  await requireAdmin();
   const id = String(formData.get('id') ?? '');
   const name = String(formData.get('name') ?? '').trim();
   const logoUrl = String(formData.get('logoUrl') ?? '').trim() || null;
@@ -44,6 +47,7 @@ async function updateSponsor(formData: FormData) {
 
 async function toggleSponsor(formData: FormData) {
   'use server';
+  await requireAdmin();
   const id = String(formData.get('id') ?? '');
   if (!id) return;
   const cur = await prisma.sponsor.findUnique({ where: { id } });
@@ -56,6 +60,7 @@ async function toggleSponsor(formData: FormData) {
 
 async function deleteSponsor(formData: FormData) {
   'use server';
+  await requireAdmin();
   const id = String(formData.get('id') ?? '');
   if (!id) return;
   await prisma.sponsor.delete({ where: { id } });
@@ -66,6 +71,7 @@ async function deleteSponsor(formData: FormData) {
 
 async function seedDefaults() {
   'use server';
+  await requireAdmin();
   // Defaults de PADELBOX x DELISH y sus restaurantes afiliados.
   // Idempotente: solo crea si no existe ya un sponsor con ese name.
   const DEFAULTS = [
@@ -87,6 +93,7 @@ async function seedDefaults() {
 
 async function reorderSponsor(formData: FormData) {
   'use server';
+  await requireAdmin();
   const id = String(formData.get('id') ?? '');
   const dir = String(formData.get('dir') ?? '');
   if (!id || (dir !== 'up' && dir !== 'down')) return;

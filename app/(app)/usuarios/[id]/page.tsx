@@ -13,7 +13,10 @@ export default async function UserProfilePage({ params }: { params: { id: string
 
   const target = await prisma.user.findUnique({
     where: { id: params.id },
-    select: { id: true, name: true, email: true, createdAt: true, hasPaid: true },
+    select: {
+      id: true, name: true, email: true, createdAt: true, hasPaid: true,
+      championPick: true, championLockedAt: true,
+    },
   });
   if (!target) notFound();
 
@@ -69,6 +72,19 @@ export default async function UserProfilePage({ params }: { params: { id: string
         <Stat label="Pronósticos" value={totalPredictions} />
         <Stat label="Marcadores exactos" value={exact} />
       </section>
+
+      {/* Campeón predicho — solo visible si esta congelado (anti-trampa pre-Mundial) */}
+      {target.championLockedAt && target.championPick && (
+        <section className="rounded-xl border-2 border-accent/40 bg-accent/10 p-5 flex items-center gap-3">
+          <span className="text-3xl">🏆</span>
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.18em] text-accent font-bold">
+              SU CAMPEÓN
+            </p>
+            <p className="font-display text-2xl mt-1">{target.championPick}</p>
+          </div>
+        </section>
+      )}
 
       <section>
         <h2 className="font-display text-2xl mb-3">Su quiniela</h2>

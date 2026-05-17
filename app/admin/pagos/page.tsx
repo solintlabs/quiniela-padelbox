@@ -1,6 +1,7 @@
 import { revalidatePath } from 'next/cache';
 import Link from 'next/link';
 import { prisma } from '@/lib/db';
+import { requireAdmin } from '@/lib/permissions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { formatDateTime } from '@/lib/format';
@@ -11,6 +12,7 @@ export const dynamic = 'force-dynamic';
 
 async function updateFee(formData: FormData) {
   'use server';
+  await requireAdmin();
   const feeAmount = Number(formData.get('feeAmount') ?? 10);
   const feeCurrency = String(formData.get('feeCurrency') ?? 'USD').trim().toUpperCase();
   await prisma.rules.upsert({
@@ -24,6 +26,7 @@ async function updateFee(formData: FormData) {
 
 async function updateWeeklyPrizes(formData: FormData) {
   'use server';
+  await requireAdmin();
   const raw = String(formData.get('weeklyPrizesText') ?? '').trim();
   const value = raw.length > 0 ? raw.slice(0, 1500) : null;
   await prisma.rules.upsert({
@@ -38,6 +41,7 @@ async function updateWeeklyPrizes(formData: FormData) {
 
 async function toggleMethod(formData: FormData) {
   'use server';
+  await requireAdmin();
   const id = String(formData.get('id') ?? '');
   if (!id) return;
   const m = await prisma.paymentMethod.findUnique({ where: { id } });

@@ -1,32 +1,45 @@
 import Link from 'next/link';
 import { revalidatePath } from 'next/cache';
-import { auth } from '@/lib/auth';
+import { requireUser } from '@/lib/permissions';
 import { prisma } from '@/lib/db';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { formatDateTime } from '@/lib/format';
+import { FIFA_2026_GROUPS } from '@/lib/fifa2026';
 
-export const metadata = { title: 'Perfil · Quiniela PADELBOX' };
+export const metadata = { title: 'Perfil · QuinielaBOX' };
 export const dynamic = 'force-dynamic';
+
+// Lista plana de los 48 equipos del Mundial 2026, ordenada alfabéticamente.
+const FIFA_2026_TEAMS = Object.entries(FIFA_2026_GROUPS)
+  .flatMap(([group, teams]) => teams.map((t) => ({ team: t, group })))
+  .sort((a, b) => a.team.localeCompare(b.team));
 
 async function updateChampion(formData: FormData) {
   'use server';
-  const session = await auth();
-  if (!session?.user) return;
+  const user = await requireUser();
   const pick = String(formData.get('championPick') ?? '').trim();
-  const rules = await prisma.rules.findUnique({ where: { id: 1 } });
-  const locked = rules?.tournamentStartAt && rules.tournamentStartAt.getTime() <= Date.now();
-  if (locked) return;
-  await prisma.user.update({
-    where: { id: session.user.id },
-    data: { championPick: pick || null },
+
+  // Validar contra la lista oficial — evita free text
+  const validTeams = new Set(FIFA_2026_TEAMS.map((t) => t.team));
+  const finalPick = pick && validTeams.has(pick) ? pick : null;
+
+  // Atomic: solo actualiza si NO esta congelado todavia
+  const result = await prisma.user.updateMany({
+    where: { id: user.id, championLockedAt: null },
+    data: { championPick: finalPick },
   });
+  if (result.count === 0) {
+    // Esta congelado o no existe el user — no se hace nada
+    return;
+  }
   revalidatePath('/perfil');
+  revalidatePath('/partidos');
+  revalidatePath('/cuadro');
 }
 
 export default async function PerfilPage() {
-  const session = await auth();
-  const user = await prisma.user.findUnique({ where: { id: session!.user.id } });
+  const sessionUser = await requireUser();
+  const user = await prisma.user.findUnique({ where: { id: sessionUser.id } });
   const rules = await prisma.rules.findUnique({ where: { id: 1 } });
   const championLocked = !!rules?.tournamentStartAt && rules.tournamentStartAt.getTime() <= Date.now();
 
@@ -69,16 +82,28 @@ export default async function PerfilPage() {
             ? ' Ya no se puede modificar — el torneo ha comenzado.'
             : ' Puedes cambiarlo hasta el primer pitido del Mundial.'}
         </p>
-        <form action={updateChampion} className="flex gap-2">
-          <Input
+        <form action={updateChampion} className="flex gap-2 flex-wrap">
+          <select
             name="championPick"
             defaultValue={user!.championPick ?? ''}
-            placeholder="Ej: Argentina"
             disabled={championLocked}
-            maxLength={32}
-          />
-          <Button type="submit" disabled={championLocked}>Guardar</Button>
+            className="flex-1 min-w-[200px] h-11 bg-bg border border-line rounded-lg px-3 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-accent"
+          >
+            <option value="">— Sin elegir —</option>
+            {FIFA_2026_TEAMS.map((t) => (
+              <option key={t.team} value={t.team}>
+                {t.team} · Grupo {t.group}
+              </option>
+            ))}
+          </select>
+          <Button type="submit" disabled={championLocked}>Guardar campeón</Button>
         </form>
+        {user!.championPick && (
+          <p className="text-xs text-muted mt-3">
+            ✓ Tu pick actual: <strong className="text-accent">{user!.championPick}</strong>
+            {user!.championLockedAt && ' 🔒'}
+          </p>
+        )}
       </section>
 
       <section className="grid grid-cols-3 gap-3">

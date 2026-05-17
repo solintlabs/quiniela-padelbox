@@ -1,5 +1,6 @@
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/db';
+import { requireAdmin } from '@/lib/permissions';
 import { Button } from '@/components/ui/button';
 import { formatDateTime } from '@/lib/format';
 import { getPool } from '@/lib/pool';
@@ -8,6 +9,7 @@ export const dynamic = 'force-dynamic';
 
 async function markPaid(formData: FormData) {
   'use server';
+  await requireAdmin();
   const id = String(formData.get('id') ?? '');
   if (!id) return;
   const paidMethod = String(formData.get('paidMethod') ?? '').trim() || null;
@@ -30,6 +32,7 @@ async function markPaid(formData: FormData) {
 
 async function markUnpaid(formData: FormData) {
   'use server';
+  await requireAdmin();
   const id = String(formData.get('id') ?? '');
   if (!id) return;
   await prisma.user.update({

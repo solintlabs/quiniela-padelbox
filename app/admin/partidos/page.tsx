@@ -1,5 +1,6 @@
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/db';
+import { requireAdmin } from '@/lib/permissions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { formatDateTime, STAGE_LABEL } from '@/lib/format';
@@ -12,6 +13,7 @@ const STATUSES = ['SCHEDULED', 'LIVE', 'FINISHED', 'POSTPONED', 'CANCELLED'] as 
 
 async function syncMatches() {
   'use server';
+  await requireAdmin();
   const url = (process.env.AUTH_URL ?? 'http://localhost:3000') + '/api/admin/sync-matches';
   await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, cache: 'no-store' });
   revalidatePath('/admin/partidos');
@@ -19,6 +21,7 @@ async function syncMatches() {
 
 async function recompute() {
   'use server';
+  await requireAdmin();
   const url = (process.env.AUTH_URL ?? 'http://localhost:3000') + '/api/admin/recompute';
   await fetch(url, { method: 'POST', cache: 'no-store' });
   revalidatePath('/admin/partidos');
@@ -26,6 +29,7 @@ async function recompute() {
 
 async function toggleSync() {
   'use server';
+  await requireAdmin();
   const cur = await prisma.rules.findUnique({ where: { id: 1 } });
   await prisma.rules.upsert({
     where: { id: 1 },
@@ -37,6 +41,7 @@ async function toggleSync() {
 
 async function updateScore(formData: FormData) {
   'use server';
+  await requireAdmin();
   const id = String(formData.get('id') ?? '');
   const homeScore = parseInt(String(formData.get('homeScore') ?? ''), 10);
   const awayScore = parseInt(String(formData.get('awayScore') ?? ''), 10);
@@ -73,6 +78,7 @@ async function updateScore(formData: FormData) {
 
 async function updateMatchFull(formData: FormData) {
   'use server';
+  await requireAdmin();
   const id = String(formData.get('id') ?? '');
   const homeTeam = String(formData.get('homeTeam') ?? '').trim();
   const awayTeam = String(formData.get('awayTeam') ?? '').trim();
@@ -96,6 +102,7 @@ async function updateMatchFull(formData: FormData) {
 
 async function createMatch(formData: FormData) {
   'use server';
+  await requireAdmin();
   const homeTeam = String(formData.get('homeTeam') ?? '').trim();
   const awayTeam = String(formData.get('awayTeam') ?? '').trim();
   const kickoffStr = String(formData.get('kickoff') ?? '');
@@ -122,6 +129,7 @@ async function createMatch(formData: FormData) {
 
 async function deleteMatch(formData: FormData) {
   'use server';
+  await requireAdmin();
   const id = String(formData.get('id') ?? '');
   if (!id) return;
   await prisma.prediction.deleteMany({ where: { matchId: id } });

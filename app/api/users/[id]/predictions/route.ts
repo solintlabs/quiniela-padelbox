@@ -13,7 +13,10 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 
   const target = await prisma.user.findUnique({
     where: { id: params.id },
-    select: { id: true, name: true, email: true, createdAt: true, hasPaid: true },
+    select: {
+      id: true, name: true, email: true, createdAt: true, hasPaid: true,
+      championPick: true, championLockedAt: true,
+    },
   });
   if (!target) return NextResponse.json({ error: 'No encontrado' }, { status: 404 });
 
@@ -54,6 +57,8 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
       email: target.email,
       hasPaid: target.hasPaid,
       createdAt: target.createdAt,
+      championPick: target.championPick,
+      championLockedAt: target.championLockedAt,
     },
     isMe: target.id === me.id,
     stats: {

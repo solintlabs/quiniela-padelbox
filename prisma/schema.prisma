@@ -191,6 +191,9 @@ model Rules {
   // Premios de la semana (free text editado por admin). Aparece en dashboard.
   // Vacio o null = no se muestra el bloque.
   weeklyPrizesText  String?
+  // Campeón ganador del torneo (lo setea el admin cuando termina la final).
+  // Usado para otorgar el bonus de pointsChampion en el ranking final.
+  championWinner    String?
   updatedAt         DateTime  @updatedAt
 }
 

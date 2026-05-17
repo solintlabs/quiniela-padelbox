@@ -1,18 +1,26 @@
 import Link from 'next/link';
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/db';
+import { requireAdmin } from '@/lib/permissions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { FIFA_2026_GROUPS } from '@/lib/fifa2026';
 
 export const dynamic = 'force-dynamic';
 
+const FIFA_2026_TEAMS = Object.values(FIFA_2026_GROUPS).flat().sort();
+
 async function updateRules(formData: FormData) {
   'use server';
+  await requireAdmin();
   const pointsExact = Number(formData.get('pointsExact') ?? 3);
   const pointsWinner = Number(formData.get('pointsWinner') ?? 1);
   const pointsChampion = Number(formData.get('pointsChampion') ?? 25);
   const lockOffsetMin = Number(formData.get('lockOffsetMin') ?? 15);
   const tournamentStartAt = String(formData.get('tournamentStartAt') ?? '').trim();
+  const championWinnerRaw = String(formData.get('championWinner') ?? '').trim();
+  const championWinner = championWinnerRaw && FIFA_2026_TEAMS.includes(championWinnerRaw)
+    ? championWinnerRaw : null;
 
   await prisma.rules.upsert({
     where: { id: 1 },
@@ -22,6 +30,7 @@ async function updateRules(formData: FormData) {
       pointsChampion,
       lockOffsetMin,
       tournamentStartAt: tournamentStartAt ? new Date(tournamentStartAt) : null,
+      championWinner,
     },
     create: {
       id: 1,
@@ -30,10 +39,12 @@ async function updateRules(formData: FormData) {
       pointsChampion,
       lockOffsetMin,
       tournamentStartAt: tournamentStartAt ? new Date(tournamentStartAt) : null,
+      championWinner,
     },
   });
   revalidatePath('/admin/reglas');
   revalidatePath('/reglas');
+  revalidatePath('/ranking');
 }
 
 export default async function ReglasAdmin() {
@@ -66,6 +77,28 @@ export default async function ReglasAdmin() {
             defaultValue={rules?.tournamentStartAt ? new Date(rules.tournamentStartAt).toISOString().slice(0, 16) : ''}
           />
         </div>
+
+        <hr className="border-line my-4" />
+
+        <div className="space-y-1">
+          <label className="text-xs uppercase tracking-[0.18em] text-muted">
+            Campeón del Mundial 2026
+          </label>
+          <p className="text-xs text-muted">
+            Lo seteas tras la final. Quien lo haya predicho correctamente con pick congelado se lleva el bonus de campeón.
+          </p>
+          <select
+            name="championWinner"
+            defaultValue={rules?.championWinner ?? ''}
+            className="w-full h-11 bg-bg border border-line rounded-lg px-3 text-sm text-ink"
+          >
+            <option value="">— No hay ganador todavía —</option>
+            {FIFA_2026_TEAMS.map((t) => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
+        </div>
+
         <Button type="submit">Guardar reglas</Button>
       </form>
     </div>
