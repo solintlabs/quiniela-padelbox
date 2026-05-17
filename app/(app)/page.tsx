@@ -5,7 +5,6 @@ import { computeRanking } from '@/lib/ranking';
 import { PodioHero } from '@/components/PodioHero';
 import { Countdown } from '@/components/Countdown';
 import { formatDateTime } from '@/lib/format';
-import { getPool } from '@/lib/pool';
 
 export const metadata = { title: 'Inicio · Quiniela PADELBOX' };
 export const dynamic = 'force-dynamic';
@@ -14,7 +13,7 @@ export default async function DashboardPage() {
   const session = await auth();
   const userId = session!.user.id;
 
-  const [ranking, nextMatch, groupStats, pool, me_user] = await Promise.all([
+  const [ranking, nextMatch, groupStats, me_user] = await Promise.all([
     computeRanking(),
     prisma.match.findFirst({
       where: { status: 'SCHEDULED', lockedAt: null },
@@ -37,7 +36,6 @@ export default async function DashboardPage() {
       });
       return { total, filled };
     })(),
-    getPool(),
     prisma.user.findUnique({ where: { id: userId }, select: { hasPaid: true } }),
   ]);
 
@@ -152,60 +150,35 @@ export default async function DashboardPage() {
         </section>
       )}
 
-      {/* Bote dinámico + premios proporcionales */}
+      {/* Premios garantizados (fijos, independiente de inscritos) */}
       <section className="max-w-2xl mx-auto">
         <header className="text-center mb-4">
-          <p className="text-xs uppercase tracking-[0.18em] text-accent">El bote en juego</p>
-          <p className="font-display text-5xl text-accent tabular-nums mt-2">{pool.totalFormatted}</p>
-          <p className="text-xs text-muted mt-1">
-            {pool.feeFormatted} × {pool.paidCount} socio{pool.paidCount !== 1 && 's'} pagado{pool.paidCount !== 1 && 's'}
-          </p>
-          {!me_user?.hasPaid && (
-            <p className="text-xs text-warning mt-2">
-              <Link href="/inscripcion" className="underline">Inscríbete</Link> para sumar al bote y competir
-            </p>
-          )}
-          <p className="text-[11px] text-muted mt-4 max-w-md mx-auto">
+          <p className="text-xs uppercase tracking-[0.18em] text-accent">Premios garantizados</p>
+          <h2 className="font-display text-3xl mt-1">🏆 El bote del Mundial</h2>
+          <p className="text-[11px] text-muted mt-3 max-w-md mx-auto">
             + más premios todas las semanas de nuestros patrocinadores
           </p>
         </header>
         <div className="rounded-xl border border-line bg-bg-elev overflow-hidden mt-6">
-          <PrizeRow place="🥇 1er lugar" share={0.65} pool={pool.totalAmount} currency={pool.feeCurrency} highlight />
-          <PrizeRow place="🥈 2º lugar" share={0.22} pool={pool.totalAmount} currency={pool.feeCurrency} border />
-          <PrizeRow place="🥉 3er lugar" share={0.13} pool={pool.totalAmount} currency={pool.feeCurrency} border />
+          <div className="flex items-center justify-between px-5 py-4">
+            <span className="text-base">🥇 1er lugar</span>
+            <span className="font-display text-2xl tabular-nums text-accent">$1.500</span>
+          </div>
+          <div className="flex items-center justify-between px-5 py-4 border-t border-line">
+            <span className="text-base">🥈 2º lugar</span>
+            <span className="font-display text-2xl tabular-nums">$500</span>
+          </div>
+          <div className="flex items-center justify-between px-5 py-4 border-t border-line">
+            <span className="text-base">🥉 3er lugar</span>
+            <span className="font-display text-2xl tabular-nums">$300</span>
+          </div>
         </div>
-        <p className="text-[10px] text-muted text-center mt-3">
-          Distribución 65/22/13 sobre el bote total
-        </p>
+        {!me_user?.hasPaid && (
+          <p className="text-xs text-warning mt-4 text-center">
+            <Link href="/inscripcion" className="underline">Inscríbete</Link> para competir por estos premios
+          </p>
+        )}
       </section>
-    </div>
-  );
-}
-
-function PrizeRow({
-  place,
-  share,
-  pool,
-  currency,
-  highlight,
-  border,
-}: {
-  place: string;
-  share: number;
-  pool: number;
-  currency: string;
-  highlight?: boolean;
-  border?: boolean;
-}) {
-  const amount = Math.round(pool * share);
-  const symbol = currency === 'USD' ? '$' : currency === 'EUR' ? '€' : currency === 'VES' ? 'Bs. ' : '';
-  const formatted = symbol + new Intl.NumberFormat('es-ES', { maximumFractionDigits: 0 }).format(amount);
-  return (
-    <div className={'flex items-center justify-between px-5 py-4 ' + (border ? 'border-t border-line' : '')}>
-      <span className="text-base">{place}</span>
-      <span className={'font-display text-2xl tabular-nums ' + (highlight ? 'text-accent' : 'text-ink')}>
-        {formatted}
-      </span>
     </div>
   );
 }

@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Footer } from '@/components/Footer';
 import { WhatsappFab } from '@/components/WhatsappFab';
-import { getPool } from '@/lib/pool';
 
 export const metadata = { title: 'Entrar · Quiniela PADELBOX' };
 export const dynamic = 'force-dynamic';
@@ -16,30 +15,31 @@ export default async function LoginPage() {
   const session = await auth();
   if (session?.user) redirect('/');
 
-  const [hasGoogle, pool, sponsors] = await Promise.all([
-    Promise.resolve(!!process.env.GOOGLE_CLIENT_ID && !!process.env.GOOGLE_CLIENT_SECRET),
-    getPool(),
+  const [sponsors] = await Promise.all([
     prisma.sponsor.findMany({ where: { enabled: true }, orderBy: { sortOrder: 'asc' } }),
   ]);
+  const hasGoogle = !!process.env.GOOGLE_CLIENT_ID && !!process.env.GOOGLE_CLIENT_SECRET;
 
+  // Premios garantizados (fijos)
+  const guaranteedPrizes = '$2.300';
   return (
-    <main className="min-h-screen relative overflow-hidden">
-      {/* Hero stadium background */}
-      <div
-        className="absolute inset-0 -z-10"
-        style={{
-          background:
-            'radial-gradient(ellipse at center top, rgba(74,124,29,0.35) 0%, transparent 55%), linear-gradient(180deg, #0A1F08 0%, #0A0A0A 50%)',
-        }}
-      />
-      {/* líneas de cancha sutiles */}
+    <main className="min-h-screen relative overflow-hidden bg-bg">
+      {/* Líneas geométricas sutiles sobre negro */}
       <div
         aria-hidden
-        className="absolute inset-0 -z-10 pointer-events-none opacity-40"
+        className="absolute inset-0 -z-10 pointer-events-none opacity-50"
         style={{
           backgroundImage:
-            'linear-gradient(transparent 50%, rgba(255,255,255,0.06) 50.5%, transparent 51%), linear-gradient(90deg, transparent 49.5%, rgba(255,255,255,0.04) 50%, transparent 50.5%)',
+            'linear-gradient(transparent 50%, rgba(255,255,255,0.025) 50.5%, transparent 51%), linear-gradient(90deg, transparent 49.5%, rgba(255,255,255,0.02) 50%, transparent 50.5%)',
           backgroundSize: '100% 120px, 120px 100%',
+        }}
+      />
+      {/* Glow accent sutil arriba */}
+      <div
+        aria-hidden
+        className="absolute inset-x-0 top-0 -z-10 h-96 pointer-events-none opacity-30"
+        style={{
+          background: 'radial-gradient(ellipse at center top, rgba(182,255,60,0.12) 0%, transparent 60%)',
         }}
       />
 
@@ -47,13 +47,7 @@ export default async function LoginPage() {
         {/* Header con logo */}
         <Logo size={36} priority />
 
-        {/* Banderas */}
-        <div className="flex gap-1.5 mt-8 text-xl opacity-70" aria-hidden>
-          <span>🇪🇸</span><span>🇦🇷</span><span>🇫🇷</span><span>🇧🇷</span><span>🇩🇪</span>
-          <span>🇲🇽</span><span>🇮🇹</span>
-        </div>
-
-        <p className="text-[10px] uppercase tracking-[0.28em] text-accent font-bold mt-6">
+        <p className="text-[10px] uppercase tracking-[0.28em] text-accent font-bold mt-12">
           El Mundial llega
         </p>
         <h1
@@ -64,11 +58,11 @@ export default async function LoginPage() {
           <span className="text-accent">Gana.</span>
         </h1>
 
-        {/* Bote (sin contador socios) + mención patrocinadores */}
-        <div className="mt-6 px-4 py-2 rounded-full bg-white/10 backdrop-blur border border-white/20 text-center">
+        {/* Premios garantizados + mención patrocinadores */}
+        <div className="mt-6 px-4 py-2 rounded-full bg-white/5 backdrop-blur border border-white/10 text-center">
           <p className="text-xs">
-            <span className="text-zinc-400">En juego:</span>{' '}
-            <span className="font-display text-accent tabular-nums">{pool.totalFormatted}</span>
+            <span className="text-zinc-400">Premios garantizados:</span>{' '}
+            <span className="font-display text-accent tabular-nums">{guaranteedPrizes}</span>
           </p>
         </div>
         <p className="text-[11px] text-zinc-400 mt-3 text-center max-w-xs">

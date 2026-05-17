@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/db';
 import { auth } from '@/lib/auth';
-import { MatchCard } from '@/components/MatchCard';
+import { InlinePredictionRow } from '@/components/InlinePredictionRow';
 
 export const metadata = { title: 'Partidos · Quiniela PADELBOX' };
 export const dynamic = 'force-dynamic';
@@ -17,19 +17,16 @@ export default async function PartidosPage({
 }) {
   const session = await auth();
   const userId = session!.user.id;
+  const hasPaid = session!.user.hasPaid;
   const tab: Tab = searchParams.tab === 'liga' ? 'liga' : 'mundial';
 
-  // Recuento por competición para los badges de los tabs
   const [mundialCount, ligaCount] = await Promise.all([
     prisma.match.count({ where: { group: { in: MUNDIAL_GROUPS } } }),
     prisma.match.count({ where: { group: 'LIGA' } }),
   ]);
 
   const matches = await prisma.match.findMany({
-    where:
-      tab === 'liga'
-        ? { group: 'LIGA' }
-        : { group: { in: MUNDIAL_GROUPS } },
+    where: tab === 'liga' ? { group: 'LIGA' } : { group: { in: MUNDIAL_GROUPS } },
     orderBy: { kickoff: 'asc' },
     include: {
       predictions: {
@@ -40,7 +37,9 @@ export default async function PartidosPage({
   });
 
   const upcoming = matches.filter((m) => m.status === 'SCHEDULED' && !m.lockedAt);
-  const locked = matches.filter((m) => m.status !== 'FINISHED' && (m.status !== 'SCHEDULED' || m.lockedAt));
+  const locked = matches.filter(
+    (m) => m.status !== 'FINISHED' && (m.status !== 'SCHEDULED' || m.lockedAt),
+  );
   const finished = matches.filter((m) => m.status === 'FINISHED');
 
   return (
@@ -52,20 +51,30 @@ export default async function PartidosPage({
             ? `Mundial 2026 · ${matches.length} partidos`
             : `La Liga · ${matches.length} partidos`}
         </p>
+        {!hasPaid && (
+          <p className="text-xs text-warning mt-2">
+            ⚠ Tu cuenta no está activa. Puedes ver partidos pero no enviar pronósticos hasta que el admin confirme tu pago.{' '}
+            <Link href="/inscripcion" className="underline">Ver cómo inscribirte →</Link>
+          </p>
+        )}
+        <p className="text-xs text-muted mt-2">
+          💡 Predice directamente desde la lista. Se guarda automáticamente al modificar.
+        </p>
       </header>
 
-      {/* Tabs competición */}
       <nav className="flex gap-2 border-b border-line">
         <TabLink href="/partidos?tab=mundial" active={tab === 'mundial'} label="🌍 Mundial 2026" count={mundialCount} />
         <TabLink href="/partidos?tab=liga" active={tab === 'liga'} label="🇪🇸 La Liga" count={ligaCount} />
       </nav>
 
-      <Section title="Próximos · puedes predecir" items={upcoming} />
-      <Section title="En juego o cerrados" items={locked} dim />
-      <Section title="Finalizados" items={finished} />
+      <Section title="Próximos · puedes predecir" items={upcoming} hasPaid={hasPaid} />
+      <Section title="En juego o cerrados (esperando resultado)" items={locked} hasPaid={hasPaid} dim />
+      <Section title="Finalizados" items={finished} hasPaid={hasPaid} />
 
       {matches.length === 0 && (
-        <p className="text-sm text-muted text-center py-10">No hay partidos cargados en esta competición.</p>
+        <p className="text-sm text-muted text-center py-10">
+          No hay partidos cargados en esta competición.
+        </p>
       )}
     </div>
   );
@@ -97,25 +106,51 @@ function TabLink({
   );
 }
 
+type MatchWithPrediction = Awaited<ReturnType<typeof prisma.match.findMany>>[number] & {
+  predictions: Array<{ homeScore: number; awayScore: number; points: number | null }>;
+};
+
 function Section({
   title,
   items,
+  hasPaid,
   dim,
 }: {
   title: string;
-  items: Awaited<ReturnType<typeof prisma.match.findMany>>;
+  items: MatchWithPrediction[];
+  hasPaid: boolean;
   dim?: boolean;
 }) {
   if (items.length === 0) return null;
   return (
     <section>
       <h2 className="text-xs uppercase tracking-[0.18em] text-muted mb-3">{title}</h2>
-      <div className={'space-y-3 ' + (dim ? 'opacity-80' : '')}>
+      <div className={'space-y-2 ' + (dim ? 'opacity-80' : '')}>
         {items.map((m) => (
-          <MatchCard
+          <InlinePredictionRow
             key={m.id}
-            match={m}
-            myPrediction={(m as any).predictions?.[0] ?? null}
+            canEdit={hasPaid}
+            match={{
+              id: m.id,
+              stage: m.stage,
+              group: m.group,
+              kickoff: m.kickoff.toISOString(),
+              homeTeam: m.homeTeam,
+              awayTeam: m.awayTeam,
+              homeFlag: m.homeFlag,
+              awayFlag: m.awayFlag,
+              homeScore: m.homeScore,
+              awayScore: m.awayScore,
+              status: m.status,
+              lockedAt: m.lockedAt ? m.lockedAt.toISOString() : null,
+              initial: m.predictions[0]
+                ? {
+                    homeScore: m.predictions[0].homeScore,
+                    awayScore: m.predictions[0].awayScore,
+                    points: m.predictions[0].points,
+                  }
+                : null,
+            }}
           />
         ))}
       </div>
