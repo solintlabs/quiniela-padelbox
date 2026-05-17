@@ -156,7 +156,7 @@ export default async function DashboardPage() {
           <p className="text-xs uppercase tracking-[0.18em] text-accent">Premios garantizados</p>
           <h2 className="font-display text-3xl mt-1">🏆 El bote del Mundial</h2>
           <p className="text-[11px] text-muted mt-3 max-w-md mx-auto">
-            + más premios todas las semanas de nuestros patrocinadores
+            + gift cards y productos <span className="text-[#f14826] font-semibold">DELISH</span> cada semana
           </p>
         </header>
         <div className="rounded-xl border border-line bg-bg-elev overflow-hidden mt-6">

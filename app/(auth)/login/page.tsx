@@ -43,10 +43,22 @@ export default async function LoginPage() {
       />
 
       <div className="max-w-md mx-auto px-6 pt-10 pb-12 flex flex-col items-center">
-        {/* Header con logo */}
-        <Logo size={36} priority />
+        {/* Co-branding: PADELBOX × DELISH */}
+        <div className="flex items-center gap-4">
+          <Logo size={36} priority />
+          <span className="font-display text-2xl text-zinc-500 leading-none">×</span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/partners/delish.svg"
+            alt="DELISH! BURGERS"
+            className="h-9 w-auto"
+          />
+        </div>
+        <p className="text-[10px] uppercase tracking-[0.28em] text-zinc-500 mt-2">
+          Presentan la Quiniela del Mundial
+        </p>
 
-        <p className="text-[10px] uppercase tracking-[0.28em] text-accent font-bold mt-10">
+        <p className="text-[10px] uppercase tracking-[0.28em] text-accent font-bold mt-8">
           Mundial 2026
         </p>
 
@@ -66,7 +78,7 @@ export default async function LoginPage() {
           </div>
         </div>
         <p className="text-[10px] text-zinc-500 mt-2 text-center max-w-xs">
-          + premios semanales de patrocinadores
+          + gift cards y productos <span className="text-[#f14826] font-semibold">DELISH</span> cada semana
         </p>
 
         {/* Card del form */}
