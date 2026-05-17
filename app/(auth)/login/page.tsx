@@ -28,7 +28,7 @@ export default async function LoginPage() {
         className="absolute inset-0 -z-20 bg-cover bg-center"
         style={{
           backgroundImage:
-            "url('https://images.unsplash.com/photo-1577223625816-7546f13df25d?auto=format&fit=crop&w=1600&q=70')",
+            "url('https://images.unsplash.com/photo-1577223625816-7546f13df25d?auto=format&fit=crop&w=2400&q=85')",
           filter: 'brightness(0.55)',
         }}
       />
@@ -70,7 +70,7 @@ export default async function LoginPage() {
         </p>
 
         {/* Card del form */}
-        <div className="mt-6 w-full rounded-2xl bg-ink/95 backdrop-blur-md border border-zinc-800 p-5">
+        <div className="mt-6 w-full rounded-2xl bg-zinc-950/92 backdrop-blur-md border border-zinc-800 p-5">
           <p className="text-[10px] uppercase tracking-[0.18em] text-muted mb-3">Únete a la quiniela</p>
 
           <form
