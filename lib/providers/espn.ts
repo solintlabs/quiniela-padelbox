@@ -17,6 +17,7 @@
  *   2) Cambiar el import en lib/sync.ts.
  */
 import type { MatchStatus, Stage } from '@prisma/client';
+import { inferGroupFromMatch } from '@/lib/fifa2026';
 
 const HOST = 'site.api.espn.com';
 
@@ -207,11 +208,16 @@ function mapStage(slug: string | undefined, notes: Array<{ headline: string }> |
 function mapGroup(
   slug: string | undefined,
   notes: Array<{ headline: string }> | undefined,
-  _home: string,
-  _away: string,
+  home: string,
+  away: string,
 ): string | null {
-  // ESPN no expone el grupo (A..H) directamente. Si en notes aparece "Group X" lo extraemos.
+  // 1) Si en notes aparece "Group X" lo extraemos directo.
   const text = (notes?.[0]?.headline ?? '') + ' ' + (slug ?? '');
   const m = text.match(/group\s+([a-l])/i);
-  return m ? m[1].toUpperCase() : null;
+  if (m) return m[1].toUpperCase();
+
+  // 2) Fallback: lookup en el draw oficial FIFA 2026 por nombre de equipo.
+  // (ESPN no expone el grupo en su endpoint scoreboard; el draw fue el 5-dic-2025
+  // y no cambia, asi que lib/fifa2026.ts es la fuente de verdad para el mapping)
+  return inferGroupFromMatch(home, away);
 }
