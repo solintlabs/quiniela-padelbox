@@ -21,6 +21,7 @@ export async function GET() {
       lockOffsetMin: rules?.lockOffsetMin ?? 15,
       tournamentStartAt: rules?.tournamentStartAt ?? null,
       syncPaused: rules?.syncPaused ?? false,
+      weeklyPrizesText: rules?.weeklyPrizesText ?? null,
     },
   });
 }

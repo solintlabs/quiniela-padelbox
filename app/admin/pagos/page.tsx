@@ -22,6 +22,20 @@ async function updateFee(formData: FormData) {
   revalidatePath('/admin/usuarios');
 }
 
+async function updateWeeklyPrizes(formData: FormData) {
+  'use server';
+  const raw = String(formData.get('weeklyPrizesText') ?? '').trim();
+  const value = raw.length > 0 ? raw.slice(0, 1500) : null;
+  await prisma.rules.upsert({
+    where: { id: 1 },
+    update: { weeklyPrizesText: value },
+    create: { id: 1, weeklyPrizesText: value },
+  });
+  revalidatePath('/admin/pagos');
+  revalidatePath('/');
+  revalidatePath('/partidos');
+}
+
 async function toggleMethod(formData: FormData) {
   'use server';
   const id = String(formData.get('id') ?? '');
@@ -98,6 +112,28 @@ export default async function PagosAdmin() {
             <Input type="text" name="feeCurrency" defaultValue={rules?.feeCurrency ?? 'USD'} maxLength={4} />
           </div>
           <Button type="submit">Guardar</Button>
+        </form>
+      </section>
+
+      {/* Premios de esta semana — texto libre */}
+      <section className="rounded-xl border border-line bg-bg-elev p-5 max-w-2xl">
+        <h2 className="font-display text-xl">Premios de esta semana</h2>
+        <p className="text-sm text-muted mt-1">
+          Lo que aparece en el dashboard a todos los socios. Edítalo cada semana.
+          Acepta texto plano y emojis (máx 1500 caracteres). Déjalo vacío para ocultar el bloque.
+        </p>
+        <form action={updateWeeklyPrizes} className="mt-4">
+          <textarea
+            name="weeklyPrizesText"
+            defaultValue={rules?.weeklyPrizesText ?? ''}
+            maxLength={1500}
+            rows={5}
+            placeholder={'Ej:\n🥇 1er lugar: Gift card $50 DELISH\n🍔 Top 5: Combo Vinny\'s\n🌮 Premio sorpresa: 3 docenas de tacos Tacoberto'}
+            className="w-full rounded-lg border border-line bg-bg p-3 text-sm font-mono text-ink resize-y min-h-[140px] focus:outline-none focus:ring-2 focus:ring-accent"
+          />
+          <div className="flex justify-end mt-3">
+            <Button type="submit">Guardar premios de la semana</Button>
+          </div>
         </form>
       </section>
 

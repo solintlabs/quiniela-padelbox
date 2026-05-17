@@ -188,6 +188,9 @@ model Rules {
   // Para cuando ESPN cae y el admin gestiona partidos a mano sin que el
   // cron sobreescriba las ediciones manuales.
   syncPaused        Boolean   @default(false)
+  // Premios de la semana (free text editado por admin). Aparece en dashboard.
+  // Vacio o null = no se muestra el bloque.
+  weeklyPrizesText  String?
   updatedAt         DateTime  @updatedAt
 }
 

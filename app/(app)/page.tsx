@@ -14,7 +14,7 @@ export default async function DashboardPage() {
   const session = await auth();
   const userId = session!.user.id;
 
-  const [ranking, nextMatch, groupStats, me_user] = await Promise.all([
+  const [ranking, nextMatch, groupStats, me_user, rules] = await Promise.all([
     computeRanking(),
     prisma.match.findFirst({
       where: { status: 'SCHEDULED', lockedAt: null },
@@ -38,6 +38,7 @@ export default async function DashboardPage() {
       return { total, filled };
     })(),
     prisma.user.findUnique({ where: { id: userId }, select: { hasPaid: true } }),
+    prisma.rules.findUnique({ where: { id: 1 }, select: { weeklyPrizesText: true } }),
   ]);
 
   const myPrediction = nextMatch?.predictions?.[0];
@@ -74,7 +75,7 @@ export default async function DashboardPage() {
                 />
               </div>
               <Link
-                href="/predecir-grupos"
+                href="/partidos?tab=mundial"
                 className="inline-flex items-center mt-4 h-10 px-5 rounded-lg bg-accent text-accent-fg font-display text-sm hover:brightness-95"
               >
                 {groupStats.filled === 0 ? 'EMPEZAR →' : 'CONTINUAR →'}
@@ -148,6 +149,18 @@ export default async function DashboardPage() {
       ) : (
         <section className="text-center text-muted text-sm">
           No hay partidos pendientes. Ve a <Link href="/partidos" className="underline">/partidos</Link>.
+        </section>
+      )}
+
+      {/* Premios de esta semana — el admin lo edita en /admin/pagos */}
+      {rules?.weeklyPrizesText && (
+        <section className="max-w-2xl mx-auto rounded-2xl border-2 border-[#f14826]/50 bg-[#f14826]/10 p-5">
+          <p className="text-[10px] uppercase tracking-[0.28em] font-bold" style={{ color: '#f14826' }}>
+            🍔 Premios de esta semana
+          </p>
+          <p className="font-display text-sm text-ink mt-2 whitespace-pre-line leading-relaxed">
+            {rules.weeklyPrizesText}
+          </p>
         </section>
       )}
 

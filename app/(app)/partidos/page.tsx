@@ -3,11 +3,13 @@ import { prisma } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { PartidosClient } from '@/components/PartidosClient';
 import type { InlineMatch } from '@/components/InlinePredictionRow';
+import { STAGE_LABEL } from '@/lib/format';
 
 export const metadata = { title: 'Partidos · Quiniela PADELBOX' };
 export const dynamic = 'force-dynamic';
 
 const MUNDIAL_GROUPS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
+const KNOCKOUT_STAGES = ['R32', 'R16', 'QF', 'SF', 'THIRD', 'FINAL'] as const;
 
 type Tab = 'mundial' | 'liga';
 
@@ -21,9 +23,13 @@ export default async function PartidosPage({
   const hasPaid = session!.user.hasPaid;
   const tab: Tab = searchParams.tab === 'liga' ? 'liga' : 'mundial';
 
-  const [mundialCount, ligaCount] = await Promise.all([
+  const [mundialCount, ligaCount, me] = await Promise.all([
     prisma.match.count({ where: { group: { in: MUNDIAL_GROUPS } } }),
     prisma.match.count({ where: { group: 'LIGA' } }),
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { championPick: true, championLockedAt: true },
+    }),
   ]);
 
   const matches = await prisma.match.findMany({
@@ -61,11 +67,43 @@ export default async function PartidosPage({
     };
   }
 
-  const upcoming = matches.filter((m) => m.status === 'SCHEDULED' && !m.lockedAt).map(toInline);
-  const locked = matches
-    .filter((m) => m.status !== 'FINISHED' && (m.status !== 'SCHEDULED' || m.lockedAt))
-    .map(toInline);
-  const finished = matches.filter((m) => m.status === 'FINISHED').map(toInline);
+  // Construir secciones segun la tab
+  let sections: Array<{ title: string; items: InlineMatch[]; dim?: boolean }> = [];
+
+  if (tab === 'mundial') {
+    // Mundial: secciones por grupo A-L, luego rondas eliminatorias.
+    for (const g of MUNDIAL_GROUPS) {
+      const groupMatches = matches.filter((m) => m.group === g);
+      if (groupMatches.length > 0) {
+        sections.push({
+          title: `Grupo ${g}`,
+          items: groupMatches.map(toInline),
+        });
+      }
+    }
+    // Eliminatorias (cuando existan)
+    for (const stage of KNOCKOUT_STAGES) {
+      const stageMatches = matches.filter((m) => m.stage === stage);
+      if (stageMatches.length > 0) {
+        sections.push({
+          title: STAGE_LABEL[stage] ?? stage,
+          items: stageMatches.map(toInline),
+        });
+      }
+    }
+  } else {
+    // La Liga: agrupacion clasica por estado.
+    const upcoming = matches.filter((m) => m.status === 'SCHEDULED' && !m.lockedAt).map(toInline);
+    const locked = matches
+      .filter((m) => m.status !== 'FINISHED' && (m.status !== 'SCHEDULED' || m.lockedAt))
+      .map(toInline);
+    const finished = matches.filter((m) => m.status === 'FINISHED').map(toInline);
+    sections = [
+      { title: 'Próximos · puedes predecir', items: upcoming },
+      { title: 'En juego o cerrados', items: locked, dim: true },
+      { title: 'Finalizados', items: finished },
+    ];
+  }
 
   return (
     <div className="space-y-8">
@@ -93,14 +131,40 @@ export default async function PartidosPage({
         <TabLink href="/partidos?tab=liga" active={tab === 'liga'} label="🇪🇸 La Liga" count={ligaCount} />
       </nav>
 
-      <PartidosClient
-        hasPaid={hasPaid}
-        sections={[
-          { title: 'Próximos · puedes predecir', items: upcoming },
-          { title: 'En juego o cerrados (esperando resultado)', items: locked, dim: true },
-          { title: 'Finalizados', items: finished },
-        ]}
-      />
+      {/* Card MI CAMPEÓN (solo en tab Mundial) */}
+      {tab === 'mundial' && (
+        <section className="rounded-2xl border-2 border-accent/60 bg-accent/10 p-5 flex items-center justify-between gap-4 flex-wrap">
+          <div className="min-w-0">
+            <p className="text-[10px] uppercase tracking-[0.28em] text-accent font-bold">
+              MI CAMPEÓN
+            </p>
+            {me?.championPick ? (
+              <>
+                <p className="font-display text-2xl mt-1">{me.championPick.toUpperCase()}</p>
+                <p className="text-xs text-muted mt-1">
+                  {me.championLockedAt
+                    ? '🔒 Pick congelado al inicio del torneo'
+                    : 'Aún puedes cambiarlo antes del 11 jun'}
+                </p>
+              </>
+            ) : (
+              <p className="text-sm text-muted mt-1">
+                No has elegido todavía. Pick gana +25 pts si aciertas.
+              </p>
+            )}
+          </div>
+          {!me?.championLockedAt && (
+            <Link
+              href="/perfil"
+              className="inline-flex items-center h-10 px-5 rounded-lg bg-accent text-accent-fg font-display text-sm hover:brightness-95 shrink-0"
+            >
+              {me?.championPick ? 'Cambiar →' : 'Elegir campeón →'}
+            </Link>
+          )}
+        </section>
+      )}
+
+      <PartidosClient hasPaid={hasPaid} sections={sections} />
 
       {matches.length === 0 && (
         <p className="text-sm text-muted text-center py-10">
