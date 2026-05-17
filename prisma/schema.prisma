@@ -167,6 +167,10 @@ model Rules {
   // Cuota y bote
   feeAmount         Int       @default(10)        // valor numérico (10, 25, 100...)
   feeCurrency       String    @default("USD")     // "USD", "EUR", "VES"...
+  // Modo manual: si está activo, syncMatchesFromApi no toca la DB.
+  // Para cuando ESPN cae y el admin gestiona partidos a mano sin que el
+  // cron sobreescriba las ediciones manuales.
+  syncPaused        Boolean   @default(false)
   updatedAt         DateTime  @updatedAt
 }
 

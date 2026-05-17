@@ -2,8 +2,17 @@ import { prisma } from '@/lib/db';
 import { calcPoints } from '@/lib/scoring';
 import { fetchWorldCupFixtures, type NormalizedFixture } from '@/lib/providers/espn';
 
-/** Sync con el proveedor externo: upsert por externalId. */
+/**
+ * Sync con el proveedor externo: upsert por externalId.
+ * Si Rules.syncPaused está en true, hace early return — el admin gestiona
+ * los partidos manualmente sin que el cron sobreescriba sus ediciones.
+ */
 export async function syncMatchesFromApi() {
+  const rules = await prisma.rules.findUnique({ where: { id: 1 } });
+  if (rules?.syncPaused) {
+    return { created: 0, updated: 0, total: 0, paused: true as const };
+  }
+
   const fixtures = await fetchWorldCupFixtures();
   let created = 0;
   let updated = 0;
