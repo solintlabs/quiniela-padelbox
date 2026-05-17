@@ -171,12 +171,7 @@ export default async function LoginPage() {
             </div>
           ) : (
             <div className="rounded-lg border border-dashed border-zinc-800 p-6 text-center">
-              <p className="text-xs text-muted">
-                Espacio para tus patrocinadores
-              </p>
-              <p className="text-[10px] text-muted mt-1">
-                El admin añade logos desde <code className="bg-zinc-900 px-1.5 py-0.5 rounded text-zinc-300">/admin/sponsors</code> (próximamente)
-              </p>
+              <p className="text-xs text-muted">Espacio para tus patrocinadores</p>
             </div>
           )}
         </section>
