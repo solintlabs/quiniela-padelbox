@@ -48,12 +48,12 @@ function PaymentMethod({
 }
 
 export default async function PublicInscripcionPage() {
-  const [rules] = await Promise.all([
+  const [rules, methods] = await Promise.all([
     prisma.rules.findUnique({ where: { id: 1 } }),
+    prisma.paymentMethod.findMany({ where: { enabled: true }, orderBy: { sortOrder: 'asc' } }),
   ]);
   const feeAmount = rules?.feeAmount ?? CLUB_INFO.fee.amount;
   const feeCurrency = rules?.feeCurrency ?? CLUB_INFO.fee.currency;
-  const p = CLUB_INFO.payment;
   return (
     <div className="max-w-3xl mx-auto space-y-10">
       <header>
@@ -75,51 +75,25 @@ export default async function PublicInscripcionPage() {
 
       <section className="space-y-4">
         <h2 className="font-display text-2xl">Métodos de pago</h2>
-        {p.pagoMovil.enabled && (
-          <PaymentMethod
-            icon="📲"
-            title="Pago Móvil"
-            subtitle={p.pagoMovil.bank}
-            rows={[
-              { label: 'Teléfono', value: p.pagoMovil.phone },
-              { label: 'C.I.', value: p.pagoMovil.ci },
-              { label: 'Titular', value: p.pagoMovil.holder },
-            ]}
-          />
-        )}
-        {p.banesco.enabled && (
-          <PaymentMethod
-            icon="🏦"
-            title="Transferencia Banesco"
-            subtitle={`Cuenta ${p.banesco.type}`}
-            rows={[
-              { label: 'Cuenta', value: p.banesco.account, mono: true },
-              { label: 'Titular', value: p.banesco.holder },
-              { label: 'C.I.', value: p.banesco.ci },
-            ]}
-          />
-        )}
-        {p.zelle.enabled && (
-          <PaymentMethod
-            icon="💵"
-            title="Zelle"
-            subtitle="USD"
-            rows={[
-              { label: 'Email', value: p.zelle.email, mono: true },
-              { label: 'Titular', value: p.zelle.holder },
-            ]}
-          />
-        )}
-        {p.binance.enabled && (
-          <PaymentMethod
-            icon="🪙"
-            title="Binance Pay"
-            subtitle="Cripto"
-            rows={[
-              { label: 'Email Binance', value: p.binance.email, mono: true },
-              { label: 'Moneda preferida', value: p.binance.preferredCoin },
-            ]}
-          />
+        {methods.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-line p-6 text-center">
+            <p className="text-sm text-muted">
+              Aún no hay métodos de pago configurados. Contacta al admin por WhatsApp.
+            </p>
+          </div>
+        ) : (
+          methods.map((m) => {
+            const fields = Array.isArray(m.fields) ? (m.fields as Array<{ label: string; value: string; mono?: boolean }>) : [];
+            return (
+              <PaymentMethod
+                key={m.id}
+                icon={m.icon ?? '💳'}
+                title={m.title}
+                subtitle={m.subtitle ?? ''}
+                rows={fields}
+              />
+            );
+          })
         )}
       </section>
 

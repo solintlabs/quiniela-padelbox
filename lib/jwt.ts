@@ -1,6 +1,11 @@
 import { SignJWT, jwtVerify } from 'jose';
 
-const SECRET = new TextEncoder().encode(process.env.AUTH_SECRET ?? 'dev-secret');
+const rawSecret = process.env.AUTH_SECRET;
+if (!rawSecret) {
+  // Fail loudly en runtime: sin AUTH_SECRET cualquiera podría forjar tokens.
+  throw new Error('AUTH_SECRET no configurado — imposible firmar/verificar JWT.');
+}
+const SECRET = new TextEncoder().encode(rawSecret);
 const ALG = 'HS256';
 const ISSUER = 'quiniela-padelbox';
 const EXPIRY_DAYS = 90;

@@ -15,10 +15,15 @@ const Schema = z.object({
 const IDENT_PREFIX = 'code:';
 
 function hashCode(code: string): string {
-  return crypto
-    .createHmac('sha256', process.env.AUTH_SECRET ?? 'dev-secret')
-    .update(code)
-    .digest('hex');
+  const secret = process.env.AUTH_SECRET;
+  if (!secret) throw new Error('AUTH_SECRET no configurado');
+  return crypto.createHmac('sha256', secret).update(code).digest('hex');
+}
+
+function clientIp(req: Request): string {
+  const xff = req.headers.get('x-forwarded-for');
+  if (xff) return xff.split(',')[0]!.trim();
+  return req.headers.get('x-real-ip') ?? 'unknown';
 }
 
 export async function POST(req: Request) {
@@ -29,10 +34,12 @@ export async function POST(req: Request) {
   const email = parsed.data.email.toLowerCase();
   const identifier = IDENT_PREFIX + email;
 
-  // Rate limit: max 10 intentos por hora por email. Brute force del codigo
-  // de 6 digitos requeriria 1M intentos — 10/h hace inviable cualquier ataque.
+  // Rate limit: max 10 intentos por hora por email + 30 por IP/hora.
+  // Brute force del codigo de 6 digitos requeriria 1M intentos.
   const rl = await rateLimit(`code-verify:email:${email}`, 10, 3600);
   if (!rl.allowed) return tooManyRequests(rl.resetAt);
+  const rlIp = await rateLimit(`code-verify:ip:${clientIp(req)}`, 30, 3600);
+  if (!rlIp.allowed) return tooManyRequests(rlIp.resetAt);
 
   const expected = hashCode(parsed.data.code);
 

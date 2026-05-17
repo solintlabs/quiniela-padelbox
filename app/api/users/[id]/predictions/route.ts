@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { requireUserApi } from '@/lib/permissions';
+import { publicDisplayName } from '@/lib/display';
 
 /**
  * Devuelve los pronósticos de un usuario que ya están "públicos":
@@ -54,7 +55,10 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     user: {
       id: target.id,
       name: target.name,
-      email: target.email,
+      // Si es uno mismo, devolvemos el email real. Si no, mascarado.
+      email: target.id === me.id
+        ? target.email
+        : publicDisplayName({ name: target.name, email: target.email }),
       hasPaid: target.hasPaid,
       createdAt: target.createdAt,
       championPick: target.championPick,

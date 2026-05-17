@@ -154,6 +154,8 @@ model Match {
   status        MatchStatus @default(SCHEDULED)
   lockedAt      DateTime?   // momento real de cierre
   scoredAt      DateTime?   // momento real de cálculo de puntos
+  // Marcado cuando se envió el push "recordatorio 1h antes" (evita doble envio)
+  reminderSentAt DateTime?
 
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt

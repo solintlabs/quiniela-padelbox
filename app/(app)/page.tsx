@@ -5,6 +5,7 @@ import { computeRanking } from '@/lib/ranking';
 import { PodioHero } from '@/components/PodioHero';
 import { Countdown } from '@/components/Countdown';
 import { AliadosStrip } from '@/components/AliadosStrip';
+import { AppStoreBadges } from '@/components/AppStoreBadges';
 import { formatDateTime } from '@/lib/format';
 
 export const metadata = { title: 'Inicio · Quiniela PADELBOX' };
@@ -167,6 +168,11 @@ export default async function DashboardPage() {
       {/* Aliados comerciales — premios semanales cortesía de */}
       <div className="max-w-2xl mx-auto">
         <AliadosStrip variant="dashboard" />
+      </div>
+
+      {/* Descarga la app — solo visible si las URLs estan en env (post-publicacion) */}
+      <div className="max-w-2xl mx-auto">
+        <AppStoreBadges variant="hero" />
       </div>
 
       {/* Premios garantizados (fijos, independiente de inscritos) */}

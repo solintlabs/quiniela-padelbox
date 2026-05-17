@@ -94,6 +94,49 @@ export async function lockAndScore() {
   const pointsWinner = rules?.pointsWinner ?? 1;
   const now = Date.now();
 
+  // 0bis. Push recordatorio 1h antes del kickoff. A users pagados que
+  // NO hayan predicho. Marcamos reminderSentAt para no duplicar.
+  // Ventana: entre kickoff-75min y kickoff-45min (el cron corre cada 10min
+  // asi que cualquier partido caera en una de estas ejecuciones).
+  const reminderWindowStart = new Date(now + 45 * 60_000);
+  const reminderWindowEnd = new Date(now + 75 * 60_000);
+  const toRemind = await prisma.match.findMany({
+    where: {
+      reminderSentAt: null,
+      lockedAt: null,
+      status: 'SCHEDULED',
+      kickoff: { gte: reminderWindowStart, lte: reminderWindowEnd },
+    },
+    select: { id: true, homeTeam: true, awayTeam: true, kickoff: true },
+  });
+  for (const m of toRemind) {
+    // Marca como enviado YA — race-safe vs duplicate crons
+    const claim = await prisma.match.updateMany({
+      where: { id: m.id, reminderSentAt: null },
+      data: { reminderSentAt: new Date() },
+    });
+    if (claim.count === 0) continue; // otro cron ya lo agarro
+
+    const usersNoPred = await prisma.user.findMany({
+      where: {
+        hasPaid: true,
+        predictions: { none: { matchId: m.id } },
+      },
+      select: { id: true },
+    });
+    if (usersNoPred.length === 0) continue;
+
+    const minsToKickoff = Math.max(
+      1,
+      Math.round((new Date(m.kickoff).getTime() - now) / 60_000),
+    );
+    await sendPushToUsers(usersNoPred.map((u) => u.id), () => ({
+      title: `⚽ ${m.homeTeam} vs ${m.awayTeam}`,
+      body: `Empieza en ${minsToKickoff} min y no has predicho. Última oportunidad.`,
+      data: { type: 'match-reminder', matchId: m.id },
+    })).catch((e) => console.error('[push] reminder notify:', e));
+  }
+
   // 0. Sync inteligente: solo si hay partido cerca.
   let synced: false | Awaited<ReturnType<typeof syncMatchesFromApi>> = false;
   if (await hasMatchInWindow()) {

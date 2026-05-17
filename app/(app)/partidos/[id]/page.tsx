@@ -149,18 +149,28 @@ async function AllPredictions({
     );
   }
 
-  // Ya está cerrado: lista completa
-  const predictions = await prisma.prediction.findMany({
-    where: { matchId },
-    select: {
-      id: true,
-      homeScore: true,
-      awayScore: true,
-      points: true,
-      user: { select: { id: true, name: true, email: true } },
-    },
-    orderBy: [{ points: 'desc' }, { createdAt: 'asc' }],
-  });
+  // Ya está cerrado: lista completa + agregados
+  const [predictions, matchInfo, myPrediction] = await Promise.all([
+    prisma.prediction.findMany({
+      where: { matchId },
+      select: {
+        id: true,
+        homeScore: true,
+        awayScore: true,
+        points: true,
+        user: { select: { id: true, name: true, email: true } },
+      },
+      orderBy: [{ points: 'desc' }, { createdAt: 'asc' }],
+    }),
+    prisma.match.findUnique({
+      where: { id: matchId },
+      select: { homeTeam: true, awayTeam: true },
+    }),
+    prisma.prediction.findUnique({
+      where: { userId_matchId: { userId: myUserId, matchId } },
+      select: { homeScore: true, awayScore: true },
+    }),
+  ]);
 
   if (predictions.length === 0) {
     return (
@@ -173,8 +183,104 @@ async function AllPredictions({
     );
   }
 
+  // Agregados: comparativa
+  let homeWins = 0, draws = 0, awayWins = 0;
+  const scoreCount = new Map<string, number>();
+  for (const p of predictions) {
+    if (p.homeScore > p.awayScore) homeWins++;
+    else if (p.homeScore < p.awayScore) awayWins++;
+    else draws++;
+    const key = `${p.homeScore}-${p.awayScore}`;
+    scoreCount.set(key, (scoreCount.get(key) ?? 0) + 1);
+  }
+  const total = predictions.length;
+  const pct = (n: number) => (total > 0 ? Math.round((n / total) * 100) : 0);
+  const topScores = [...scoreCount.entries()]
+    .map(([k, count]) => {
+      const [h, a] = k.split('-').map(Number);
+      return { home: h, away: a, count, pct: pct(count) };
+    })
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 3);
+
+  // Resultado que predijo el mayor número
+  const myOutcome = myPrediction
+    ? myPrediction.homeScore > myPrediction.awayScore ? 'home'
+      : myPrediction.homeScore < myPrediction.awayScore ? 'away' : 'draw'
+    : null;
+  const majorityOutcome = homeWins > awayWins && homeWins > draws ? 'home'
+    : awayWins > draws ? 'away' : 'draw';
+  const inMajority = myOutcome && myOutcome === majorityOutcome;
+
+  const homeName = matchInfo?.homeTeam ?? 'Local';
+  const awayName = matchInfo?.awayTeam ?? 'Visitante';
+
   return (
-    <section>
+    <section className="space-y-4">
+      {/* Comparativa: barra 1X2 + marcadores más predichos */}
+      <div className="rounded-xl border border-accent/30 bg-accent/5 p-5">
+        <p className="text-xs uppercase tracking-[0.18em] text-accent font-bold mb-3">
+          Comparativa · qué predijeron los demás
+        </p>
+
+        {/* Barra 1X2 segmentada */}
+        <div className="flex h-10 rounded-md overflow-hidden text-[11px] font-display text-ink">
+          {homeWins > 0 && (
+            <div className="bg-blue-500/70 flex items-center justify-center" style={{ width: `${pct(homeWins)}%`, minWidth: 28 }} title={`${homeWins} predijeron ${homeName} gana`}>
+              {pct(homeWins)}%
+            </div>
+          )}
+          {draws > 0 && (
+            <div className="bg-zinc-600/70 flex items-center justify-center" style={{ width: `${pct(draws)}%`, minWidth: 28 }} title={`${draws} predijeron empate`}>
+              {pct(draws)}%
+            </div>
+          )}
+          {awayWins > 0 && (
+            <div className="bg-orange-500/70 flex items-center justify-center" style={{ width: `${pct(awayWins)}%`, minWidth: 28 }} title={`${awayWins} predijeron ${awayName} gana`}>
+              {pct(awayWins)}%
+            </div>
+          )}
+        </div>
+        <div className="flex justify-between text-[10px] text-muted mt-1">
+          <span className="text-blue-400">🏠 {homeName}</span>
+          <span>Empate</span>
+          <span className="text-orange-400">{awayName} 🏃</span>
+        </div>
+
+        {/* Tu posición respecto a la mayoría */}
+        {myPrediction && (
+          <p className="text-xs text-muted mt-4">
+            Tu pronóstico: <span className="text-ink font-display tabular-nums">{myPrediction.homeScore}–{myPrediction.awayScore}</span>{' '}
+            {inMajority
+              ? <span className="text-accent">· estás con la mayoría</span>
+              : <span className="text-warning">· vas a contracorriente 👀</span>}
+          </p>
+        )}
+
+        {/* Top 3 marcadores más predichos */}
+        <div className="mt-4">
+          <p className="text-[10px] uppercase tracking-[0.12em] text-muted mb-2">Marcadores más populares</p>
+          <div className="flex gap-2 flex-wrap">
+            {topScores.map((s, i) => {
+              const isMy = myPrediction && s.home === myPrediction.homeScore && s.away === myPrediction.awayScore;
+              return (
+                <span
+                  key={`${s.home}-${s.away}`}
+                  className={
+                    'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-display tabular-nums ' +
+                    (isMy ? 'bg-accent/20 border border-accent/60 text-ink' : 'bg-bg border border-line text-muted')
+                  }
+                >
+                  <span>{i === 0 && '🥇 '}{s.home}–{s.away}</span>
+                  <span className="text-[10px]">({s.count} · {s.pct}%)</span>
+                  {isMy && <span className="text-[10px] text-accent">tú</span>}
+                </span>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
       <h2 className="font-display text-xl mb-3">Pronósticos de los demás ({predictions.length})</h2>
       <div className="rounded-xl border border-line bg-bg-elev overflow-hidden">
         {predictions.map((p, i) => {

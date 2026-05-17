@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { formatDateTime, STAGE_LABEL } from '@/lib/format';
 import { calcPoints } from '@/lib/scoring';
+import { syncMatchesFromApi, recomputeAll } from '@/lib/sync';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,16 +15,25 @@ const STATUSES = ['SCHEDULED', 'LIVE', 'FINISHED', 'POSTPONED', 'CANCELLED'] as 
 async function syncMatches() {
   'use server';
   await requireAdmin();
-  const url = (process.env.AUTH_URL ?? 'http://localhost:3000') + '/api/admin/sync-matches';
-  await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, cache: 'no-store' });
+  // Invocacion directa: una fetch server-to-self no propaga la cookie de sesion
+  // y requireAdminApi devolveria 401. Llamamos al helper del modulo igual que
+  // hace la ruta /api/admin/sync-matches.
+  try {
+    await syncMatchesFromApi();
+  } catch (e) {
+    console.error('[admin/partidos] sync fallo:', e instanceof Error ? e.message : e);
+  }
   revalidatePath('/admin/partidos');
 }
 
 async function recompute() {
   'use server';
   await requireAdmin();
-  const url = (process.env.AUTH_URL ?? 'http://localhost:3000') + '/api/admin/recompute';
-  await fetch(url, { method: 'POST', cache: 'no-store' });
+  try {
+    await recomputeAll();
+  } catch (e) {
+    console.error('[admin/partidos] recompute fallo:', e instanceof Error ? e.message : e);
+  }
   revalidatePath('/admin/partidos');
 }
 

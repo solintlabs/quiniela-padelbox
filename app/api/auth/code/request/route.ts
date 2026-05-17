@@ -11,10 +11,15 @@ const CODE_TTL_MIN = 10;
 const IDENT_PREFIX = 'code:';
 
 function hashCode(code: string): string {
-  return crypto
-    .createHmac('sha256', process.env.AUTH_SECRET ?? 'dev-secret')
-    .update(code)
-    .digest('hex');
+  const secret = process.env.AUTH_SECRET;
+  if (!secret) throw new Error('AUTH_SECRET no configurado');
+  return crypto.createHmac('sha256', secret).update(code).digest('hex');
+}
+
+function clientIp(req: Request): string {
+  const xff = req.headers.get('x-forwarded-for');
+  if (xff) return xff.split(',')[0]!.trim();
+  return req.headers.get('x-real-ip') ?? 'unknown';
 }
 
 function generateCode(): string {
@@ -30,10 +35,12 @@ export async function POST(req: Request) {
   const email = parsed.data.email.toLowerCase();
   const identifier = IDENT_PREFIX + email;
 
-  // Rate limit: max 5 emails de codigo por hora a cada direccion.
-  // Anti-spam de emails (cada uno cuesta a Resend) y anti-enumeracion.
+  // Rate limit: max 5 emails de codigo por hora a cada direccion +
+  // max 20 por hora por IP (anti-spam masivo).
   const rl = await rateLimit(`code-req:email:${email}`, 5, 3600);
   if (!rl.allowed) return tooManyRequests(rl.resetAt);
+  const rlIp = await rateLimit(`code-req:ip:${clientIp(req)}`, 20, 3600);
+  if (!rlIp.allowed) return tooManyRequests(rlIp.resetAt);
 
   // Borrar códigos previos para este email
   await prisma.verificationToken.deleteMany({ where: { identifier } });

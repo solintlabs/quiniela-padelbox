@@ -10,7 +10,10 @@ export default async function InscripcionPage() {
   const session = await auth();
   const hasPaid = session?.user?.hasPaid ?? false;
   const userEmail = session?.user?.email ?? null;
-  const rules = await prisma.rules.findUnique({ where: { id: 1 } });
+  const [rules, methods] = await Promise.all([
+    prisma.rules.findUnique({ where: { id: 1 } }),
+    prisma.paymentMethod.findMany({ where: { enabled: true }, orderBy: { sortOrder: 'asc' } }),
+  ]);
   const feeAmount = rules?.feeAmount ?? CLUB_INFO.fee.amount;
   const feeCurrency = rules?.feeCurrency ?? CLUB_INFO.fee.currency;
 
@@ -53,58 +56,28 @@ export default async function InscripcionPage() {
         </p>
       </section>
 
-      {/* Métodos de pago */}
+      {/* Métodos de pago — desde DB editables en /admin/pagos */}
       <section className="space-y-4">
         <h2 className="font-display text-2xl">Métodos de pago</h2>
-
-        {CLUB_INFO.payment.pagoMovil.enabled && (
-          <PaymentMethod
-            icon="📲"
-            title="Pago Móvil"
-            subtitle={CLUB_INFO.payment.pagoMovil.bank}
-            rows={[
-              { label: 'Teléfono', value: CLUB_INFO.payment.pagoMovil.phone, copyable: true },
-              { label: 'C.I.', value: CLUB_INFO.payment.pagoMovil.ci, copyable: true },
-              { label: 'Titular', value: CLUB_INFO.payment.pagoMovil.holder },
-            ]}
-          />
-        )}
-
-        {CLUB_INFO.payment.banesco.enabled && (
-          <PaymentMethod
-            icon="🏦"
-            title="Transferencia Banesco"
-            subtitle={`Cuenta ${CLUB_INFO.payment.banesco.type}`}
-            rows={[
-              { label: 'Cuenta', value: CLUB_INFO.payment.banesco.account, copyable: true, mono: true },
-              { label: 'Titular', value: CLUB_INFO.payment.banesco.holder },
-              { label: 'C.I.', value: CLUB_INFO.payment.banesco.ci, copyable: true },
-            ]}
-          />
-        )}
-
-        {CLUB_INFO.payment.zelle.enabled && (
-          <PaymentMethod
-            icon="💵"
-            title="Zelle"
-            subtitle="USD"
-            rows={[
-              { label: 'Email', value: CLUB_INFO.payment.zelle.email, copyable: true, mono: true },
-              { label: 'Titular', value: CLUB_INFO.payment.zelle.holder },
-            ]}
-          />
-        )}
-
-        {CLUB_INFO.payment.binance.enabled && (
-          <PaymentMethod
-            icon="🪙"
-            title="Binance Pay"
-            subtitle="Cripto"
-            rows={[
-              { label: 'Email Binance', value: CLUB_INFO.payment.binance.email, copyable: true, mono: true },
-              { label: 'Moneda preferida', value: CLUB_INFO.payment.binance.preferredCoin },
-            ]}
-          />
+        {methods.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-line p-6 text-center">
+            <p className="text-sm text-muted">
+              Aún no hay métodos configurados. Contacta al admin por WhatsApp para coordinar el pago.
+            </p>
+          </div>
+        ) : (
+          methods.map((m) => {
+            const fields = Array.isArray(m.fields) ? (m.fields as Array<{ label: string; value: string; mono?: boolean }>) : [];
+            return (
+              <PaymentMethod
+                key={m.id}
+                icon={m.icon ?? '💳'}
+                title={m.title}
+                subtitle={m.subtitle ?? ''}
+                rows={fields.map((f) => ({ label: f.label, value: f.value, copyable: true, mono: f.mono }))}
+              />
+            );
+          })
         )}
       </section>
 

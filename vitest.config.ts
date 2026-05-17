@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitest/config';
+import { fileURLToPath } from 'node:url';
 
 export default defineConfig({
   test: {
@@ -7,7 +8,9 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@': new URL('./', import.meta.url).pathname,
+      // Usar fileURLToPath para evitar el leading "/" en Windows que rompe
+      // la resolución de imports tipo "@/lib/scoring".
+      '@': fileURLToPath(new URL('./', import.meta.url)),
     },
   },
 });

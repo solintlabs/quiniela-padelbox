@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Footer } from '@/components/Footer';
 import { WhatsappFab } from '@/components/WhatsappFab';
+import { AppStoreBadges } from '@/components/AppStoreBadges';
 
 export const metadata = { title: 'Entrar · Quiniela PADELBOX' };
 export const dynamic = 'force-dynamic';
@@ -196,6 +197,11 @@ export default async function LoginPage() {
         <p className="text-xs text-muted text-center mt-8 max-w-xs">
           ¿No estás inscrito? Tu cuenta se crea sola. El admin de PADELBOX valida tu pago para activarte.
         </p>
+
+        {/* App Store / Play Store — solo aparece si las URLs estan en env */}
+        <div className="mt-6 w-full">
+          <AppStoreBadges variant="compact" />
+        </div>
       </div>
 
       <Footer variant="auth" />

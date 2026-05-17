@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/db';
+import { publicDisplayName } from '@/lib/display';
 import type { RankingRow } from '@/components/RankingTable';
 
 /**
@@ -47,7 +48,10 @@ export async function computeRanking(): Promise<RankingRow[]> {
     return {
       userId: u.id,
       name: u.name,
-      email: u.email,
+      // Email se envia MASCARADO al cliente — fallback display si no hay name.
+      // Esto evita scraping de la lista completa de correos de socios.
+      // El admin tiene su propia vista (admin/usuarios) sin mascara.
+      email: publicDisplayName({ name: u.name, email: u.email }),
       played,
       exact,
       points,
