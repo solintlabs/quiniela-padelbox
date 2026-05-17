@@ -64,6 +64,27 @@ async function deleteSponsor(formData: FormData) {
   revalidatePath('/');
 }
 
+async function seedDefaults() {
+  'use server';
+  // Defaults de PADELBOX x DELISH y sus restaurantes afiliados.
+  // Idempotente: solo crea si no existe ya un sponsor con ese name.
+  const DEFAULTS = [
+    { name: 'DELISH! Burgers', logoUrl: '/partners/delish.svg', url: null, sortOrder: 10 },
+    { name: "Vinny's Trattoria", logoUrl: '/partners/vinnys.png', url: null, sortOrder: 20 },
+    { name: 'Tacoberto', logoUrl: '/partners/tacoberto.png', url: null, sortOrder: 30 },
+    { name: 'Solintlabs', logoUrl: '/partners/solint.png', url: 'https://solint.cloud', sortOrder: 100 },
+  ];
+  for (const d of DEFAULTS) {
+    const exists = await prisma.sponsor.findFirst({ where: { name: d.name } });
+    if (!exists) {
+      await prisma.sponsor.create({ data: { ...d, enabled: true } });
+    }
+  }
+  revalidatePath('/admin/sponsors');
+  revalidatePath('/login');
+  revalidatePath('/');
+}
+
 async function reorderSponsor(formData: FormData) {
   'use server';
   const id = String(formData.get('id') ?? '');
@@ -106,6 +127,27 @@ export default async function SponsorsAdminPage() {
             de Vercel (Storage → Create → Blob) y conéctalo a este proyecto. Mientras tanto, puedes pegar
             URLs públicas (Imgur, Cloudinary, etc.) en el campo &quot;URL del logo&quot;.
           </p>
+        </section>
+      )}
+
+      {/* Botón one-shot para cargar los defaults PADELBOX × DELISH */}
+      {sponsors.length === 0 && (
+        <section className="rounded-xl border border-accent/40 bg-accent/5 p-5 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="font-semibold">Cargar sponsors por defecto</p>
+            <p className="text-xs text-muted mt-1">
+              Inserta DELISH, Vinny&apos;s, Tacoberto y Solintlabs con los logos
+              ya subidos en <code className="text-zinc-400">/public/partners/</code>. Idempotente.
+            </p>
+          </div>
+          <form action={seedDefaults}>
+            <button
+              type="submit"
+              className="h-10 px-4 rounded-lg bg-accent text-accent-fg text-sm font-display"
+            >
+              Cargar los 4 defaults
+            </button>
+          </form>
         </section>
       )}
 
