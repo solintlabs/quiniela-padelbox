@@ -44,14 +44,14 @@ export default async function LoginPage() {
 
       <div className="max-w-md mx-auto px-6 pt-10 pb-12 flex flex-col items-center">
         {/* Co-branding: PADELBOX × DELISH */}
-        <div className="flex items-center gap-4">
-          <Logo size={36} priority />
-          <span className="font-display text-2xl text-zinc-500 leading-none">×</span>
+        <div className="flex items-center gap-5">
+          <Logo size={44} priority />
+          <span className="font-display text-3xl text-zinc-500 leading-none">×</span>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/partners/delish.svg"
             alt="DELISH! BURGERS"
-            className="h-9 w-auto"
+            className="h-16 w-auto"
           />
         </div>
         <p className="text-[10px] uppercase tracking-[0.28em] text-zinc-500 mt-2">
@@ -114,7 +114,7 @@ export default async function LoginPage() {
             className="space-y-2"
           >
             <Input name="name" type="text" placeholder="Tu nombre o apodo" autoComplete="name" maxLength={60} />
-            <Input name="phone" type="tel" inputMode="tel" placeholder="+34 600 000 000" autoComplete="tel" maxLength={20} />
+            <Input name="phone" type="tel" inputMode="tel" placeholder="+58 412 555 0000" autoComplete="tel" maxLength={20} />
             <Input name="email" type="email" placeholder="tu@email.com" autoComplete="email" required />
             <Button type="submit" size="lg" className="w-full font-display tracking-tight mt-2">
               ENVIAR CÓDIGO →

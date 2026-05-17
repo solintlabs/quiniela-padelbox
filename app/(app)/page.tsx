@@ -150,6 +150,26 @@ export default async function DashboardPage() {
         </section>
       )}
 
+      {/* Banda DELISH protagonista — premios semanales son cosa suya */}
+      <section className="max-w-2xl mx-auto rounded-2xl border-2 border-[#f14826]/50 bg-[#f14826]/10 overflow-hidden">
+        <div className="flex items-center gap-4 p-4 sm:p-5">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/partners/delish.svg" alt="DELISH! BURGERS" className="h-14 sm:h-16 w-auto shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] uppercase tracking-[0.18em] font-bold" style={{ color: '#f14826' }}>
+              Premios semanales · presentados por
+            </p>
+            <p className="font-display text-base sm:text-lg mt-1 leading-tight">
+              Gift cards y productos <span className="text-[#f14826]">DELISH!</span> cada semana
+            </p>
+            <p className="text-xs text-muted mt-1">
+              Top pronosticadores de la semana se llevan combos, hamburguesas y gift cards canjeables en
+              cualquier restaurante DELISH.
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* Premios garantizados (fijos, independiente de inscritos) */}
       <section className="max-w-2xl mx-auto">
         <header className="text-center mb-4">

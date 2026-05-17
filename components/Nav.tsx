@@ -27,9 +27,11 @@ export function Nav({ isAdmin, userEmail }: NavProps) {
   return (
     <header className="sticky top-0 z-40 backdrop-blur bg-bg/85 border-b border-line">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-2">
-        <Link href="/" className="flex items-center gap-3 shrink-0">
+        <Link href="/" className="flex items-center gap-2 sm:gap-3 shrink-0">
           <Logo size={28} />
-          <span className="text-xs text-muted hidden md:inline">Quiniela Mundial 2026</span>
+          <span className="font-display text-lg text-zinc-500 leading-none">×</span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/partners/delish.svg" alt="DELISH" className="h-7 w-auto" />
         </Link>
 
         {/* Desktop nav — solo md+ */}

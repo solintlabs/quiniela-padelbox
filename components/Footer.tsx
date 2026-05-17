@@ -13,10 +13,19 @@ export function Footer({ variant = 'app' }: FooterProps) {
     <footer
       className={
         variant === 'auth'
-          ? 'mt-12 text-center space-y-3'
-          : 'mt-16 pt-8 border-t border-line text-center space-y-3'
+          ? 'mt-12 text-center space-y-4'
+          : 'mt-16 pt-8 border-t border-line text-center space-y-4'
       }
     >
+      {/* Banda co-branding PADELBOX × DELISH */}
+      <div className="inline-flex items-center gap-3 px-5 py-3 rounded-full bg-white/5 border border-zinc-800">
+        <span className="text-[10px] uppercase tracking-[0.18em] text-muted">Presentado por</span>
+        <span className="font-display text-sm">PADELBOX</span>
+        <span className="text-zinc-500">×</span>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/partners/delish.svg" alt="DELISH" className="h-5 w-auto" />
+      </div>
+
       <div className="flex justify-center gap-4 text-xs text-muted">
         <Link href="/privacy" className="hover:text-ink underline-offset-4 hover:underline">
           Privacidad
