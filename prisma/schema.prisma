@@ -106,9 +106,26 @@ model User {
   accounts         Account[]
   sessions         Session[]
   predictions      Prediction[]
+  pushDevices      PushDevice[]
 
   @@index([role])
   @@index([hasPaid])
+}
+
+// Token Expo push por dispositivo. Un user puede tener varios (iPhone + iPad,
+// etc). Limpiamos cuando Expo devuelve DeviceNotRegistered.
+model PushDevice {
+  id          String   @id @default(cuid())
+  userId      String
+  expoToken   String   @unique
+  platform    String   // "ios" | "android"
+  appVersion  String?
+  lastUsedAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Match {

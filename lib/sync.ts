@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/db';
 import { calcPoints } from '@/lib/scoring';
 import { fetchWorldCupFixtures, type NormalizedFixture } from '@/lib/providers/espn';
+import { sendPushToUsers } from '@/lib/push';
 
 /**
  * Sync con el proveedor externo: upsert por externalId.
@@ -106,13 +107,31 @@ export async function lockAndScore() {
   // 1. Bloqueo por hora
   const toLock = await prisma.match.findMany({
     where: { lockedAt: null, kickoff: { lte: new Date(now + offsetMs) } },
-    select: { id: true },
+    select: { id: true, homeTeam: true, awayTeam: true },
   });
   if (toLock.length) {
     await prisma.match.updateMany({
       where: { id: { in: toLock.map((m) => m.id) } },
       data: { lockedAt: new Date() },
     });
+
+    // Push: avisa a usuarios pagados SIN prediccion de los partidos que se cerraron.
+    for (const m of toLock) {
+      const usersNoPred = await prisma.user.findMany({
+        where: {
+          hasPaid: true,
+          predictions: { none: { matchId: m.id } },
+        },
+        select: { id: true },
+      });
+      if (usersNoPred.length > 0) {
+        await sendPushToUsers(usersNoPred.map((u) => u.id), () => ({
+          title: '⏰ Partido cerrado',
+          body: `${m.homeTeam} vs ${m.awayTeam} — no llegaste a predecir esta vez.`,
+          data: { type: 'match-locked', matchId: m.id },
+        })).catch((e) => console.error('[push] locked notify:', e));
+      }
+    }
   }
 
   // 2. Cierre de pick de campeón
@@ -130,6 +149,7 @@ export async function lockAndScore() {
   });
   let scored = 0;
   for (const m of toScore) {
+    const pointsByUser: Record<string, number> = {};
     for (const p of m.predictions) {
       const points = calcPoints(
         { homeScore: p.homeScore, awayScore: p.awayScore },
@@ -137,9 +157,28 @@ export async function lockAndScore() {
         { pointsExact, pointsWinner },
       );
       await prisma.prediction.update({ where: { id: p.id }, data: { points } });
+      pointsByUser[p.userId] = points;
       scored++;
     }
     await prisma.match.update({ where: { id: m.id }, data: { scoredAt: new Date() } });
+
+    // Push: notifica resultado personalizado a cada user con prediccion.
+    const userIds = Object.keys(pointsByUser);
+    if (userIds.length > 0) {
+      await sendPushToUsers(userIds, (uid) => {
+        const pts = pointsByUser[uid];
+        const ico = pts === 3 ? '🎯' : pts === 1 ? '👍' : '😬';
+        return {
+          title: `${ico} ${m.homeTeam} ${m.homeScore}–${m.awayScore} ${m.awayTeam}`,
+          body: pts === 3
+            ? `¡Marcador exacto! Ganaste +${pts} pts.`
+            : pts === 1
+              ? `Acertaste el ganador. +${pts} pt.`
+              : 'Esta no la sacaste. 0 pts.',
+          data: { type: 'match-scored', matchId: m.id, points: pts },
+        };
+      }).catch((e) => console.error('[push] scored notify:', e));
+    }
   }
 
   return { synced, locked: toLock.length, scored, scoredMatches: toScore.length };
