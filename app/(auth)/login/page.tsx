@@ -23,23 +23,23 @@ export default async function LoginPage() {
   // Premios garantizados (fijos)
   const guaranteedPrizes = '$2.300';
   return (
-    <main className="min-h-screen relative overflow-hidden bg-bg">
-      {/* Líneas geométricas sutiles sobre negro */}
+    <main className="min-h-screen relative overflow-hidden">
+      {/* Hero stadium background — verde cancha */}
       <div
-        aria-hidden
-        className="absolute inset-0 -z-10 pointer-events-none opacity-50"
+        className="absolute inset-0 -z-10"
         style={{
-          backgroundImage:
-            'linear-gradient(transparent 50%, rgba(255,255,255,0.025) 50.5%, transparent 51%), linear-gradient(90deg, transparent 49.5%, rgba(255,255,255,0.02) 50%, transparent 50.5%)',
-          backgroundSize: '100% 120px, 120px 100%',
+          background:
+            'radial-gradient(ellipse at center top, rgba(74,124,29,0.35) 0%, transparent 55%), linear-gradient(180deg, #0A1F08 0%, #0A0A0A 50%)',
         }}
       />
-      {/* Glow accent sutil arriba */}
+      {/* Líneas de cancha sutiles */}
       <div
         aria-hidden
-        className="absolute inset-x-0 top-0 -z-10 h-96 pointer-events-none opacity-30"
+        className="absolute inset-0 -z-10 pointer-events-none opacity-40"
         style={{
-          background: 'radial-gradient(ellipse at center top, rgba(182,255,60,0.12) 0%, transparent 60%)',
+          backgroundImage:
+            'linear-gradient(transparent 50%, rgba(255,255,255,0.06) 50.5%, transparent 51%), linear-gradient(90deg, transparent 49.5%, rgba(255,255,255,0.04) 50%, transparent 50.5%)',
+          backgroundSize: '100% 120px, 120px 100%',
         }}
       />
 
