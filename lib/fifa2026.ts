@@ -101,8 +101,11 @@ export function lookupGroupForTeam(teamName: string): string | null {
  * al mismo grupo. Si solo uno se encuentra, usa ese. Si discrepa, devuelve null.
  */
 export function inferGroupFromMatch(homeTeam: string, awayTeam: string): string | null {
+  // Ambos equipos deben pertenecer al MISMO grupo del Mundial 2026 para
+  // contar como partido de fase de grupos. Si solo uno coincide (ej. una
+  // amistosa Brazil vs Bolivia) devolvemos null para no contaminar el cuadro.
   const a = lookupGroupForTeam(homeTeam);
   const b = lookupGroupForTeam(awayTeam);
-  if (a && b) return a === b ? a : null;
-  return a ?? b ?? null;
+  if (a && b && a === b) return a;
+  return null;
 }
