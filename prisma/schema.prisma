@@ -164,7 +164,25 @@ model Rules {
   pointsChampion    Int       @default(25)
   lockOffsetMin     Int       @default(15)
   tournamentStartAt DateTime?
+  // Cuota y bote
+  feeAmount         Int       @default(10)        // valor numérico (10, 25, 100...)
+  feeCurrency       String    @default("USD")     // "USD", "EUR", "VES"...
   updatedAt         DateTime  @updatedAt
+}
+
+// Patrocinadores del bote — opcional. Se muestran en login y dashboard.
+model Sponsor {
+  id        String   @id @default(cuid())
+  tenantId  String?
+  name      String
+  logoUrl   String?
+  url       String?
+  enabled   Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId, enabled, sortOrder])
 }
 
 // Métodos de pago configurables desde /admin/pagos.

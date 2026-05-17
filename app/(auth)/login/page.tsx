@@ -1,151 +1,182 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { auth, signIn } from '@/lib/auth';
+import { prisma } from '@/lib/db';
 import { Logo } from '@/components/Logo';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Footer } from '@/components/Footer';
 import { WhatsappFab } from '@/components/WhatsappFab';
+import { getPool } from '@/lib/pool';
 
 export const metadata = { title: 'Entrar · Quiniela PADELBOX' };
+export const dynamic = 'force-dynamic';
 
 export default async function LoginPage() {
   const session = await auth();
   if (session?.user) redirect('/');
 
-  const hasGoogle = !!process.env.GOOGLE_CLIENT_ID && !!process.env.GOOGLE_CLIENT_SECRET;
+  const [hasGoogle, pool, sponsors] = await Promise.all([
+    Promise.resolve(!!process.env.GOOGLE_CLIENT_ID && !!process.env.GOOGLE_CLIENT_SECRET),
+    getPool(),
+    prisma.sponsor.findMany({ where: { enabled: true }, orderBy: { sortOrder: 'asc' } }),
+  ]);
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center px-6 py-12">
-      <div className="w-full max-w-md">
-        <div className="flex flex-col items-center text-center">
-          <Logo size={44} priority />
-          <h1 className="font-display text-3xl mt-8">Quiniela Mundial 2026</h1>
-          <p className="text-sm text-muted mt-2">
-            Entra con tu email del club. Sin contraseñas.
-          </p>
+    <main className="min-h-screen relative overflow-hidden">
+      {/* Hero stadium background */}
+      <div
+        className="absolute inset-0 -z-10"
+        style={{
+          background:
+            'radial-gradient(ellipse at center top, rgba(74,124,29,0.35) 0%, transparent 55%), linear-gradient(180deg, #0A1F08 0%, #0A0A0A 50%)',
+        }}
+      />
+      {/* líneas de cancha sutiles */}
+      <div
+        aria-hidden
+        className="absolute inset-0 -z-10 pointer-events-none opacity-40"
+        style={{
+          backgroundImage:
+            'linear-gradient(transparent 50%, rgba(255,255,255,0.06) 50.5%, transparent 51%), linear-gradient(90deg, transparent 49.5%, rgba(255,255,255,0.04) 50%, transparent 50.5%)',
+          backgroundSize: '100% 120px, 120px 100%',
+        }}
+      />
+
+      <div className="max-w-md mx-auto px-6 pt-10 pb-12 flex flex-col items-center">
+        {/* Header con logo */}
+        <Logo size={36} priority />
+
+        {/* Banderas */}
+        <div className="flex gap-1.5 mt-8 text-xl opacity-70" aria-hidden>
+          <span>🇪🇸</span><span>🇦🇷</span><span>🇫🇷</span><span>🇧🇷</span><span>🇩🇪</span>
+          <span>🇲🇽</span><span>🇮🇹</span>
         </div>
 
-        <form
-          action={async (formData) => {
-            'use server';
-            const email = String(formData.get('email') ?? '')
-              .trim()
-              .toLowerCase();
-            const name = String(formData.get('name') ?? '').trim();
-            const phone = String(formData.get('phone') ?? '').trim();
-            if (!email) return;
+        <p className="text-[10px] uppercase tracking-[0.28em] text-accent font-bold mt-6">
+          El Mundial llega
+        </p>
+        <h1
+          className="font-display text-5xl sm:text-6xl text-center mt-2 leading-[0.85] uppercase"
+          style={{ letterSpacing: '-0.01em' }}
+        >
+          Predice.<br />Compite.<br />
+          <span className="text-accent">Gana.</span>
+        </h1>
 
-            if (name || phone) {
-              const { prisma } = await import('@/lib/db');
-              const existing = await prisma.user.findUnique({ where: { email } });
-              if (!existing) {
-                await prisma.user.create({
-                  data: { email, name: name || null, phone: phone || null },
-                });
-              } else {
-                // Solo rellena los campos que NO tenía
-                const data: { name?: string; phone?: string } = {};
-                if (name && !existing.name) data.name = name;
-                if (phone && !existing.phone) data.phone = phone;
-                if (Object.keys(data).length) {
-                  await prisma.user.update({ where: { id: existing.id }, data });
+        {/* Bote (sin contador socios) + mención patrocinadores */}
+        <div className="mt-6 px-4 py-2 rounded-full bg-white/10 backdrop-blur border border-white/20 text-center">
+          <p className="text-xs">
+            <span className="text-zinc-400">En juego:</span>{' '}
+            <span className="font-display text-accent tabular-nums">{pool.totalFormatted}</span>
+          </p>
+        </div>
+        <p className="text-[11px] text-zinc-400 mt-3 text-center max-w-xs">
+          + más premios todas las semanas de nuestros patrocinadores
+        </p>
+
+        {/* Card del form */}
+        <div className="mt-6 w-full rounded-2xl bg-ink/95 backdrop-blur-md border border-zinc-800 p-5">
+          <p className="text-[10px] uppercase tracking-[0.18em] text-muted mb-3">Únete a la quiniela</p>
+
+          <form
+            action={async (formData) => {
+              'use server';
+              const email = String(formData.get('email') ?? '').trim().toLowerCase();
+              const name = String(formData.get('name') ?? '').trim();
+              const phone = String(formData.get('phone') ?? '').trim();
+              if (!email) return;
+
+              if (name || phone) {
+                const existing = await prisma.user.findUnique({ where: { email } });
+                if (!existing) {
+                  await prisma.user.create({
+                    data: { email, name: name || null, phone: phone || null },
+                  });
+                } else {
+                  const data: { name?: string; phone?: string } = {};
+                  if (name && !existing.name) data.name = name;
+                  if (phone && !existing.phone) data.phone = phone;
+                  if (Object.keys(data).length) {
+                    await prisma.user.update({ where: { id: existing.id }, data });
+                  }
                 }
               }
-            }
 
-            await signIn('resend', { email, redirectTo: '/' });
-          }}
-          className="space-y-3 mt-10"
-        >
-          <div className="space-y-1">
-            <label htmlFor="name" className="text-xs uppercase tracking-[0.18em] text-muted">
-              Nombre
-            </label>
-            <Input
-              id="name"
-              name="name"
-              type="text"
-              placeholder="Tu nombre o apodo"
-              autoComplete="name"
-              maxLength={60}
-            />
-          </div>
-          <div className="space-y-1">
-            <label htmlFor="phone" className="text-xs uppercase tracking-[0.18em] text-muted">
-              Teléfono
-            </label>
-            <Input
-              id="phone"
-              name="phone"
-              type="tel"
-              inputMode="tel"
-              placeholder="+34 600 000 000"
-              autoComplete="tel"
-              maxLength={20}
-            />
-          </div>
-          <div className="space-y-1">
-            <label htmlFor="email" className="text-xs uppercase tracking-[0.18em] text-muted">
-              Email
-            </label>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              placeholder="tu@email.com"
-              autoComplete="email"
-              required
-            />
-          </div>
-          <Button type="submit" size="lg" className="w-full font-display tracking-tight">
-            ENVIAR ENLACE MÁGICO
-          </Button>
-          <p className="text-xs text-muted text-center pt-1">
-            Si ya tienes cuenta, basta con el email — nombre y teléfono solo se guardan la primera vez.
-          </p>
-        </form>
+              await signIn('resend', { email, redirectTo: '/' });
+            }}
+            className="space-y-2"
+          >
+            <Input name="name" type="text" placeholder="Tu nombre o apodo" autoComplete="name" maxLength={60} />
+            <Input name="phone" type="tel" inputMode="tel" placeholder="+34 600 000 000" autoComplete="tel" maxLength={20} />
+            <Input name="email" type="email" placeholder="tu@email.com" autoComplete="email" required />
+            <Button type="submit" size="lg" className="w-full font-display tracking-tight mt-2">
+              ENVIAR CÓDIGO →
+            </Button>
+          </form>
 
-        {hasGoogle && (
-          <>
-            <div className="flex items-center gap-2 my-6 text-xs text-muted">
-              <span className="flex-1 h-px bg-line" /> o <span className="flex-1 h-px bg-line" />
-            </div>
-            <form
-              action={async () => {
-                'use server';
-                await signIn('google', { redirectTo: '/' });
-              }}
+          {hasGoogle && (
+            <>
+              <div className="flex items-center gap-2 my-4 text-xs text-muted">
+                <span className="flex-1 h-px bg-line" /> o <span className="flex-1 h-px bg-line" />
+              </div>
+              <form
+                action={async () => {
+                  'use server';
+                  await signIn('google', { redirectTo: '/' });
+                }}
+              >
+                <Button type="submit" variant="secondary" size="lg" className="w-full">
+                  Continuar con Google
+                </Button>
+              </form>
+            </>
+          )}
+
+          {/* Quick actions */}
+          <div className="flex justify-around mt-4 pt-3 border-t border-zinc-800 text-[11px] text-zinc-400">
+            <Link href="/public/reglas" className="flex items-center gap-1 hover:text-ink">📖 Reglas</Link>
+            <Link href="/public/inscripcion" className="flex items-center gap-1 hover:text-ink">💳 Inscripción</Link>
+            <a
+              href="https://wa.me/34635171649?text=Quiero%20inscribirme%20en%20la%20Quiniela%20PADELBOX"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 text-[#25D366]"
             >
-              <Button type="submit" variant="secondary" size="lg" className="w-full">
-                Continuar con Google
-              </Button>
-            </form>
-          </>
-        )}
-
-        {/* Acceso público a info sin necesidad de login */}
-        <div className="mt-10 grid grid-cols-2 gap-3">
-          <Link
-            href="/public/reglas"
-            className="rounded-xl border border-line bg-bg-elev p-4 hover:border-accent/40 transition-colors flex flex-col items-center gap-2 text-center"
-          >
-            <span className="text-2xl">📖</span>
-            <span className="font-semibold text-sm">Reglas</span>
-            <span className="text-xs text-muted">Cómo funciona la quiniela</span>
-          </Link>
-          <Link
-            href="/public/inscripcion"
-            className="rounded-xl border border-line bg-bg-elev p-4 hover:border-accent/40 transition-colors flex flex-col items-center gap-2 text-center"
-          >
-            <span className="text-2xl">💳</span>
-            <span className="font-semibold text-sm">Inscripción</span>
-            <span className="text-xs text-muted">Métodos de pago</span>
-          </Link>
+              💬 WhatsApp
+            </a>
+          </div>
         </div>
 
-        <p className="text-xs text-muted text-center mt-8">
-          ¿No estás inscrito? Tu cuenta se crea sola. Después un admin de PADELBOX valida tu pago para activarte.
+        {/* Sponsors slot */}
+        <section className="mt-8 w-full">
+          <p className="text-center text-[10px] uppercase tracking-[0.18em] text-muted mb-3">
+            Con el apoyo de
+          </p>
+          {sponsors.length > 0 ? (
+            <div className="flex items-center justify-center gap-6 flex-wrap opacity-70">
+              {sponsors.map((s) =>
+                s.logoUrl ? (
+                  <SponsorLogo key={s.id} {...s} />
+                ) : (
+                  <span key={s.id} className="text-sm text-muted">{s.name}</span>
+                ),
+              )}
+            </div>
+          ) : (
+            <div className="rounded-lg border border-dashed border-zinc-800 p-6 text-center">
+              <p className="text-xs text-muted">
+                Espacio para tus patrocinadores
+              </p>
+              <p className="text-[10px] text-muted mt-1">
+                El admin añade logos desde <code className="bg-zinc-900 px-1.5 py-0.5 rounded text-zinc-300">/admin/sponsors</code> (próximamente)
+              </p>
+            </div>
+          )}
+        </section>
+
+        <p className="text-xs text-muted text-center mt-8 max-w-xs">
+          ¿No estás inscrito? Tu cuenta se crea sola. El admin de PADELBOX valida tu pago para activarte.
         </p>
       </div>
 
@@ -153,4 +184,20 @@ export default async function LoginPage() {
       <WhatsappFab />
     </main>
   );
+}
+
+function SponsorLogo({ logoUrl, name, url }: { logoUrl: string | null; name: string; url: string | null }) {
+  if (!logoUrl) return null;
+  const img = (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={logoUrl} alt={name} className="h-8 w-auto object-contain opacity-70 hover:opacity-100 transition-opacity" />
+  );
+  if (url) {
+    return (
+      <a href={url} target="_blank" rel="noopener noreferrer">
+        {img}
+      </a>
+    );
+  }
+  return img;
 }
