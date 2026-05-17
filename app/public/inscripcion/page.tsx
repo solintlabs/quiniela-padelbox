@@ -116,15 +116,29 @@ export default function PublicInscripcionPage() {
         )}
       </section>
 
-      <section className="rounded-xl border border-accent/30 bg-accent/5 p-6">
+      <section className="rounded-2xl border-2 border-[#25D366]/40 bg-[#25D366]/5 p-6">
         <h2 className="font-display text-xl">Tras realizar el pago</h2>
         <p className="text-sm text-muted mt-2">
-          Envíanos el comprobante por email a{' '}
+          Envíanos el comprobante por WhatsApp y activamos tu cuenta en minutos.
+        </p>
+        {CLUB_INFO.contact.whatsapp && (
+          <a
+            href={`https://wa.me/${CLUB_INFO.contact.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(
+              `Hola! Acabo de pagar la cuota de la Quiniela PADELBOX × DELISH. Te paso el comprobante 👇`,
+            )}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-4 flex items-center justify-center gap-3 h-14 rounded-xl bg-[#25D366] hover:brightness-95 text-white font-display text-base shadow-lg shadow-[#25D366]/20"
+          >
+            💬 Enviar comprobante por WhatsApp →
+          </a>
+        )}
+        <p className="text-xs text-muted mt-3 text-center">
+          O escríbenos a{' '}
           <a href={`mailto:${CLUB_INFO.contact.email}`} className="text-accent underline">
             {CLUB_INFO.contact.email}
           </a>
-          {CLUB_INFO.contact.whatsapp && ' o por el botón de WhatsApp abajo a la derecha.'}{' '}
-          Activaremos tu cuenta automáticamente.
+          .
         </p>
       </section>
     </div>

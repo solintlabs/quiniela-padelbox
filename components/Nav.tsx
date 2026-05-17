@@ -13,6 +13,7 @@ export function Nav({ isAdmin, userEmail }: NavProps) {
   const links = [
     { href: '/', label: 'Inicio' },
     { href: '/partidos', label: 'Partidos' },
+    { href: '/cuadro', label: 'Mi Cuadro' },
     { href: '/ranking', label: 'Ranking' },
     { href: '/reglas', label: 'Reglas' },
     { href: '/inscripcion', label: 'Inscripción' },

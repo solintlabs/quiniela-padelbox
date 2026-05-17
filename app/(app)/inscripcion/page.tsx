@@ -104,35 +104,33 @@ export default async function InscripcionPage() {
         )}
       </section>
 
-      {/* Cómo confirmar */}
-      <section className="rounded-xl border border-accent/30 bg-accent/5 p-6">
+      {/* Cómo confirmar — CTA WhatsApp protagonista */}
+      <section className="rounded-2xl border-2 border-[#25D366]/40 bg-[#25D366]/5 p-6">
         <h2 className="font-display text-xl">Tras realizar el pago</h2>
         <p className="text-sm text-muted mt-2">
-          Envíanos el comprobante por cualquiera de estos canales y activaremos tu cuenta:
+          Envíanos el comprobante por WhatsApp y activamos tu cuenta en minutos.
         </p>
-        <ul className="mt-4 space-y-2 text-sm">
-          {CLUB_INFO.contact.whatsapp && (
-            <li>
-              📱 WhatsApp:{' '}
-              <a
-                href={`https://wa.me/${CLUB_INFO.contact.whatsapp.replace(/\D/g, '')}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-accent hover:underline"
-              >
-                {CLUB_INFO.contact.whatsapp}
-              </a>
-            </li>
-          )}
-          <li>
-            ✉️ Email:{' '}
-            <a href={`mailto:${CLUB_INFO.contact.email}`} className="text-accent hover:underline">
-              {CLUB_INFO.contact.email}
-            </a>
-          </li>
+        {CLUB_INFO.contact.whatsapp && (
+          <a
+            href={`https://wa.me/${CLUB_INFO.contact.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(
+              `Hola! Acabo de pagar la cuota de la Quiniela PADELBOX × DELISH. Te paso el comprobante 👇`,
+            )}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-4 flex items-center justify-center gap-3 h-14 rounded-xl bg-[#25D366] hover:brightness-95 text-white font-display text-base shadow-lg shadow-[#25D366]/20"
+          >
+            💬 Enviar comprobante por WhatsApp
+            <span className="text-sm font-normal opacity-90">→</span>
+          </a>
+        )}
+        <p className="text-xs text-muted mt-3 text-center">
+          O escríbenos a{' '}
+          <a href={`mailto:${CLUB_INFO.contact.email}`} className="text-accent hover:underline">
+            {CLUB_INFO.contact.email}
+          </a>
           {CLUB_INFO.contact.instagram && (
-            <li>
-              📷 Instagram:{' '}
+            <>
+              {' · '}
               <a
                 href={`https://instagram.com/${CLUB_INFO.contact.instagram.replace('@', '')}`}
                 target="_blank"
@@ -141,9 +139,9 @@ export default async function InscripcionPage() {
               >
                 {CLUB_INFO.contact.instagram}
               </a>
-            </li>
+            </>
           )}
-        </ul>
+        </p>
       </section>
 
       {/* Premios */}

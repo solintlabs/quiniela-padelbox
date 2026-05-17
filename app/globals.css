@@ -59,4 +59,18 @@
     background: white !important;
     color: black !important;
   }
+  /* Ocultar chrome (Nav sticky, Footer, botones, links de accion) */
+  header.sticky,
+  footer,
+  .no-print {
+    display: none !important;
+  }
+  /* Evitar cortes feos en cards de grupo */
+  article {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  @page {
+    margin: 12mm 14mm;
+  }
 }
