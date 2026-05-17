@@ -1,5 +1,7 @@
 import { auth } from '@/lib/auth';
 import { CLUB_INFO } from '@/lib/club-info';
+import { prisma } from '@/lib/db';
+import { formatCurrency } from '@/lib/pool';
 
 export const metadata = { title: 'Inscripción · Quiniela PADELBOX' };
 export const dynamic = 'force-dynamic';
@@ -8,6 +10,9 @@ export default async function InscripcionPage() {
   const session = await auth();
   const hasPaid = session?.user?.hasPaid ?? false;
   const userEmail = session?.user?.email ?? null;
+  const rules = await prisma.rules.findUnique({ where: { id: 1 } });
+  const feeAmount = rules?.feeAmount ?? CLUB_INFO.fee.amount;
+  const feeCurrency = rules?.feeCurrency ?? CLUB_INFO.fee.currency;
 
   return (
     <div className="max-w-3xl mx-auto space-y-10">
@@ -40,8 +45,7 @@ export default async function InscripcionPage() {
       <section className="rounded-xl border border-line bg-bg-elev p-6">
         <p className="text-xs uppercase tracking-[0.18em] text-muted">Cuota</p>
         <p className="font-display text-5xl mt-2 tabular-nums">
-          {CLUB_INFO.fee.currency}
-          {CLUB_INFO.fee.amount}
+          {formatCurrency(feeAmount, feeCurrency)}
         </p>
         <p className="text-sm text-muted mt-2">{CLUB_INFO.fee.description}</p>
         <p className="text-sm text-muted mt-4">

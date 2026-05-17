@@ -45,22 +45,30 @@ function toDbShape(fx: NormalizedFixture) {
  * ¿Hay un partido en curso o que terminó hace menos de 4h?
  * Se usa para decidir si lock-and-score debe sincronizar con el proveedor
  * externo (sync inteligente — evita gastar requests en horas muertas).
+ *
+ * También devuelve true si hay matches GROUP con group=null — esto fuerza
+ * un sync para que el ESPN provider las re-mapee usando lib/fifa2026.ts.
  */
 async function hasMatchInWindow(): Promise<boolean> {
   const now = Date.now();
   const windowStart = new Date(now - 4 * 60 * 60 * 1000); // hace 4h
   const windowEnd = new Date(now + 30 * 60 * 1000); // dentro de 30min
 
-  const count = await prisma.match.count({
-    where: {
-      AND: [
-        { kickoff: { gte: windowStart, lte: windowEnd } },
-        { status: { not: 'CANCELLED' } },
-        { OR: [{ scoredAt: null }, { status: 'LIVE' }] },
-      ],
-    },
-  });
-  return count > 0;
+  const [windowCount, missingGroupCount] = await Promise.all([
+    prisma.match.count({
+      where: {
+        AND: [
+          { kickoff: { gte: windowStart, lte: windowEnd } },
+          { status: { not: 'CANCELLED' } },
+          { OR: [{ scoredAt: null }, { status: 'LIVE' }] },
+        ],
+      },
+    }),
+    prisma.match.count({
+      where: { stage: 'GROUP', group: null },
+    }),
+  ]);
+  return windowCount > 0 || missingGroupCount > 0;
 }
 
 /**
