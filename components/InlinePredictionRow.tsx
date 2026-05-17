@@ -1,13 +1,11 @@
 'use client';
 
-import { useState, useTransition } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Countdown } from './Countdown';
 import { formatDateTime, STAGE_LABEL } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
-interface InlineMatch {
+export interface InlineMatch {
   id: string;
   stage: string;
   group: string | null;
@@ -26,6 +24,17 @@ interface InlineMatch {
 interface Props {
   match: InlineMatch;
   canEdit: boolean;
+  /** Valores actuales (controlled — los maneja PartidosClient). */
+  homeValue: number;
+  awayValue: number;
+  /** Cambio local (no envia al backend). */
+  onChange: (matchId: string, home: number, away: number) => void;
+  /** true si hay cambios pendientes vs el initial guardado. */
+  dirty: boolean;
+  saving: boolean;
+  error: string | null;
+  /** Trigger guardar SOLO este partido. */
+  onSave: (matchId: string) => void;
 }
 
 function clamp(n: number) {
@@ -35,24 +44,25 @@ function clamp(n: number) {
 
 /**
  * Card de partido con form inline para predecir.
- * - SCHEDULED + canEdit: steppers + input numérico + autoguardado al perder foco o pulsar +/-.
- * - SCHEDULED sin canEdit (sin hasPaid): muestra disabled con CTA a /inscripcion.
- * - LIVE / FINISHED: solo lectura con badge de resultado/puntos.
- * - El Link al detalle queda como ícono pequeño "→" arriba a la derecha.
+ * Controlada por PartidosClient: ahora NO autosave - cambios quedan locales
+ * hasta que el user pulse "Guardar" en la fila o "Guardar todo" arriba.
  */
-export function InlinePredictionRow({ match, canEdit }: Props) {
-  const router = useRouter();
-  const [home, setHome] = useState<number>(match.initial?.homeScore ?? 0);
-  const [away, setAway] = useState<number>(match.initial?.awayScore ?? 0);
-  const [hasInitial] = useState<boolean>(!!match.initial);
-  const [saved, setSaved] = useState<boolean>(!!match.initial);
-  const [pending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
-
+export function InlinePredictionRow({
+  match,
+  canEdit,
+  homeValue,
+  awayValue,
+  onChange,
+  dirty,
+  saving,
+  error,
+  onSave,
+}: Props) {
   const kickoffDate = new Date(match.kickoff);
   const isLockedByTime = kickoffDate.getTime() - 15 * 60_000 <= Date.now();
   const isLocked = !!match.lockedAt || match.status !== 'SCHEDULED' || isLockedByTime;
   const isFinished = match.status === 'FINISHED';
+  const hasInitial = !!match.initial;
   const stageLabel =
     match.group === 'LIGA'
       ? 'La Liga'
@@ -60,46 +70,18 @@ export function InlinePredictionRow({ match, canEdit }: Props) {
         ? `Grupo ${match.group}`
         : STAGE_LABEL[match.stage] ?? match.stage;
 
-  function save(h: number, a: number) {
-    if (!canEdit || isLocked) return;
-    setSaved(false);
-    setError(null);
-    startTransition(async () => {
-      try {
-        const res = await fetch('/api/predictions', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ matchId: match.id, homeScore: h, awayScore: a }),
-        });
-        if (!res.ok) {
-          const body = await res.json().catch(() => ({}));
-          throw new Error(body.message ?? body.error ?? 'No se pudo guardar');
-        }
-        setSaved(true);
-        router.refresh();
-      } catch (e) {
-        setError(e instanceof Error ? e.message : 'Error');
-      }
-    });
-  }
-
-  function setBoth(h: number, a: number) {
-    setHome(h);
-    setAway(a);
-    save(h, a);
-  }
-
   return (
     <article
       className={cn(
         'rounded-xl border p-3 sm:p-4',
         isLocked && !isFinished && 'border-line bg-bg-elev/60',
-        !isLocked && hasInitial && 'border-accent/40 bg-accent/5',
-        !isLocked && !hasInitial && 'border-line bg-bg-elev',
+        !isLocked && dirty && 'border-warning/60 bg-warning/5',
+        !isLocked && !dirty && hasInitial && 'border-accent/40 bg-accent/5',
+        !isLocked && !dirty && !hasInitial && 'border-line bg-bg-elev',
         isFinished && 'border-line bg-bg-elev',
       )}
     >
-      {/* Header: meta + estado clickable a detalle */}
+      {/* Header */}
       <Link
         href={`/partidos/${match.id}`}
         className="flex items-center justify-between text-xs text-muted mb-3 hover:text-ink transition-colors"
@@ -123,7 +105,6 @@ export function InlinePredictionRow({ match, canEdit }: Props) {
 
       {/* Layout: equipos + score */}
       <div className="flex items-center gap-2">
-        {/* Local */}
         <div className="flex-1 flex items-center gap-2 min-w-0">
           {match.homeFlag && (
             // eslint-disable-next-line @next/next/no-img-element
@@ -132,7 +113,6 @@ export function InlinePredictionRow({ match, canEdit }: Props) {
           <span className="font-semibold text-sm truncate">{match.homeTeam}</span>
         </div>
 
-        {/* Score area */}
         {isFinished ? (
           <span className="font-display tabular-nums text-xl min-w-[68px] text-center">
             {match.homeScore}–{match.awayScore}
@@ -143,9 +123,17 @@ export function InlinePredictionRow({ match, canEdit }: Props) {
           </span>
         ) : canEdit ? (
           <div className="flex items-center gap-1 shrink-0">
-            <Stepper value={home} onChange={(v) => setBoth(clamp(v), away)} disabled={pending} />
+            <Stepper
+              value={homeValue}
+              onChange={(v) => onChange(match.id, clamp(v), awayValue)}
+              disabled={saving}
+            />
             <span className="text-muted text-xs">–</span>
-            <Stepper value={away} onChange={(v) => setBoth(home, clamp(v))} disabled={pending} />
+            <Stepper
+              value={awayValue}
+              onChange={(v) => onChange(match.id, homeValue, clamp(v))}
+              disabled={saving}
+            />
           </div>
         ) : (
           <Link
@@ -156,7 +144,6 @@ export function InlinePredictionRow({ match, canEdit }: Props) {
           </Link>
         )}
 
-        {/* Visitante */}
         <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
           <span className="font-semibold text-sm truncate text-right">{match.awayTeam}</span>
           {match.awayFlag && (
@@ -166,24 +153,37 @@ export function InlinePredictionRow({ match, canEdit }: Props) {
         </div>
       </div>
 
-      {/* Footer: estado guardado + link a ver pronósticos de todos */}
-      <div className="flex items-center justify-between mt-2 text-[11px]">
-        {isFinished && match.initial ? (
-          <p className="text-muted">
-            Tu pronóstico: <span className="text-ink tabular-nums">{match.initial.homeScore}–{match.initial.awayScore}</span>
-          </p>
-        ) : !isLocked && canEdit ? (
-          <span>
-            {pending && <span className="text-muted">Guardando…</span>}
-            {!pending && saved && <span className="text-success">✓ Guardado</span>}
-            {error && <span className="text-danger">{error}</span>}
-          </span>
-        ) : (
-          <span />
-        )}
-        <Link href={`/partidos/${match.id}`} className="text-muted hover:text-accent transition-colors">
-          {isLocked ? 'Ver pronósticos de todos →' : 'Ver detalle →'}
-        </Link>
+      {/* Footer: status + accion guardar */}
+      <div className="flex items-center justify-between mt-3 gap-2">
+        <div className="text-[11px] flex items-center gap-2 min-w-0 flex-1">
+          {isFinished && match.initial ? (
+            <p className="text-muted truncate">
+              Tu pronóstico: <span className="text-ink tabular-nums">{match.initial.homeScore}–{match.initial.awayScore}</span>
+            </p>
+          ) : !isLocked && canEdit ? (
+            <>
+              {saving && <span className="text-muted">Guardando…</span>}
+              {!saving && dirty && <span className="text-warning">● Sin guardar</span>}
+              {!saving && !dirty && hasInitial && <span className="text-success">✓ Guardado</span>}
+              {error && <span className="text-danger truncate">{error}</span>}
+            </>
+          ) : null}
+        </div>
+        <div className="flex items-center gap-3 shrink-0">
+          {!isLocked && canEdit && dirty && (
+            <button
+              type="button"
+              onClick={() => onSave(match.id)}
+              disabled={saving}
+              className="h-8 px-3 rounded-md bg-accent text-accent-fg text-xs font-display disabled:opacity-50"
+            >
+              {saving ? '…' : 'Guardar'}
+            </button>
+          )}
+          <Link href={`/partidos/${match.id}`} className="text-[11px] text-muted hover:text-accent transition-colors">
+            {isLocked ? 'Ver pronósticos →' : 'Detalle →'}
+          </Link>
+        </div>
       </div>
     </article>
   );
