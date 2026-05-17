@@ -99,8 +99,11 @@ export function InlinePredictionRow({ match, canEdit }: Props) {
         isFinished && 'border-line bg-bg-elev',
       )}
     >
-      {/* Header: meta + estado + link detalle */}
-      <div className="flex items-center justify-between text-xs text-muted mb-3">
+      {/* Header: meta + estado clickable a detalle */}
+      <Link
+        href={`/partidos/${match.id}`}
+        className="flex items-center justify-between text-xs text-muted mb-3 hover:text-ink transition-colors"
+      >
         <span className="truncate">
           {stageLabel} · {formatDateTime(match.kickoff)}
         </span>
@@ -114,11 +117,9 @@ export function InlinePredictionRow({ match, canEdit }: Props) {
               <Countdown target={kickoffDate} />
             </span>
           )}
-          <Link href={`/partidos/${match.id}`} className="text-muted hover:text-ink text-base leading-none" title="Ver detalle">
-            ›
-          </Link>
+          <span className="text-base leading-none">›</span>
         </div>
-      </div>
+      </Link>
 
       {/* Layout: equipos + score */}
       <div className="flex items-center gap-2">
@@ -165,19 +166,25 @@ export function InlinePredictionRow({ match, canEdit }: Props) {
         </div>
       </div>
 
-      {/* Footer: predicción ya guardada / estado */}
-      {isFinished && match.initial && (
-        <p className="text-[11px] text-muted mt-2">
-          Tu pronóstico: <span className="text-ink tabular-nums">{match.initial.homeScore}–{match.initial.awayScore}</span>
-        </p>
-      )}
-      {!isLocked && canEdit && (
-        <div className="flex items-center justify-end gap-2 mt-2 text-[11px]">
-          {pending && <span className="text-muted">Guardando…</span>}
-          {!pending && saved && <span className="text-success">✓ Guardado</span>}
-          {error && <span className="text-danger">{error}</span>}
-        </div>
-      )}
+      {/* Footer: estado guardado + link a ver pronósticos de todos */}
+      <div className="flex items-center justify-between mt-2 text-[11px]">
+        {isFinished && match.initial ? (
+          <p className="text-muted">
+            Tu pronóstico: <span className="text-ink tabular-nums">{match.initial.homeScore}–{match.initial.awayScore}</span>
+          </p>
+        ) : !isLocked && canEdit ? (
+          <span>
+            {pending && <span className="text-muted">Guardando…</span>}
+            {!pending && saved && <span className="text-success">✓ Guardado</span>}
+            {error && <span className="text-danger">{error}</span>}
+          </span>
+        ) : (
+          <span />
+        )}
+        <Link href={`/partidos/${match.id}`} className="text-muted hover:text-accent transition-colors">
+          {isLocked ? 'Ver pronósticos de todos →' : 'Ver detalle →'}
+        </Link>
+      </div>
     </article>
   );
 }

@@ -12,10 +12,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <main className="max-w-6xl mx-auto px-6 py-8">
         <div className="mb-8 rounded-xl border border-accent/40 bg-accent/5 px-4 py-3 text-sm flex items-center justify-between">
           <span><strong>Modo administrador.</strong> Cambios aquí afectan a todos los socios.</span>
-          <nav className="flex gap-1 text-xs">
+          <nav className="flex gap-1 text-xs flex-wrap">
             <Link href="/admin" className="px-3 py-1 rounded hover:bg-bg-elev">Resumen</Link>
             <Link href="/admin/usuarios" className="px-3 py-1 rounded hover:bg-bg-elev">Usuarios</Link>
             <Link href="/admin/partidos" className="px-3 py-1 rounded hover:bg-bg-elev">Partidos</Link>
+            <Link href="/admin/pagos" className="px-3 py-1 rounded hover:bg-bg-elev">Pagos</Link>
             <Link href="/admin/reglas" className="px-3 py-1 rounded hover:bg-bg-elev">Reglas</Link>
           </nav>
         </div>
