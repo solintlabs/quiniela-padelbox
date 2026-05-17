@@ -95,14 +95,7 @@ export default async function CuadroPage() {
       </section>
 
       {/* Grupos */}
-      {groups.length === 0 ? (
-        <section className="rounded-xl border border-dashed border-line p-8 text-center">
-          <p className="text-sm text-muted">
-            Aún no hay partidos del Mundial sincronizados. Pídele al admin que pulse Sincronizar en{' '}
-            <Link href="/admin/partidos" className="underline text-accent">/admin/partidos</Link>.
-          </p>
-        </section>
-      ) : (
+      {groups.length === 0 ? null : (
         <section>
           <h2 className="font-display text-xs uppercase tracking-[0.28em] text-muted text-center mb-4">
             FASE DE GRUPOS
