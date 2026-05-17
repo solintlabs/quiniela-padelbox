@@ -78,7 +78,8 @@ export default async function LoginPage() {
           </div>
         </div>
         <p className="text-[10px] text-zinc-500 mt-2 text-center max-w-xs">
-          + gift cards y productos <span className="text-[#f14826] font-semibold">DELISH</span> cada semana
+          + gift cards canjeables en <span className="text-[#f14826] font-semibold">DELISH</span> y
+          afiliados (Sole Mio, Tacoberto, Vinny&apos;s…)
         </p>
 
         {/* Card del form */}

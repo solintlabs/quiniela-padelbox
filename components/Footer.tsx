@@ -18,12 +18,12 @@ export function Footer({ variant = 'app' }: FooterProps) {
       }
     >
       {/* Banda co-branding PADELBOX × DELISH */}
-      <div className="inline-flex items-center gap-3 px-5 py-3 rounded-full bg-white/5 border border-zinc-800">
+      <div className="inline-flex items-center gap-4 px-6 py-3 rounded-full bg-white/5 border border-zinc-800">
         <span className="text-[10px] uppercase tracking-[0.18em] text-muted">Presentado por</span>
-        <span className="font-display text-sm">PADELBOX</span>
-        <span className="text-zinc-500">×</span>
+        <span className="font-display text-lg">PADELBOX</span>
+        <span className="text-zinc-500 text-lg">×</span>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/partners/delish.svg" alt="DELISH" className="h-5 w-auto" />
+        <img src="/partners/delish.svg" alt="DELISH" className="h-9 w-auto" />
       </div>
 
       <div className="flex justify-center gap-4 text-xs text-muted">

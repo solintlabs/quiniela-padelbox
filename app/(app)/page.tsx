@@ -160,11 +160,13 @@ export default async function DashboardPage() {
               Premios semanales · presentados por
             </p>
             <p className="font-display text-base sm:text-lg mt-1 leading-tight">
-              Gift cards y productos <span className="text-[#f14826]">DELISH!</span> cada semana
+              Gift cards y combos en <span className="text-[#f14826]">DELISH!</span> y sus afiliados
             </p>
             <p className="text-xs text-muted mt-1">
-              Top pronosticadores de la semana se llevan combos, hamburguesas y gift cards canjeables en
-              cualquier restaurante DELISH.
+              Top pronosticadores de la semana se llevan gift cards canjeables en{' '}
+              <strong className="text-ink">DELISH</strong>, <strong className="text-ink">Sole Mio</strong>,{' '}
+              <strong className="text-ink">Tacoberto</strong>, <strong className="text-ink">Vinny&apos;s</strong> y
+              demás restaurantes afiliados del grupo.
             </p>
           </div>
         </div>

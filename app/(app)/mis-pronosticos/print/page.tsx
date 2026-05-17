@@ -26,28 +26,31 @@ export default async function MyPredictionsPrintPage() {
     <div className="max-w-3xl mx-auto print:max-w-full print:mx-0 print:text-black">
       <PrintControls />
 
-      <section className="print:block bg-white text-ink rounded-xl border border-line p-8 mt-4 print:border-0 print:rounded-none print:bg-white print:p-0 print:text-black">
-        <header className="flex items-start justify-between border-b border-line pb-4 print:border-black">
+      {/* Hoja con colores explicitos (text-black, bg-white) para que se lea
+          tanto on-screen en dark mode como al imprimir. No usar text-ink/muted
+          aqui porque resuelven a blanco en dark. */}
+      <section className="bg-white text-black rounded-xl border border-gray-300 p-8 mt-4 print:border-0 print:rounded-none print:p-0">
+        <header className="flex items-start justify-between border-b border-gray-300 pb-4 print:border-black">
           <div>
-            <p className="text-xs uppercase tracking-[0.18em] text-muted print:text-gray-600">Quiniela Mundial 2026</p>
-            <h1 className="font-display text-2xl mt-1 print:text-black">Mis pronósticos</h1>
-            <p className="text-sm text-muted mt-1 print:text-gray-700">
+            <p className="text-xs uppercase tracking-[0.18em] text-gray-600">Quiniela Mundial 2026</p>
+            <h1 className="font-display text-2xl mt-1 text-black">Mis pronósticos</h1>
+            <p className="text-sm text-gray-700 mt-1">
               {user?.name ? `${user.name} · ` : ''}
               <span className="font-mono">{user?.email}</span>
             </p>
           </div>
-          <div className="text-right text-xs text-muted print:text-gray-600">
+          <div className="text-right text-xs text-gray-600">
             <p>Generado</p>
             <p className="font-mono">{generatedAt}</p>
           </div>
         </header>
 
         {predictions.length === 0 ? (
-          <p className="text-sm text-muted mt-6">Aún no tienes ningún pronóstico.</p>
+          <p className="text-sm text-gray-600 mt-6">Aún no tienes ningún pronóstico.</p>
         ) : (
-          <table className="w-full mt-6 text-sm">
+          <table className="w-full mt-6 text-sm text-black">
             <thead>
-              <tr className="border-b border-line text-xs uppercase tracking-[0.12em] text-muted print:text-gray-600">
+              <tr className="border-b border-gray-300 text-xs uppercase tracking-[0.12em] text-gray-600">
                 <th className="text-left py-2">Fecha</th>
                 <th className="text-left">Fase</th>
                 <th className="text-left">Partido</th>
@@ -65,11 +68,11 @@ export default async function MyPredictionsPrintPage() {
                     ? `Grupo ${m.group}`
                     : STAGE_LABEL[m.stage] ?? m.stage;
                 return (
-                  <tr key={p.id} className="border-b border-line/60">
+                  <tr key={p.id} className="border-b border-gray-200">
                     <td className="py-2 text-xs whitespace-nowrap">{formatDateTime(m.kickoff)}</td>
                     <td className="text-xs">{stage}</td>
                     <td>
-                      {m.homeTeam} <span className="text-muted print:text-gray-600">vs</span> {m.awayTeam}
+                      {m.homeTeam} <span className="text-gray-500">vs</span> {m.awayTeam}
                     </td>
                     <td className="text-center font-display tabular-nums">
                       {p.homeScore}–{p.awayScore}
@@ -87,7 +90,7 @@ export default async function MyPredictionsPrintPage() {
               })}
             </tbody>
             <tfoot>
-              <tr className="border-t-2 border-ink/40 print:border-black">
+              <tr className="border-t-2 border-black">
                 <td colSpan={5} className="text-right font-semibold py-3">Total</td>
                 <td className="text-right font-display text-xl tabular-nums py-3">
                   {predictions.reduce((acc, p) => acc + (p.points ?? 0), 0)}
@@ -97,10 +100,10 @@ export default async function MyPredictionsPrintPage() {
           </table>
         )}
 
-        <footer className="mt-8 pt-4 border-t border-line text-xs text-muted print:text-gray-600 print:border-black">
+        <footer className="mt-8 pt-4 border-t border-gray-300 text-xs text-gray-600 print:border-black">
           <p>
             Este documento es un comprobante personal de los pronósticos registrados en
-            <strong className="text-ink print:text-black"> Quiniela PADELBOX</strong>.
+            <strong className="text-black"> Quiniela PADELBOX × DELISH</strong>.
             Los pronósticos oficiales son los que figuran en la base de datos del sistema —
             este PDF puede no incluir cambios posteriores a la fecha de generación.
           </p>
