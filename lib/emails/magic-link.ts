@@ -27,10 +27,12 @@ const PALETTE = {
 } as const;
 
 export function buildMagicLinkEmail({ url, origin }: MagicLinkParams) {
-  const logoUrl = `${origin}/logos/completo-negro.png`;
+  const padelboxLogo = `${origin}/logos/completo-negro.png`;
+  const delishLogo = `${origin}/partners/delish.png`;
+  const solintLogo = `${origin}/partners/solint.png`;
   const year = new Date().getFullYear();
 
-  const subject = 'Tu enlace para entrar a la Quiniela PADELBOX';
+  const subject = 'Tu enlace para entrar · PADELBOX × DELISH';
 
   const text = [
     'Quiniela Mundial 2026 — PADELBOX',
@@ -65,10 +67,23 @@ export function buildMagicLinkEmail({ url, origin }: MagicLinkParams) {
       <td align="center">
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="560" style="max-width:560px;width:100%;background:${PALETTE.card};border:1px solid ${PALETTE.border};border-radius:14px;overflow:hidden;">
 
-          <!-- Header con logo -->
+          <!-- Header co-branded PADELBOX × DELISH -->
           <tr>
-            <td align="center" style="padding:40px 32px 24px;">
-              <img src="${logoUrl}" alt="PADELBOX" width="180" style="display:block;height:auto;max-width:180px;" />
+            <td align="center" style="padding:40px 32px 16px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td valign="middle" style="padding-right:14px;">
+                    <img src="${padelboxLogo}" alt="PADELBOX" width="150" style="display:block;height:auto;max-width:150px;" />
+                  </td>
+                  <td valign="middle" style="font-size:22px;color:${PALETTE.muted};padding:0 8px;">×</td>
+                  <td valign="middle" style="padding-left:14px;">
+                    <img src="${delishLogo}" alt="DELISH" width="80" style="display:block;height:auto;max-width:80px;" />
+                  </td>
+                </tr>
+              </table>
+              <p style="margin:12px 0 0;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:${PALETTE.muted};">
+                Presentan la quiniela
+              </p>
             </td>
           </tr>
 
@@ -141,10 +156,23 @@ export function buildMagicLinkEmail({ url, origin }: MagicLinkParams) {
           </tr>
         </table>
 
-        <!-- Footer fuera del card -->
+        <!-- Footer fuera del card con branding Solintlabs -->
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="560" style="max-width:560px;width:100%;">
           <tr>
-            <td align="center" style="padding:24px 32px;">
+            <td align="center" style="padding:24px 32px 8px;">
+              <p style="margin:0 0 10px;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:${PALETTE.muted};">
+                Desarrollado por
+              </p>
+              <a href="https://solint.cloud" style="display:inline-block;text-decoration:none;background:#0A0A0A;padding:12px 24px;border-radius:8px;">
+                <img src="${solintLogo}" alt="Solintlabs" width="140" style="display:block;height:auto;max-width:140px;" />
+              </a>
+              <p style="margin:8px 0 0;font-size:10px;color:${PALETTE.muted};">
+                <a href="https://solint.cloud" style="color:${PALETTE.muted};text-decoration:none;">solint.cloud</a>
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding:8px 32px 24px;">
               <p style="margin:0;font-size:11px;line-height:1.5;color:${PALETTE.muted};letter-spacing:0.04em;">
                 © ${year} PADELBOX Sports Club · Quiniela privada del club
               </p>
