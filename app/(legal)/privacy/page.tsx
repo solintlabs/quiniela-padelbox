@@ -23,6 +23,7 @@ export default function PrivacyPage() {
           <li><span className="text-ink">Pronósticos</span> — los marcadores que envías para cada partido.</li>
           <li><span className="text-ink">Estado de pago</span> — flag marcado por el admin tras confirmar tu inscripción.</li>
           <li><span className="text-ink">Pick de campeón</span> — si decides seleccionar al campeón del Mundial.</li>
+          <li><span className="text-ink">Token de notificaciones push</span> — solo si concedes permiso de notificaciones. Identifica tu dispositivo para poder enviarte avisos. No revela tu identidad fuera de la app.</li>
         </ul>
       </section>
 
@@ -44,6 +45,7 @@ export default function PrivacyPage() {
           <li>Calcular y mostrar el ranking entre los socios.</li>
           <li>Mostrar tus pronósticos en tu perfil y, tras el cierre de cada partido, en la página pública del partido.</li>
           <li>Enviar emails transaccionales (códigos de acceso, recordatorios de cierre).</li>
+          <li>Enviar notificaciones push si nos das permiso (recordatorios de partidos, cierres de pronóstico, resultados, novedades del club). Puedes desactivarlas en cualquier momento desde Ajustes &gt; Notificaciones de tu iPhone.</li>
         </ul>
       </section>
 
