@@ -62,11 +62,37 @@ export default function LanzaTuQuinielaPage() {
         </p>
       </section>
 
+      {/* Sección Solintlabs — prominente, posicionamiento de marca */}
+      <section className="max-w-3xl mx-auto px-6 pb-12">
+        <div className="rounded-2xl border border-line bg-bg-elev p-6 sm:p-8 text-center">
+          <p className="text-[10px] uppercase tracking-[0.28em] text-muted font-semibold">
+            Esto y más lo desarrolla
+          </p>
+          <a
+            href="https://solint.cloud"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 mt-3 font-display text-2xl text-ink hover:text-accent transition-colors"
+          >
+            Solintlabs
+            <span className="text-accent text-lg">↗</span>
+          </a>
+          <p className="text-sm text-muted mt-3 max-w-md mx-auto">
+            Productos digitales a medida: apps móviles, dashboards, plataformas SaaS y automatizaciones para empresas y clubs.
+          </p>
+          <div className="mt-4 flex items-center justify-center gap-4 flex-wrap">
+            <a href="https://solint.cloud" target="_blank" rel="noopener noreferrer" className="text-xs text-accent underline">
+              solint.cloud
+            </a>
+            <a href="mailto:info@solint.cloud" className="text-xs text-muted hover:text-ink">
+              info@solint.cloud
+            </a>
+          </div>
+        </div>
+      </section>
+
       <footer className="max-w-5xl mx-auto px-6 py-8 text-center text-xs text-muted border-t border-line">
-        QuinielaBOX · Plataforma de quinielas para clubs y grupos privados ·{' '}
-        <a href="https://solint.cloud" target="_blank" rel="noopener noreferrer" className="text-accent underline">
-          Solintlabs
-        </a>
+        QuinielaBOX · Plataforma de quinielas para clubs y grupos privados
       </footer>
     </main>
   );
