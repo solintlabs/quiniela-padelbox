@@ -113,6 +113,15 @@ export default async function PerfilPage() {
       </section>
 
       <MyPredictions userId={user!.id} />
+
+      <section className="pt-4 border-t border-line">
+        <Link
+          href="/account/delete"
+          className="text-xs text-muted hover:text-danger transition-colors"
+        >
+          Eliminar mi cuenta y todos mis datos
+        </Link>
+      </section>
     </div>
   );
 }
