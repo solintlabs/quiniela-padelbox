@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { computeGroupStandings, type TeamStanding } from '@/lib/groupStandings';
 import { PdfExportButton } from './PdfExportButton';
+import { ShareImageButton } from './ShareImageButton';
 
 export const metadata = { title: 'Mi Cuadro · Quiniela PADELBOX' };
 export const dynamic = 'force-dynamic';
@@ -69,6 +70,7 @@ export default async function CuadroPage() {
             </Link>
           )}
           <PdfExportButton />
+          <ShareImageButton />
         </div>
       </header>
 

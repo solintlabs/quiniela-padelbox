@@ -4,6 +4,7 @@ import { auth } from '@/lib/auth';
 import { PartidosClient } from '@/components/PartidosClient';
 import type { InlineMatch } from '@/components/InlinePredictionRow';
 import { PdfExportButton } from '@/app/(app)/cuadro/PdfExportButton';
+import { ShareImageButton } from '@/app/(app)/cuadro/ShareImageButton';
 import { STAGE_LABEL } from '@/lib/format';
 
 export const metadata = { title: 'Partidos · Quiniela PADELBOX' };
@@ -130,7 +131,8 @@ export default async function PartidosPage({
       <nav className="flex gap-2 border-b border-line items-end">
         <TabLink href="/partidos?tab=mundial" active={tab === 'mundial'} label="🌍 Mundial 2026" count={mundialCount} />
         <TabLink href="/partidos?tab=liga" active={tab === 'liga'} label="🇪🇸 La Liga" count={ligaCount} />
-        <div className="ml-auto pb-2 no-print">
+        <div className="ml-auto pb-2 flex gap-2 no-print">
+          <ShareImageButton />
           <PdfExportButton />
         </div>
       </nav>
