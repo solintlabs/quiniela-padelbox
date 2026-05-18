@@ -83,7 +83,14 @@ export async function POST(req: Request) {
       Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ from, to: email, subject, html, text }),
+    body: JSON.stringify({
+      from,
+      to: email,
+      reply_to: process.env.EMAIL_REPLY_TO ?? 'info@solint.cloud',
+      subject,
+      html,
+      text,
+    }),
   });
 
   if (!r.ok) {
