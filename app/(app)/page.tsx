@@ -175,6 +175,18 @@ export default async function DashboardPage() {
         <AppStoreBadges variant="hero" />
       </div>
 
+      {/* Cross-sell: "quiero mi quiniela" — discreto */}
+      <Link
+        href="/lanza-tu-quiniela"
+        className="max-w-2xl mx-auto block rounded-xl border border-dashed border-line bg-bg-elev/50 px-5 py-4 text-center hover:border-accent/50 hover:bg-accent/5 transition-colors"
+      >
+        <p className="text-xs uppercase tracking-[0.18em] text-muted">¿Conoces a algún club que quiera su propia quiniela?</p>
+        <p className="text-sm mt-1">
+          <span className="text-accent font-semibold">Recomiéndanos</span>
+          <span className="text-muted"> — montamos quinielas para clubs, peñas y empresas →</span>
+        </p>
+      </Link>
+
       {/* Premios garantizados (fijos, independiente de inscritos) */}
       <section className="max-w-2xl mx-auto">
         <header className="text-center mb-4">

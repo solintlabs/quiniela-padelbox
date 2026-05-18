@@ -202,6 +202,14 @@ export default async function LoginPage() {
         <div className="mt-6 w-full">
           <AppStoreBadges variant="compact" />
         </div>
+
+        {/* Cross-sell SaaS */}
+        <Link
+          href="/lanza-tu-quiniela"
+          className="mt-8 text-[11px] text-muted hover:text-accent transition-colors text-center"
+        >
+          ¿Quieres tu propia quiniela para tu club, peña u oficina? <span className="text-accent">Mira cómo →</span>
+        </Link>
       </div>
 
       <Footer variant="auth" />

@@ -45,6 +45,12 @@ export function Footer({ variant = 'app' }: FooterProps) {
           Solintlabs · S.Baldini
         </a>
       </p>
+      <p className="text-[11px] text-muted">
+        ¿Quieres tu propia quiniela del club o peña?{' '}
+        <Link href="/lanza-tu-quiniela" className="text-accent hover:underline">
+          Mira cómo →
+        </Link>
+      </p>
     </footer>
   );
 }

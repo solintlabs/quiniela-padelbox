@@ -114,6 +114,68 @@ model User {
 
 // Token Expo push por dispositivo. Un user puede tener varios (iPhone + iPad,
 // etc). Limpiamos cuando Expo devuelve DeviceNotRegistered.
+// =====================================================
+// SaaS multi-tenant (Phase B — SCAFFOLDING)
+// =====================================================
+// IMPORTANTE: estos modelos NO afectan al schema actual de PADELBOX.
+// Son tablas independientes (sin FK a User/Match/etc). Permite construir
+// la SaaS en paralelo sin romper la quiniela actual.
+// Cuando estemos listos para activar multi-tenant real, se añadirá
+// `tenantId` a User/Match/Prediction/Sponsor/PaymentMethod/Rules en
+// migración separada.
+
+enum TenantStatus {
+  LEAD          // Llenó el form pero no pagó aún
+  TRIAL         // Pagó/se registró, está en trial
+  ACTIVE        // Suscripción activa
+  PAYMENT_FAILED
+  SUSPENDED
+  CANCELLED
+}
+
+enum TenantPlan {
+  FREE   // 30 días trial
+  PRO    // $29/mes (placeholder)
+  CUSTOM // White-label, agencia
+}
+
+model Tenant {
+  id              String       @id @default(cuid())
+  slug            String       @unique          // "padelbox", "miclub" → subdominio
+  name            String                        // "Club PADELBOX"
+  adminEmail      String                        // email del primer admin
+  adminPhone      String?
+  logoUrl         String?
+  accentColor     String       @default("#B6FF3C")
+  contactWhatsapp String?
+  status          TenantStatus @default(LEAD)
+  plan            TenantPlan   @default(FREE)
+  trialEndsAt     DateTime?
+  stripeCustomerId String?
+  stripeSubId     String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([status])
+  @@index([slug])
+}
+
+// Lead capture: quien rellena "quiero mi quiniela" sin completar onboarding.
+model Lead {
+  id           String   @id @default(cuid())
+  email        String
+  name         String?
+  clubName     String?
+  phone        String?
+  expectedSize Int?     // socios esperados
+  source       String?  // "login_cta", "dashboard_cta", "landing", etc.
+  notes        String?
+  contacted    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  @@index([contacted, createdAt])
+}
+
 // Rate limit por bucket (userId+action o ip+action).
 // Borrar registros antiguos por TTL de cron diario.
 model RateLimit {
