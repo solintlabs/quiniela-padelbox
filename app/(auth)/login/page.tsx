@@ -156,16 +156,16 @@ export default async function LoginPage() {
           </div>
         </div>
 
-        {/* Info-box: como funciona el login passwordless */}
+        {/* Info-box: como funciona el login passwordless + onboarding */}
         <div className="mt-6 w-full rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
           <p className="text-[11px] text-zinc-300 leading-relaxed">
             <span className="text-accent font-bold uppercase tracking-[0.18em] text-[10px]">¿Cómo entro?</span>
             <br />
             Pones tu correo y te llega un <strong className="text-ink">código de 6 dígitos por email</strong>. Lo introduces aquí y listo —{' '}
-            <strong className="text-ink">sin contraseñas que recordar</strong>. Cada vez que vuelvas a entrar funciona igual.
+            <strong className="text-ink">sin contraseñas que recordar</strong>. Las próximas veces basta con el email, te llegará un código nuevo cada vez.
           </p>
           <p className="text-[10px] text-zinc-500 mt-2">
-            Tu cuenta se crea sola al introducir el email por primera vez.
+            Tu cuenta se crea sola la primera vez. El admin de PADELBOX valida tu pago para activarte.
           </p>
         </div>
 
@@ -194,22 +194,10 @@ export default async function LoginPage() {
           </p>
         </section>
 
-        <p className="text-xs text-muted text-center mt-8 max-w-xs">
-          ¿No estás inscrito? Tu cuenta se crea sola. El admin de PADELBOX valida tu pago para activarte.
-        </p>
-
         {/* App Store / Play Store — solo aparece si las URLs estan en env */}
-        <div className="mt-6 w-full">
+        <div className="mt-8 w-full">
           <AppStoreBadges variant="compact" />
         </div>
-
-        {/* Cross-sell SaaS */}
-        <Link
-          href="/lanza-tu-quiniela"
-          className="mt-8 text-[11px] text-muted hover:text-accent transition-colors text-center"
-        >
-          ¿Quieres tu propia quiniela para tu club, peña u oficina? <span className="text-accent">Mira cómo →</span>
-        </Link>
       </div>
 
       <Footer variant="auth" />
