@@ -75,7 +75,7 @@ async function seedDefaults() {
   // Defaults de PADELBOX x DELISH y sus restaurantes afiliados.
   // Idempotente: solo crea si no existe ya un sponsor con ese name.
   const DEFAULTS = [
-    { name: 'DELISH! Burgers', logoUrl: '/partners/delish.svg', url: null, sortOrder: 10 },
+    { name: 'DELISH! Burgers', logoUrl: '/partners/delish.png', url: null, sortOrder: 10 },
     { name: "Vinny's Trattoria", logoUrl: '/partners/vinnys.png', url: null, sortOrder: 20 },
     { name: 'Tacoberto', logoUrl: '/partners/tacoberto.png', url: null, sortOrder: 30 },
     { name: 'Solintlabs', logoUrl: '/partners/solint.png', url: 'https://solint.cloud', sortOrder: 100 },
