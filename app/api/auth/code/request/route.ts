@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { buildLoginCodeEmail } from '@/lib/emails/login-code';
 import { rateLimit, tooManyRequests } from '@/lib/ratelimit';
+import { APPLE_REVIEW_CODE, isAppleReviewEmail } from '@/lib/apple-review';
 
 const Schema = z.object({ email: z.string().email() });
 
@@ -34,6 +35,19 @@ export async function POST(req: Request) {
   }
   const email = parsed.data.email.toLowerCase();
   const identifier = IDENT_PREFIX + email;
+
+  // Bypass cuenta demo Apple Review: codigo fijo, sin rate limit, sin Resend.
+  if (isAppleReviewEmail(email)) {
+    await prisma.verificationToken.deleteMany({ where: { identifier } });
+    await prisma.verificationToken.create({
+      data: {
+        identifier,
+        token: hashCode(APPLE_REVIEW_CODE),
+        expires: new Date(Date.now() + CODE_TTL_MIN * 60_000),
+      },
+    });
+    return NextResponse.json({ ok: true });
+  }
 
   // Rate limit: max 5 emails de codigo por hora a cada direccion +
   // max 20 por hora por IP (anti-spam masivo).

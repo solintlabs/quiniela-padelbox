@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { signAppToken } from '@/lib/jwt';
 import { rateLimit, tooManyRequests } from '@/lib/ratelimit';
+import { isAppleReviewEmail } from '@/lib/apple-review';
 
 const Schema = z.object({
   email: z.string().email(),
@@ -33,13 +34,16 @@ export async function POST(req: Request) {
   }
   const email = parsed.data.email.toLowerCase();
   const identifier = IDENT_PREFIX + email;
+  const isReview = isAppleReviewEmail(email);
 
-  // Rate limit: max 10 intentos por hora por email + 30 por IP/hora.
-  // Brute force del codigo de 6 digitos requeriria 1M intentos.
-  const rl = await rateLimit(`code-verify:email:${email}`, 10, 3600);
-  if (!rl.allowed) return tooManyRequests(rl.resetAt);
-  const rlIp = await rateLimit(`code-verify:ip:${clientIp(req)}`, 30, 3600);
-  if (!rlIp.allowed) return tooManyRequests(rlIp.resetAt);
+  if (!isReview) {
+    // Rate limit: max 10 intentos por hora por email + 30 por IP/hora.
+    // Brute force del codigo de 6 digitos requeriria 1M intentos.
+    const rl = await rateLimit(`code-verify:email:${email}`, 10, 3600);
+    if (!rl.allowed) return tooManyRequests(rl.resetAt);
+    const rlIp = await rateLimit(`code-verify:ip:${clientIp(req)}`, 30, 3600);
+    if (!rlIp.allowed) return tooManyRequests(rlIp.resetAt);
+  }
 
   const expected = hashCode(parsed.data.code);
 
@@ -64,22 +68,25 @@ export async function POST(req: Request) {
     user = await prisma.user.create({
       data: {
         email,
-        name: parsed.data.name ?? null,
+        name: parsed.data.name ?? (isReview ? 'Apple Reviewer' : null),
         phone: parsed.data.phone ?? null,
         emailVerified: new Date(),
+        hasPaid: isReview ? true : undefined,
       },
     });
   } else {
     user = existing;
     const wantsName = parsed.data.name && !existing.name;
     const wantsPhone = parsed.data.phone && !existing.phone;
-    if (wantsName || wantsPhone || !existing.emailVerified) {
+    const needsPaid = isReview && !existing.hasPaid;
+    if (wantsName || wantsPhone || !existing.emailVerified || needsPaid) {
       user = await prisma.user.update({
         where: { id: existing.id },
         data: {
           name: wantsName ? parsed.data.name : existing.name,
           phone: wantsPhone ? parsed.data.phone : existing.phone,
           emailVerified: existing.emailVerified ?? new Date(),
+          hasPaid: needsPaid ? true : existing.hasPaid,
         },
       });
     }
