@@ -51,6 +51,93 @@ async function toggleMethod(formData: FormData) {
   revalidatePath('/inscripcion');
 }
 
+function parseFields(raw: string): Array<{ label: string; value: string; mono?: boolean }> {
+  // Acepta lineas "label = value" o "label = value | mono"
+  const lines = raw.split('\n').map((l) => l.trim()).filter(Boolean);
+  return lines.map((line) => {
+    const [labelRaw, ...valParts] = line.split('=');
+    const label = (labelRaw ?? '').trim();
+    const restRaw = valParts.join('=').trim();
+    const [valuePart, modifier] = restRaw.split('|').map((s) => s.trim());
+    const mono = (modifier ?? '').toLowerCase() === 'mono';
+    return { label, value: valuePart ?? '', mono: mono || undefined };
+  }).filter((f) => f.label && f.value);
+}
+
+async function createMethod(formData: FormData) {
+  'use server';
+  await requireAdmin();
+  const type = String(formData.get('type') ?? '').trim();
+  const title = String(formData.get('title') ?? '').trim();
+  const subtitle = String(formData.get('subtitle') ?? '').trim() || null;
+  const icon = String(formData.get('icon') ?? '').trim() || null;
+  const fieldsRaw = String(formData.get('fields') ?? '');
+  const fields = parseFields(fieldsRaw);
+  if (!type || !title || fields.length === 0) return;
+  const max = await prisma.paymentMethod.aggregate({ _max: { sortOrder: true } });
+  await prisma.paymentMethod.create({
+    data: {
+      type,
+      title,
+      subtitle,
+      icon,
+      fields,
+      enabled: true,
+      sortOrder: (max._max.sortOrder ?? 0) + 10,
+    },
+  });
+  revalidatePath('/admin/pagos');
+  revalidatePath('/inscripcion');
+}
+
+async function updateMethod(formData: FormData) {
+  'use server';
+  await requireAdmin();
+  const id = String(formData.get('id') ?? '');
+  const type = String(formData.get('type') ?? '').trim();
+  const title = String(formData.get('title') ?? '').trim();
+  const subtitle = String(formData.get('subtitle') ?? '').trim() || null;
+  const icon = String(formData.get('icon') ?? '').trim() || null;
+  const fieldsRaw = String(formData.get('fields') ?? '');
+  const fields = parseFields(fieldsRaw);
+  if (!id || !type || !title || fields.length === 0) return;
+  await prisma.paymentMethod.update({
+    where: { id },
+    data: { type, title, subtitle, icon, fields },
+  });
+  revalidatePath('/admin/pagos');
+  revalidatePath('/inscripcion');
+}
+
+async function deleteMethod(formData: FormData) {
+  'use server';
+  await requireAdmin();
+  const id = String(formData.get('id') ?? '');
+  if (!id) return;
+  await prisma.paymentMethod.delete({ where: { id } });
+  revalidatePath('/admin/pagos');
+  revalidatePath('/inscripcion');
+}
+
+async function reorderMethod(formData: FormData) {
+  'use server';
+  await requireAdmin();
+  const id = String(formData.get('id') ?? '');
+  const dir = String(formData.get('dir') ?? '');
+  if (!id || (dir !== 'up' && dir !== 'down')) return;
+  const all = await prisma.paymentMethod.findMany({ orderBy: { sortOrder: 'asc' } });
+  const idx = all.findIndex((m) => m.id === id);
+  if (idx < 0) return;
+  const swap = dir === 'up' ? idx - 1 : idx + 1;
+  if (swap < 0 || swap >= all.length) return;
+  await prisma.$transaction([
+    prisma.paymentMethod.update({ where: { id: all[idx].id }, data: { sortOrder: all[swap].sortOrder } }),
+    prisma.paymentMethod.update({ where: { id: all[swap].id }, data: { sortOrder: all[idx].sortOrder } }),
+  ]);
+  revalidatePath('/admin/pagos');
+  revalidatePath('/inscripcion');
+}
+
 export default async function PagosAdmin() {
   const [rules, pool, methods, paidUsers] = await Promise.all([
     prisma.rules.findUnique({ where: { id: 1 } }),
@@ -141,32 +228,157 @@ export default async function PagosAdmin() {
         </form>
       </section>
 
-      {/* Métodos de pago */}
+      {/* Métodos de pago — editor completo */}
       <section>
         <div className="flex items-end justify-between mb-3">
           <div>
             <h2 className="font-display text-xl">Métodos de pago</h2>
-            <p className="text-sm text-muted mt-1">Lo que ven los socios en /inscripcion. (Editor completo próximamente)</p>
+            <p className="text-sm text-muted mt-1">
+              Lo que ven los socios en <code className="bg-bg-elev px-1 rounded">/inscripcion</code> (web y app).
+              Si no hay ninguno activo, se muestra empty-state.
+            </p>
           </div>
         </div>
+
+        {/* Crear nuevo metodo */}
+        <details className="rounded-xl border border-line bg-bg-elev mb-3">
+          <summary className="cursor-pointer px-5 py-4 font-semibold">➕ Añadir método de pago</summary>
+          <form action={createMethod} className="px-5 pb-5 grid sm:grid-cols-2 gap-3">
+            <Field label="Tipo (interno) *">
+              <select name="type" required defaultValue="pago_movil" className="h-11 w-full bg-bg border border-line rounded-md px-3 text-sm text-ink">
+                <option value="pago_movil">Pago Móvil</option>
+                <option value="bank_transfer">Transferencia bancaria</option>
+                <option value="zelle">Zelle</option>
+                <option value="binance">Binance Pay</option>
+                <option value="paypal">PayPal</option>
+                <option value="wise">Wise</option>
+                <option value="cash">Efectivo</option>
+                <option value="other">Otro</option>
+              </select>
+            </Field>
+            <Field label="Icono (emoji)">
+              <Input name="icon" placeholder="📲" maxLength={4} />
+            </Field>
+            <Field label="Título *">
+              <Input name="title" required maxLength={60} placeholder="Pago Móvil Banesco" />
+            </Field>
+            <Field label="Subtítulo">
+              <Input name="subtitle" maxLength={60} placeholder="Banco Banesco · respuesta inmediata" />
+            </Field>
+            <div className="sm:col-span-2 space-y-1">
+              <label className="text-xs uppercase tracking-[0.18em] text-muted">
+                Datos a mostrar *
+              </label>
+              <p className="text-xs text-muted">
+                Una línea por dato. Formato: <code>Etiqueta = valor</code> · añade{' '}
+                <code>| mono</code> al final si quieres fuente monoespaciada (cuentas, IBAN).
+              </p>
+              <textarea
+                name="fields"
+                required
+                rows={4}
+                className="w-full rounded-lg border border-line bg-bg p-3 text-sm font-mono text-ink"
+                placeholder={'Teléfono = 0412-1234567\nCédula = V-12345678\nTitular = Tu Nombre\nCuenta = 0134-0000-0000-0000-0000 | mono'}
+              />
+            </div>
+            <div className="sm:col-span-2 flex justify-end">
+              <Button type="submit">Añadir método</Button>
+            </div>
+          </form>
+        </details>
+
         <div className="space-y-2">
-          {methods.map((m) => (
-            <article key={m.id} className={'rounded-xl border bg-bg-elev p-4 flex items-center gap-3 ' + (m.enabled ? 'border-line' : 'border-line opacity-50')}>
-              <span className="text-2xl">{m.icon ?? '💳'}</span>
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-sm">{m.title}</p>
-                {m.subtitle && <p className="text-xs text-muted">{m.subtitle}</p>}
+          {methods.map((m, i) => {
+            const fields = Array.isArray(m.fields) ? (m.fields as Array<{ label: string; value: string; mono?: boolean }>) : [];
+            const fieldsAsText = fields
+              .map((f) => `${f.label} = ${f.value}${f.mono ? ' | mono' : ''}`)
+              .join('\n');
+            return (
+              <div key={m.id} className={'rounded-xl border bg-bg-elev ' + (m.enabled ? 'border-line' : 'border-line opacity-50')}>
+                {/* Header de la fila */}
+                <div className="flex items-center gap-3 p-4">
+                  <span className="text-2xl">{m.icon ?? '💳'}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm">{m.title}</p>
+                    {m.subtitle && <p className="text-xs text-muted">{m.subtitle}</p>}
+                    <p className="text-[10px] text-muted mt-0.5">
+                      {fields.length} campo{fields.length !== 1 ? 's' : ''} · tipo: {m.type}
+                    </p>
+                  </div>
+                  <form action={reorderMethod} className="flex flex-col gap-0.5">
+                    <input type="hidden" name="id" value={m.id} />
+                    <button name="dir" value="up" disabled={i === 0} className="text-xs px-2 py-0.5 rounded hover:bg-bg disabled:opacity-30">↑</button>
+                    <button name="dir" value="down" disabled={i === methods.length - 1} className="text-xs px-2 py-0.5 rounded hover:bg-bg disabled:opacity-30">↓</button>
+                  </form>
+                  <form action={toggleMethod}>
+                    <input type="hidden" name="id" value={m.id} />
+                    <Button type="submit" variant={m.enabled ? 'secondary' : 'primary'} size="sm">
+                      {m.enabled ? 'Desactivar' : 'Activar'}
+                    </Button>
+                  </form>
+                </div>
+
+                {/* Edit panel */}
+                <details className="border-t border-line">
+                  <summary className="cursor-pointer px-4 py-2 text-xs text-muted hover:text-ink">
+                    ✏️ Editar / borrar
+                  </summary>
+                  <div className="p-4 space-y-3">
+                    <form action={updateMethod} className="grid sm:grid-cols-2 gap-3">
+                      <input type="hidden" name="id" value={m.id} />
+                      <Field label="Tipo">
+                        <select name="type" defaultValue={m.type} className="h-11 w-full bg-bg border border-line rounded-md px-3 text-sm text-ink">
+                          <option value="pago_movil">Pago Móvil</option>
+                          <option value="bank_transfer">Transferencia bancaria</option>
+                          <option value="zelle">Zelle</option>
+                          <option value="binance">Binance Pay</option>
+                          <option value="paypal">PayPal</option>
+                          <option value="wise">Wise</option>
+                          <option value="cash">Efectivo</option>
+                          <option value="other">Otro</option>
+                        </select>
+                      </Field>
+                      <Field label="Icono">
+                        <Input name="icon" defaultValue={m.icon ?? ''} maxLength={4} />
+                      </Field>
+                      <Field label="Título">
+                        <Input name="title" defaultValue={m.title} required maxLength={60} />
+                      </Field>
+                      <Field label="Subtítulo">
+                        <Input name="subtitle" defaultValue={m.subtitle ?? ''} maxLength={60} />
+                      </Field>
+                      <div className="sm:col-span-2 space-y-1">
+                        <label className="text-xs uppercase tracking-[0.18em] text-muted">Datos</label>
+                        <textarea
+                          name="fields"
+                          required
+                          rows={Math.max(3, fields.length + 1)}
+                          defaultValue={fieldsAsText}
+                          className="w-full rounded-lg border border-line bg-bg p-3 text-sm font-mono text-ink"
+                        />
+                      </div>
+                      <div className="sm:col-span-2 flex justify-between items-center gap-2 flex-wrap">
+                        <Button type="submit" size="sm">Guardar cambios</Button>
+                      </div>
+                    </form>
+                    <form action={deleteMethod}>
+                      <input type="hidden" name="id" value={m.id} />
+                      <button type="submit" className="text-xs text-danger hover:bg-danger/10 px-3 py-1.5 rounded-md border border-danger/40">
+                        🗑 Borrar método
+                      </button>
+                    </form>
+                  </div>
+                </details>
               </div>
-              <form action={toggleMethod}>
-                <input type="hidden" name="id" value={m.id} />
-                <Button type="submit" variant={m.enabled ? 'secondary' : 'primary'} size="sm">
-                  {m.enabled ? 'Desactivar' : 'Activar'}
-                </Button>
-              </form>
-            </article>
-          ))}
+            );
+          })}
           {methods.length === 0 && (
-            <p className="text-sm text-muted text-center py-8">Sin métodos configurados. Hay 4 cargados por el seed; si no aparecen, regenera la BD.</p>
+            <div className="rounded-xl border border-dashed border-line py-8 text-center">
+              <p className="text-sm text-muted">
+                Sin métodos configurados. Pulsa <strong>Añadir método de pago</strong> arriba para
+                empezar. Los socios verán un mensaje invitándoles a contactar por WhatsApp mientras tanto.
+              </p>
+            </div>
           )}
         </div>
       </section>
@@ -225,6 +437,15 @@ export default async function PagosAdmin() {
           </div>
         )}
       </section>
+    </div>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1">
+      <label className="text-xs uppercase tracking-[0.18em] text-muted">{label}</label>
+      {children}
     </div>
   );
 }
