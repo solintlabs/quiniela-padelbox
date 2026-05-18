@@ -22,6 +22,7 @@ export async function GET() {
       tournamentStartAt: rules?.tournamentStartAt ?? null,
       syncPaused: rules?.syncPaused ?? false,
       weeklyPrizesText: rules?.weeklyPrizesText ?? null,
+      championPrizesText: rules?.championPrizesText ?? null,
     },
   });
 }

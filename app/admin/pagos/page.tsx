@@ -24,6 +24,21 @@ async function updateFee(formData: FormData) {
   revalidatePath('/admin/usuarios');
 }
 
+async function updateChampionPrizes(formData: FormData) {
+  'use server';
+  await requireAdmin();
+  const raw = String(formData.get('championPrizesText') ?? '').trim();
+  const value = raw.length > 0 ? raw.slice(0, 1500) : null;
+  await prisma.rules.upsert({
+    where: { id: 1 },
+    update: { championPrizesText: value },
+    create: { id: 1, championPrizesText: value },
+  });
+  revalidatePath('/admin/pagos');
+  revalidatePath('/');
+  revalidatePath('/partidos');
+}
+
 async function updateWeeklyPrizes(formData: FormData) {
   'use server';
   await requireAdmin();
@@ -203,6 +218,31 @@ export default async function PagosAdmin() {
             <Input type="text" name="feeCurrency" defaultValue={rules?.feeCurrency ?? 'USD'} maxLength={4} />
           </div>
           <Button type="submit">Guardar</Button>
+        </form>
+      </section>
+
+      {/* Premios del CAMPEONATO (texto libre — aparece en dashboard movil) */}
+      <section className="rounded-xl border border-line bg-bg-elev p-5 max-w-2xl">
+        <h2 className="font-display text-xl">Premios del campeonato</h2>
+        <p className="text-sm text-muted mt-1">
+          Texto del bloque &quot;Premios del campeonato&quot; en el dashboard de la app móvil.
+          <br />
+          <strong className="text-warning">Para App Store review déjalo vacío</strong> (la app
+          mostrará un texto genérico &quot;Premio del podio&quot;). Tras aprobación, pega aquí
+          los montos reales y aparecerán automáticamente.
+        </p>
+        <form action={updateChampionPrizes} className="mt-4">
+          <textarea
+            name="championPrizesText"
+            defaultValue={rules?.championPrizesText ?? ''}
+            maxLength={1500}
+            rows={4}
+            placeholder={'Ej (post-aprobacion Apple):\n🥇 1er lugar: $1.500\n🥈 2º lugar: $500\n🥉 3er lugar: $300'}
+            className="w-full rounded-lg border border-line bg-bg p-3 text-sm font-mono text-ink resize-y min-h-[120px] focus:outline-none focus:ring-2 focus:ring-accent"
+          />
+          <div className="flex justify-end mt-3">
+            <Button type="submit">Guardar premios del campeonato</Button>
+          </div>
         </form>
       </section>
 

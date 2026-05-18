@@ -266,6 +266,10 @@ model Rules {
   // Premios de la semana (free text editado por admin). Aparece en dashboard.
   // Vacio o null = no se muestra el bloque.
   weeklyPrizesText  String?
+  // Premios del campeonato completo (texto libre). El admin lo edita y
+  // aparece en el dashboard de la app movil. Si vacio, dashboard muestra
+  // version generica "Premio mayor del podio" (Apple-safe).
+  championPrizesText String?
   // Campeón ganador del torneo (lo setea el admin cuando termina la final).
   // Usado para otorgar el bonus de pointsChampion en el ranking final.
   championWinner    String?
