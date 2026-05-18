@@ -38,9 +38,11 @@ export async function POST(req: Request) {
     req.headers.get('x-real-ip') ??
     'unknown';
 
-  const rlEmail = await rateLimit(`lead:email:${email}`, 3, 3600);
+  // Rate limits generosos — leads son user input bajo volumen y testing puede
+  // dispararlos. Anti-spam real con honeypot/OTP iria en otra capa.
+  const rlEmail = await rateLimit(`lead:email:${email}`, 10, 3600);
   if (!rlEmail.allowed) return tooManyRequests(rlEmail.resetAt);
-  const rlIp = await rateLimit(`lead:ip:${ip}`, 10, 3600);
+  const rlIp = await rateLimit(`lead:ip:${ip}`, 30, 3600);
   if (!rlIp.allowed) return tooManyRequests(rlIp.resetAt);
 
   const lead = await prisma.lead.create({
@@ -95,7 +97,7 @@ async function notifyAdminOfLead(lead: LeadRow): Promise<void> {
     '',
     lead.notes && `Notas:\n${lead.notes}`,
     '',
-    `Ver en super-admin: https://quiniela.solint.cloud/super-admin`,
+    `Ver en super-admin: https://quiniela.solint.cloud/admin/saas`,
   ].filter(Boolean).join('\n');
 
   const html = `<div style="font-family:-apple-system,sans-serif;color:#111;background:#fff;padding:20px;max-width:560px;">
@@ -110,7 +112,7 @@ async function notifyAdminOfLead(lead: LeadRow): Promise<void> {
     </table>
     ${lead.notes ? `<div style="margin-top:16px;padding:12px;background:#f4f4f5;border-radius:6px;white-space:pre-wrap;font-size:13px;">${escapeHtml(lead.notes)}</div>` : ''}
     <p style="margin-top:24px;font-size:12px;color:#666;">
-      <a href="https://quiniela.solint.cloud/super-admin" style="color:#6BA50A;">Ver en super-admin →</a>
+      <a href="https://quiniela.solint.cloud/admin/saas" style="color:#6BA50A;">Ver en super-admin →</a>
     </p>
   </div>`;
 

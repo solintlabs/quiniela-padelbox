@@ -22,7 +22,7 @@ async function markContacted(formData: FormData) {
   const id = String(formData.get('id') ?? '');
   if (!id) return;
   await prisma.lead.update({ where: { id }, data: { contacted: true } });
-  revalidatePath('/super-admin');
+  revalidatePath('/admin/saas');
 }
 
 async function deleteLead(formData: FormData) {
@@ -31,7 +31,7 @@ async function deleteLead(formData: FormData) {
   const id = String(formData.get('id') ?? '');
   if (!id) return;
   await prisma.lead.delete({ where: { id } });
-  revalidatePath('/super-admin');
+  revalidatePath('/admin/saas');
 }
 
 export default async function SuperAdminPage() {

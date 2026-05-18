@@ -35,7 +35,10 @@ export function OnboardingForm() {
           source: 'onboarding',
         }),
       });
-      if (!res.ok) throw new Error('No se pudo enviar');
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({} as { error?: string; message?: string }));
+        throw new Error(body.error ?? body.message ?? `HTTP ${res.status}`);
+      }
       setDone(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error');
