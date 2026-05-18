@@ -221,7 +221,7 @@ export async function GET(req: Request) {
               borderTop: `2px solid ${ACCENT}`,
             }}
           >
-            <span style={{ fontSize: 14, color: MUTED }}>quiniela-padelbox.vercel.app</span>
+            <span style={{ fontSize: 14, color: MUTED }}>quiniela.solint.cloud</span>
             <span style={{ fontSize: 14, color: ACCENT, fontWeight: 700 }}>¿Te animas a competir?</span>
           </div>
         </div>

@@ -74,8 +74,8 @@ export default async function SuperAdminPage() {
         {leads.length === 0 ? (
           <p className="text-sm text-muted">
             Aún no hay solicitudes. Comparte{' '}
-            <code className="text-accent">quiniela-padelbox.vercel.app/lanza-tu-quiniela</code>{' '}
-            o el footer "¿Quieres tu propia quiniela?".
+            <code className="text-accent">quiniela.solint.cloud/lanza-tu-quiniela</code>{' '}
+            o el footer &quot;¿Quieres tu propia quiniela?&quot;.
           </p>
         ) : (
           <div className="space-y-2">
