@@ -108,10 +108,10 @@ export default async function PartidosPage({
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5 sm:space-y-8">
       <header>
-        <h1 className="font-display text-3xl">Partidos</h1>
-        <p className="text-sm text-muted mt-1">
+        <h1 className="font-display text-2xl sm:text-3xl">Partidos</h1>
+        <p className="text-xs sm:text-sm text-muted mt-1">
           {tab === 'mundial'
             ? `Mundial 2026 · ${matches.length} partidos`
             : `La Liga · ${matches.length} partidos`}
@@ -128,33 +128,41 @@ export default async function PartidosPage({
         </p>
       </header>
 
-      <nav className="flex gap-2 border-b border-line items-end">
+      {/* Tabs Mundial / La Liga */}
+      <nav className="flex gap-1 sm:gap-2 border-b border-line items-end overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
         <TabLink href="/partidos?tab=mundial" active={tab === 'mundial'} label="🌍 Mundial 2026" count={mundialCount} />
         <TabLink href="/partidos?tab=liga" active={tab === 'liga'} label="🇪🇸 La Liga" count={ligaCount} />
-        <div className="ml-auto pb-2 flex gap-2 no-print">
+        {/* Botones export — solo en desktop, en móvil van debajo */}
+        <div className="ml-auto pb-2 hidden sm:flex gap-2 no-print">
           <ShareImageButton />
           <PdfExportButton />
         </div>
       </nav>
 
+      {/* Botones export en móvil — fila aparte */}
+      <div className="flex gap-2 no-print sm:hidden -mt-3">
+        <ShareImageButton />
+        <PdfExportButton />
+      </div>
+
       {/* Card MI CAMPEÓN (solo en tab Mundial) */}
       {tab === 'mundial' && (
-        <section className="rounded-2xl border-2 border-accent/60 bg-accent/10 p-5 flex items-center justify-between gap-4 flex-wrap">
+        <section className="rounded-2xl border-2 border-accent/60 bg-accent/10 p-3 sm:p-5 flex items-center justify-between gap-3 sm:gap-4 flex-wrap">
           <div className="min-w-0">
-            <p className="text-[10px] uppercase tracking-[0.28em] text-accent font-bold">
+            <p className="text-[10px] uppercase tracking-[0.22em] sm:tracking-[0.28em] text-accent font-bold">
               MI CAMPEÓN
             </p>
             {me?.championPick ? (
               <>
-                <p className="font-display text-2xl mt-1">{me.championPick.toUpperCase()}</p>
-                <p className="text-xs text-muted mt-1">
+                <p className="font-display text-lg sm:text-2xl mt-1">{me.championPick.toUpperCase()}</p>
+                <p className="text-[11px] sm:text-xs text-muted mt-1">
                   {me.championLockedAt
                     ? '🔒 Pick congelado al inicio del torneo'
                     : 'Aún puedes cambiarlo antes del 11 jun'}
                 </p>
               </>
             ) : (
-              <p className="text-sm text-muted mt-1">
+              <p className="text-xs sm:text-sm text-muted mt-1">
                 No has elegido todavía. Pick gana +25 pts si aciertas.
               </p>
             )}
@@ -162,7 +170,7 @@ export default async function PartidosPage({
           {!me?.championLockedAt && (
             <Link
               href="/perfil"
-              className="inline-flex items-center h-10 px-5 rounded-lg bg-accent text-accent-fg font-display text-sm hover:brightness-95 shrink-0"
+              className="inline-flex items-center h-9 sm:h-10 px-4 sm:px-5 rounded-lg bg-accent text-accent-fg font-display text-xs sm:text-sm hover:brightness-95 shrink-0"
             >
               {me?.championPick ? 'Cambiar →' : 'Elegir campeón →'}
             </Link>
@@ -196,13 +204,13 @@ function TabLink({
     <Link
       href={href}
       className={
-        'px-4 py-2 text-sm border-b-2 -mb-px transition-colors ' +
+        'px-3 sm:px-4 py-2 text-xs sm:text-sm border-b-2 -mb-px transition-colors whitespace-nowrap shrink-0 ' +
         (active
           ? 'border-accent text-ink font-semibold'
           : 'border-transparent text-muted hover:text-ink')
       }
     >
-      {label} <span className="text-xs text-muted">({count})</span>
+      {label} <span className="text-[10px] sm:text-xs text-muted">({count})</span>
     </Link>
   );
 }
