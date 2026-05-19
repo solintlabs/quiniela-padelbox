@@ -5,6 +5,7 @@ import { prisma } from '@/lib/db';
 import { signAppToken } from '@/lib/jwt';
 import { rateLimit, tooManyRequests } from '@/lib/ratelimit';
 import { isAppleReviewEmail } from '@/lib/apple-review';
+import { getInscriptionsStatus } from '@/lib/inscriptions';
 
 const Schema = z.object({
   email: z.string().email(),
@@ -63,6 +64,27 @@ export async function POST(req: Request) {
   // Upsert del usuario. name/phone solo se guardan en primer registro
   // o si el usuario aún no los tenía (no sobrescriben).
   const existing = await prisma.user.findUnique({ where: { email } });
+
+  // Si las inscripciones están cerradas y es una cuenta NUEVA, denegar.
+  // El Apple reviewer queda exento para que las revisiones siempre funcionen.
+  if (!existing && !isReview) {
+    const rules = await prisma.rules.findUnique({
+      where: { id: 1 },
+      select: { inscriptionsCloseAt: true },
+    });
+    const st = getInscriptionsStatus(rules?.inscriptionsCloseAt ?? null);
+    if (st.closed) {
+      return NextResponse.json(
+        {
+          error: 'Inscripciones cerradas',
+          message:
+            'Las inscripciones para esta quiniela están cerradas. Si ya tenías cuenta, entra con tu email habitual.',
+        },
+        { status: 403 },
+      );
+    }
+  }
+
   let user;
   if (!existing) {
     user = await prisma.user.create({

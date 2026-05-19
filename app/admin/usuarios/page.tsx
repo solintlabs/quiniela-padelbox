@@ -1,9 +1,11 @@
 import { revalidatePath } from 'next/cache';
+import Link from 'next/link';
 import { prisma } from '@/lib/db';
 import { requireAdmin } from '@/lib/permissions';
 import { Button } from '@/components/ui/button';
 import { formatDateTime } from '@/lib/format';
 import { getPool } from '@/lib/pool';
+import { getInscriptionsStatus } from '@/lib/inscriptions';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,11 +52,13 @@ async function markUnpaid(formData: FormData) {
 }
 
 export default async function UsuariosAdmin() {
-  const [users, methods, pool] = await Promise.all([
+  const [users, methods, pool, rules] = await Promise.all([
     prisma.user.findMany({ orderBy: [{ hasPaid: 'asc' }, { createdAt: 'desc' }] }),
     prisma.paymentMethod.findMany({ where: { enabled: true }, orderBy: { sortOrder: 'asc' } }),
     getPool(),
+    prisma.rules.findUnique({ where: { id: 1 }, select: { inscriptionsCloseAt: true } }),
   ]);
+  const inscriptions = getInscriptionsStatus(rules?.inscriptionsCloseAt ?? null);
 
   return (
     <div className="space-y-6">
@@ -70,6 +74,30 @@ export default async function UsuariosAdmin() {
           <p className="font-display text-2xl text-accent tabular-nums">{pool.totalFormatted}</p>
         </div>
       </header>
+
+      {inscriptions.closeAt && (
+        <div
+          className={
+            'rounded-xl border px-4 py-3 text-xs ' +
+            (inscriptions.closed
+              ? 'border-warning/40 bg-warning/10 text-warning'
+              : 'border-line bg-bg-elev text-muted')
+          }
+        >
+          {inscriptions.closed ? (
+            <>
+              <strong>Inscripciones cerradas</strong> desde {formatDateTime(inscriptions.closeAt)}.
+              Nuevos registros bloqueados.{' '}
+              <Link href="/admin/reglas" className="underline">Editar fecha</Link>
+            </>
+          ) : (
+            <>
+              Inscripciones cerrarán el {formatDateTime(inscriptions.closeAt)}.{' '}
+              <Link href="/admin/reglas" className="underline text-accent">Cambiar</Link>
+            </>
+          )}
+        </div>
+      )}
 
       <div className="space-y-2">
         {users.map((u) => (

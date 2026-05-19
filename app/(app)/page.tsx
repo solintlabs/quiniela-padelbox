@@ -72,6 +72,15 @@ export default async function DashboardPage() {
     <div className="space-y-6 sm:space-y-12">
       <PodioHero top={top3} me={me} />
 
+      {rules?.tournamentStartAt && rules.tournamentStartAt.getTime() > Date.now() && (
+        <p className="text-center text-[11px] sm:text-xs text-muted -mt-3">
+          🌍 Mundial 2026 empieza en{' '}
+          <span className="text-accent font-semibold">
+            <Countdown target={rules.tournamentStartAt} />
+          </span>
+        </p>
+      )}
+
       {groupStats.total > 0 && groupStats.filled < groupStats.total && (
         <section className="rounded-xl border border-accent/30 bg-accent/5 p-3 sm:p-5 max-w-2xl mx-auto">
           <div className="flex items-start gap-3 sm:gap-4">

@@ -18,6 +18,7 @@ async function updateRules(formData: FormData) {
   const pointsChampion = Number(formData.get('pointsChampion') ?? 25);
   const lockOffsetMin = Number(formData.get('lockOffsetMin') ?? 15);
   const tournamentStartAt = String(formData.get('tournamentStartAt') ?? '').trim();
+  const inscriptionsCloseAt = String(formData.get('inscriptionsCloseAt') ?? '').trim();
   const championWinnerRaw = String(formData.get('championWinner') ?? '').trim();
   const championWinner = championWinnerRaw && FIFA_2026_TEAMS.includes(championWinnerRaw)
     ? championWinnerRaw : null;
@@ -30,6 +31,7 @@ async function updateRules(formData: FormData) {
       pointsChampion,
       lockOffsetMin,
       tournamentStartAt: tournamentStartAt ? new Date(tournamentStartAt) : null,
+      inscriptionsCloseAt: inscriptionsCloseAt ? new Date(inscriptionsCloseAt) : null,
       championWinner,
     },
     create: {
@@ -39,11 +41,15 @@ async function updateRules(formData: FormData) {
       pointsChampion,
       lockOffsetMin,
       tournamentStartAt: tournamentStartAt ? new Date(tournamentStartAt) : null,
+      inscriptionsCloseAt: inscriptionsCloseAt ? new Date(inscriptionsCloseAt) : null,
       championWinner,
     },
   });
   revalidatePath('/admin/reglas');
+  revalidatePath('/admin/usuarios');
   revalidatePath('/reglas');
+  revalidatePath('/inscripcion');
+  revalidatePath('/login');
   revalidatePath('/ranking');
 }
 
@@ -75,6 +81,21 @@ export default async function ReglasAdmin() {
             type="datetime-local"
             name="tournamentStartAt"
             defaultValue={rules?.tournamentStartAt ? new Date(rules.tournamentStartAt).toISOString().slice(0, 16) : ''}
+          />
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-xs uppercase tracking-[0.18em] text-muted">
+            Cierre de inscripciones
+          </label>
+          <p className="text-xs text-muted">
+            Después de esta fecha, no se aceptan nuevos registros ni nuevos pagos.
+            Cuentas ya existentes y predicciones siguen funcionando normal. Vacío = abiertas siempre.
+          </p>
+          <Input
+            type="datetime-local"
+            name="inscriptionsCloseAt"
+            defaultValue={rules?.inscriptionsCloseAt ? new Date(rules.inscriptionsCloseAt).toISOString().slice(0, 16) : ''}
           />
         </div>
 

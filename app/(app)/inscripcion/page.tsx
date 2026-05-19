@@ -2,6 +2,8 @@ import { auth } from '@/lib/auth';
 import { CLUB_INFO } from '@/lib/club-info';
 import { prisma } from '@/lib/db';
 import { formatCurrency } from '@/lib/pool';
+import { getInscriptionsStatus } from '@/lib/inscriptions';
+import { formatDateTime } from '@/lib/format';
 
 export const metadata = { title: 'Inscripción · Quiniela PADELBOX' };
 export const dynamic = 'force-dynamic';
@@ -16,6 +18,7 @@ export default async function InscripcionPage() {
   ]);
   const feeAmount = rules?.feeAmount ?? CLUB_INFO.fee.amount;
   const feeCurrency = rules?.feeCurrency ?? CLUB_INFO.fee.currency;
+  const inscriptions = getInscriptionsStatus(rules?.inscriptionsCloseAt ?? null);
 
   return (
     <div className="max-w-3xl mx-auto space-y-10">
@@ -28,6 +31,18 @@ export default async function InscripcionPage() {
           de abajo y avísanos. Tu acceso se activa en cuanto confirmemos el pago.
         </p>
       </header>
+
+      {inscriptions.closed && !hasPaid && (
+        <div className="rounded-xl border border-warning/50 bg-warning/10 p-5">
+          <p className="font-display text-base">⏰ Inscripciones cerradas</p>
+          <p className="text-sm text-muted mt-2">
+            Las inscripciones se cerraron el{' '}
+            <strong className="text-ink">{formatDateTime(inscriptions.closeAt!)}</strong>.
+            Si ya hiciste el pago y necesitas que te activemos manualmente,
+            contáctanos por WhatsApp y revisamos tu caso.
+          </p>
+        </div>
+      )}
 
       {hasPaid ? (
         <div className="rounded-xl border border-success/40 bg-success/10 p-5">

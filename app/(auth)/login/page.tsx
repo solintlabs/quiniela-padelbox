@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { auth, signIn } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { getInscriptionsStatus } from '@/lib/inscriptions';
 import { Logo } from '@/components/Logo';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -12,13 +13,22 @@ import { AppStoreBadges } from '@/components/AppStoreBadges';
 export const metadata = { title: 'Entrar · Quiniela PADELBOX' };
 export const dynamic = 'force-dynamic';
 
-export default async function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ closed?: string }>;
+}) {
   const session = await auth();
   if (session?.user) redirect('/');
 
-  const [sponsors] = await Promise.all([
+  const params = await searchParams;
+  const showClosedAttempt = params.closed === '1';
+
+  const [sponsors, rules] = await Promise.all([
     prisma.sponsor.findMany({ where: { enabled: true }, orderBy: { sortOrder: 'asc' } }),
+    prisma.rules.findUnique({ where: { id: 1 }, select: { inscriptionsCloseAt: true } }),
   ]);
+  const inscriptions = getInscriptionsStatus(rules?.inscriptionsCloseAt ?? null);
   const hasGoogle = !!process.env.GOOGLE_CLIENT_ID && !!process.env.GOOGLE_CLIENT_SECRET;
 
   return (
@@ -85,7 +95,14 @@ export default async function LoginPage() {
 
         {/* Card del form */}
         <div className="mt-6 w-full rounded-2xl bg-zinc-950/92 backdrop-blur-md border border-zinc-800 p-5">
-          <p className="text-[10px] uppercase tracking-[0.18em] text-muted mb-3">Únete a la quiniela</p>
+          {(inscriptions.closed || showClosedAttempt) && (
+            <div className="mb-3 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning">
+              <strong>Inscripciones cerradas.</strong> Ya no se aceptan nuevos registros. Si ya tenías cuenta, puedes seguir entrando con tu email.
+            </div>
+          )}
+          <p className="text-[10px] uppercase tracking-[0.18em] text-muted mb-3">
+            {inscriptions.closed ? 'Entrar a tu cuenta' : 'Únete a la quiniela'}
+          </p>
 
           <form
             action={async (formData) => {
@@ -95,8 +112,18 @@ export default async function LoginPage() {
               const phone = String(formData.get('phone') ?? '').trim();
               if (!email) return;
 
+              const existing = await prisma.user.findUnique({ where: { email } });
+
+              // Si las inscripciones están cerradas, solo dejamos entrar a cuentas existentes.
+              if (!existing) {
+                const r = await prisma.rules.findUnique({ where: { id: 1 }, select: { inscriptionsCloseAt: true } });
+                const st = getInscriptionsStatus(r?.inscriptionsCloseAt ?? null);
+                if (st.closed) {
+                  redirect('/login?closed=1');
+                }
+              }
+
               if (name || phone) {
-                const existing = await prisma.user.findUnique({ where: { email } });
                 if (!existing) {
                   await prisma.user.create({
                     data: { email, name: name || null, phone: phone || null },

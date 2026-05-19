@@ -5,6 +5,7 @@ import { prisma } from '@/lib/db';
 import { buildLoginCodeEmail } from '@/lib/emails/login-code';
 import { rateLimit, tooManyRequests } from '@/lib/ratelimit';
 import { APPLE_REVIEW_CODE, isAppleReviewEmail } from '@/lib/apple-review';
+import { getInscriptionsStatus } from '@/lib/inscriptions';
 
 const Schema = z.object({ email: z.string().email() });
 
@@ -47,6 +48,27 @@ export async function POST(req: Request) {
       },
     });
     return NextResponse.json({ ok: true });
+  }
+
+  // Si las inscripciones están cerradas y este email no tiene cuenta todavía,
+  // rechazamos antes de gastar email/rate-limit. Cuentas existentes pueden
+  // seguir entrando con su código normal.
+  const existing = await prisma.user.findUnique({ where: { email }, select: { id: true } });
+  if (!existing) {
+    const rules = await prisma.rules.findUnique({
+      where: { id: 1 },
+      select: { inscriptionsCloseAt: true },
+    });
+    const st = getInscriptionsStatus(rules?.inscriptionsCloseAt ?? null);
+    if (st.closed) {
+      return NextResponse.json(
+        {
+          error: 'Inscripciones cerradas',
+          message: 'Las inscripciones para esta quiniela están cerradas. Si ya tenías cuenta, vuelve a intentar con tu email habitual.',
+        },
+        { status: 403 },
+      );
+    }
   }
 
   // Rate limit: max 5 emails de codigo por hora a cada direccion +

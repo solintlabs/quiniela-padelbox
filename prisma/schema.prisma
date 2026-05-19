@@ -273,6 +273,10 @@ model Rules {
   // Campeón ganador del torneo (lo setea el admin cuando termina la final).
   // Usado para otorgar el bonus de pointsChampion en el ranking final.
   championWinner    String?
+  // Fecha y hora a partir de la cual no se aceptan nuevas inscripciones ni
+  // marcar como pagado. Si es null, las inscripciones quedan abiertas para
+  // siempre. El admin lo edita desde /admin/reglas.
+  inscriptionsCloseAt DateTime?
   updatedAt         DateTime  @updatedAt
 }
 
