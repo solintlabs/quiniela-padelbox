@@ -1,4 +1,5 @@
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { prisma } from '@/lib/db';
 import { requireAdmin } from '@/lib/permissions';
@@ -6,6 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { formatDateTime } from '@/lib/format';
 import { getPool, formatCurrency } from '@/lib/pool';
+
+function bail(reason: string): never {
+  redirect(`/admin/pagos?error=${encodeURIComponent(reason)}#metodos`);
+}
 
 export const metadata = { title: 'Pagos · Admin' };
 export const dynamic = 'force-dynamic';
@@ -99,9 +104,9 @@ async function createMethod(formData: FormData) {
   const icon = String(formData.get('icon') ?? '').trim() || null;
   const fieldsRaw = String(formData.get('fields') ?? '');
   const fields = parseFields(fieldsRaw);
-  if (!type || !title) throw new Error('Tipo y título son obligatorios');
+  if (!type || !title) bail('Tipo y título son obligatorios');
   if (fields.length === 0) {
-    throw new Error('Datos a mostrar inválidos. Usa formato "Etiqueta = valor" (una línea por dato).');
+    bail('Datos a mostrar inválidos. Usa formato "Etiqueta = valor" o "Etiqueta : valor" (una línea por dato).');
   }
   const max = await prisma.paymentMethod.aggregate({ _max: { sortOrder: true } });
   await prisma.paymentMethod.create({
@@ -129,10 +134,10 @@ async function updateMethod(formData: FormData) {
   const icon = String(formData.get('icon') ?? '').trim() || null;
   const fieldsRaw = String(formData.get('fields') ?? '');
   const fields = parseFields(fieldsRaw);
-  if (!id) throw new Error('Falta id del método');
-  if (!type || !title) throw new Error('Tipo y título son obligatorios');
+  if (!id) bail('Falta id del método');
+  if (!type || !title) bail('Tipo y título son obligatorios');
   if (fields.length === 0) {
-    throw new Error('Datos a mostrar inválidos. Usa formato "Etiqueta = valor" (una línea por dato).');
+    bail('Datos a mostrar inválidos. Usa formato "Etiqueta = valor" o "Etiqueta : valor" (una línea por dato).');
   }
   await prisma.paymentMethod.update({
     where: { id },
@@ -171,7 +176,12 @@ async function reorderMethod(formData: FormData) {
   revalidatePath('/inscripcion');
 }
 
-export default async function PagosAdmin() {
+export default async function PagosAdmin({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
+  const errorMsg = (await searchParams).error;
   const [rules, pool, methods, paidUsers] = await Promise.all([
     prisma.rules.findUnique({ where: { id: 1 } }),
     getPool(),
@@ -207,6 +217,12 @@ export default async function PagosAdmin() {
         <h1 className="font-display text-3xl">Pagos y bote</h1>
         <p className="text-sm text-muted mt-1">Cuota, bote acumulado, métodos disponibles y historial.</p>
       </header>
+
+      {errorMsg && (
+        <div className="rounded-xl border border-danger bg-danger/10 text-danger px-5 py-3 text-sm">
+          <strong>Error:</strong> {errorMsg}
+        </div>
+      )}
 
       {/* Bote hero */}
       <section className="rounded-xl border border-accent/40 bg-accent/10 p-6 max-w-2xl">
