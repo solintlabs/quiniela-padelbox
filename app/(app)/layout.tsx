@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { requireUser } from '@/lib/permissions';
 import { Nav } from '@/components/Nav';
 import { Footer } from '@/components/Footer';
+import { BottomQuickNav } from '@/components/BottomQuickNav';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
@@ -11,6 +12,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <main className="max-w-6xl mx-auto px-6 py-8">
         {!user.hasPaid && <PaymentBanner />}
         {children}
+        <BottomQuickNav hasPaid={user.hasPaid} />
         <Footer variant="app" />
       </main>
     </>
