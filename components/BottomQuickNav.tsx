@@ -1,75 +1,74 @@
+'use client';
+
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 interface BottomQuickNavProps {
   hasPaid: boolean;
 }
 
 /**
- * Menú estático de accesos rápidos visible al final de cada página (solo en
- * móvil web). En desktop está oculto porque el Nav superior con hamburguesa
- * ya cubre la navegación.
+ * Tab bar fijo al fondo de la pantalla en móvil (estilo iOS). Solo visible
+ * en anchos < sm (640px). El layout añade pb-20 sm:pb-8 al main para que
+ * el contenido no quede tapado por la barra.
+ *
+ * Es client component porque usa usePathname() para resaltar el tab activo.
  */
 export function BottomQuickNav({ hasPaid }: BottomQuickNavProps) {
+  const pathname = usePathname() ?? '/';
+
+  const tabs: Array<{
+    href: string;
+    label: string;
+    icon: string;
+    active: (p: string) => boolean;
+    badge?: 'paid' | 'unpaid';
+  }> = [
+    { href: '/', label: 'Inicio', icon: '🏠', active: (p) => p === '/' },
+    { href: '/partidos', label: 'Partidos', icon: '🎯', active: (p) => p.startsWith('/partidos') },
+    { href: '/ranking', label: 'Ranking', icon: '🏆', active: (p) => p.startsWith('/ranking') },
+    {
+      href: '/perfil',
+      label: 'Perfil',
+      icon: '👤',
+      active: (p) => p.startsWith('/perfil'),
+      badge: hasPaid ? 'paid' : 'unpaid',
+    },
+  ];
+
   return (
     <nav
-      aria-label="Accesos rápidos"
-      className="sm:hidden mt-12 pt-6 border-t border-line"
+      aria-label="Navegación principal"
+      className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-bg/95 backdrop-blur-md border-t border-line"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
-      <p className="text-xs uppercase tracking-[0.18em] text-muted text-center mb-4">
-        Accesos rápidos
-      </p>
-      <div className="grid grid-cols-2 gap-3">
-        <Tile
-          href="/partidos"
-          icon="🎯"
-          title="Mis pronósticos"
-          subtitle="Predice y edita"
-        />
-        <Tile
-          href="/ranking"
-          icon="🏆"
-          title="Ranking"
-          subtitle="Ver tabla"
-        />
-        <Tile
-          href="/perfil"
-          icon="👤"
-          title="Mi perfil"
-          subtitle={hasPaid ? '✓ Activado' : '⚠ Pendiente'}
-          badgeColor={hasPaid ? 'text-success' : 'text-warning'}
-        />
-        <Tile
-          href="/reglas"
-          icon="📋"
-          title="Reglas"
-          subtitle="Cómo funciona"
-        />
-      </div>
+      <ul className="grid grid-cols-4">
+        {tabs.map((t) => {
+          const isActive = t.active(pathname);
+          return (
+            <li key={t.href}>
+              <Link
+                href={t.href}
+                className={
+                  'flex flex-col items-center justify-center gap-0.5 py-2 text-[10px] transition-colors relative ' +
+                  (isActive ? 'text-accent' : 'text-muted hover:text-ink')
+                }
+              >
+                <span className="text-xl leading-none relative">
+                  {t.icon}
+                  {t.badge === 'unpaid' && (
+                    <span
+                      aria-hidden
+                      className="absolute -top-0.5 -right-1 w-2 h-2 rounded-full bg-warning"
+                    />
+                  )}
+                </span>
+                <span className="font-medium leading-none">{t.label}</span>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
     </nav>
-  );
-}
-
-function Tile({
-  href,
-  icon,
-  title,
-  subtitle,
-  badgeColor,
-}: {
-  href: string;
-  icon: string;
-  title: string;
-  subtitle: string;
-  badgeColor?: string;
-}) {
-  return (
-    <Link
-      href={href}
-      className="rounded-xl border border-line bg-bg-elev p-4 hover:border-accent hover:bg-accent/5 transition-colors flex flex-col items-center text-center"
-    >
-      <span className="text-2xl mb-2">{icon}</span>
-      <p className="font-display text-sm leading-tight">{title}</p>
-      <p className={`text-[11px] mt-1 ${badgeColor ?? 'text-muted'}`}>{subtitle}</p>
-    </Link>
   );
 }

@@ -28,26 +28,48 @@ export async function AliadosStrip({ variant = 'dashboard' }: Props) {
   }
 
   return (
-    <section className="rounded-2xl border border-line bg-bg-elev p-5 sm:p-6">
-      <header className="text-center mb-4">
-        <p className="text-[10px] uppercase tracking-[0.28em] text-accent font-bold">
+    <section className="rounded-2xl border border-line bg-bg-elev p-3 sm:p-6">
+      <header className="text-center mb-2 sm:mb-4">
+        <p className="text-[10px] uppercase tracking-[0.22em] sm:tracking-[0.28em] text-accent font-bold">
           Aliados comerciales
         </p>
-        <h3 className="font-display text-xl sm:text-2xl mt-1">
+        <h3 className="font-display text-sm sm:text-2xl mt-1">
           Premios semanales cortesía de
         </h3>
       </header>
-      <div className="flex items-center justify-center gap-6 sm:gap-8 flex-wrap">
+      <div className="flex items-center justify-center gap-4 sm:gap-8 flex-wrap">
         {sponsors.map((s) => (
-          <SponsorLogo key={s.id} {...s} size={48} />
+          <ResponsiveSponsorLogo key={s.id} {...s} />
         ))}
       </div>
-      <p className="text-[11px] text-muted text-center mt-4 max-w-md mx-auto">
+      <p className="hidden sm:block text-[11px] text-muted text-center mt-4 max-w-md mx-auto">
         Top pronosticadores de cada semana se llevan gift cards y productos
         cortesía de nuestros aliados comerciales.
       </p>
     </section>
   );
+}
+
+function ResponsiveSponsorLogo(s: { id: string; name: string; logoUrl: string | null; url: string | null }) {
+  if (!s.logoUrl) {
+    return <span className="text-xs sm:text-sm text-muted">{s.name}</span>;
+  }
+  const img = (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={s.logoUrl}
+      alt={s.name}
+      className="h-8 sm:h-12 w-auto object-contain opacity-80 hover:opacity-100 transition-opacity"
+    />
+  );
+  if (s.url) {
+    return (
+      <a href={s.url} target="_blank" rel="noopener noreferrer" title={s.name}>
+        {img}
+      </a>
+    );
+  }
+  return img;
 }
 
 function SponsorLogo({

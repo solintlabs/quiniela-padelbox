@@ -9,12 +9,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <>
       <Nav isAdmin={user.role === 'ADMIN'} userEmail={user.email ?? undefined} />
-      <main className="max-w-6xl mx-auto px-6 py-8">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 pb-24 sm:pb-8">
         {!user.hasPaid && <PaymentBanner />}
         {children}
-        <BottomQuickNav hasPaid={user.hasPaid} />
         <Footer variant="app" />
       </main>
+      <BottomQuickNav hasPaid={user.hasPaid} />
     </>
   );
 }
