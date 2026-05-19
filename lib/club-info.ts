@@ -58,7 +58,7 @@ export const CLUB_INFO = {
   /** Premios — los socios los ven en el dashboard y en /inscripcion */
   prizes: [
     { place: '🥇 1er lugar', amount: '$1.500' },
-    { place: '🥈 2º lugar', amount: '$500' },
+    { place: '🥈 2º lugar', amount: '$600' },
     { place: '🥉 3er lugar', amount: '$300' },
   ],
 

@@ -244,7 +244,7 @@ export default async function PagosAdmin({
           <span className="text-muted">{pool.totalPaidCount} registrados</span>
         </p>
         <div className="mt-4 rounded-lg border border-warning/30 bg-warning/10 px-3 py-2 text-xs">
-          Premios garantizados: <strong>$1.500 + $500 + $300 = $2.300</strong>.
+          Premios garantizados: <strong>$1.500 + $600 + $300 = $2.400</strong>.
           Lo recogido por encima cubre operativa / patrocinios extra.
         </div>
       </section>
@@ -282,7 +282,7 @@ export default async function PagosAdmin({
             defaultValue={rules?.championPrizesText ?? ''}
             maxLength={1500}
             rows={4}
-            placeholder={'Ej (post-aprobacion Apple):\n🥇 1er lugar: $1.500\n🥈 2º lugar: $500\n🥉 3er lugar: $300'}
+            placeholder={'Ej (post-aprobacion Apple):\n🥇 1er lugar: $1.500\n🥈 2º lugar: $600\n🥉 3er lugar: $300'}
             className="w-full rounded-lg border border-line bg-bg p-3 text-sm font-mono text-ink resize-y min-h-[120px] focus:outline-none focus:ring-2 focus:ring-accent"
           />
           <div className="flex justify-end mt-3">

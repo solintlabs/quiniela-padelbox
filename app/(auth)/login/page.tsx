@@ -71,7 +71,7 @@ export default async function LoginPage() {
           </div>
           <div className="rounded-md bg-zinc-900/80 border border-zinc-700 py-1.5 px-2 text-center">
             <p className="text-zinc-400">🥈</p>
-            <p className="font-display tabular-nums text-xs mt-0.5">$500</p>
+            <p className="font-display tabular-nums text-xs mt-0.5">$600</p>
           </div>
           <div className="rounded-md bg-orange-500/15 border border-orange-500/40 py-1.5 px-2 text-center">
             <p className="text-orange-300">🥉</p>
@@ -119,7 +119,7 @@ export default async function LoginPage() {
             <Input name="phone" type="tel" inputMode="tel" placeholder="+58 412 555 0000" autoComplete="tel" maxLength={20} />
             <Input name="email" type="email" placeholder="tu@email.com" autoComplete="email" required />
             <Button type="submit" size="lg" className="w-full font-display tracking-tight mt-2">
-              ENVIAR CÓDIGO →
+              ENVIAR ENLACE →
             </Button>
           </form>
 
@@ -161,8 +161,8 @@ export default async function LoginPage() {
           <p className="text-[11px] text-zinc-300 leading-relaxed">
             <span className="text-accent font-bold uppercase tracking-[0.18em] text-[10px]">¿Cómo entro?</span>
             <br />
-            Pones tu correo y te llega un <strong className="text-ink">código de 6 dígitos por email</strong>. Lo introduces aquí y listo —{' '}
-            <strong className="text-ink">sin contraseñas que recordar</strong>. Tu sesión queda guardada en este dispositivo, así que solo pedimos el código la primera vez (o si cierras sesión).
+            Pones tu correo y te llega un <strong className="text-ink">enlace de acceso por email</strong>. Pinchas y entras —{' '}
+            <strong className="text-ink">sin contraseñas que recordar</strong>. Tu sesión queda guardada en este navegador, así que solo pedimos el enlace la primera vez (o si cierras sesión).
           </p>
           <p className="text-[10px] text-zinc-500 mt-2">
             Tu cuenta se crea sola la primera vez. El admin de PADELBOX valida tu pago para activarte.

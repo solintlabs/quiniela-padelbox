@@ -233,7 +233,7 @@ export default async function DashboardPage() {
           </div>
           <div className="flex items-center justify-between px-5 py-4 border-t border-line">
             <span className="text-base">🥈 2º lugar</span>
-            <span className="font-display text-2xl tabular-nums">$500</span>
+            <span className="font-display text-2xl tabular-nums">$600</span>
           </div>
           <div className="flex items-center justify-between px-5 py-4 border-t border-line">
             <span className="text-base">🥉 3er lugar</span>
