@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { formatDateTime } from '@/lib/format';
 import { getPool, formatCurrency } from '@/lib/pool';
+import { getAllWeeks, getCurrentWeek } from '@/lib/weeks';
 
 function bail(reason: string): never {
   redirect(`/admin/pagos?error=${encodeURIComponent(reason)}#metodos`);
@@ -61,6 +62,48 @@ async function updateWeeklyPrizes(formData: FormData) {
   revalidatePath('/');
   revalidatePath('/partidos');
   done('Premios de la semana guardados');
+}
+
+async function upsertWeeklyPrize(formData: FormData) {
+  'use server';
+  await requireAdmin();
+  const weekNumber = Number(formData.get('weekNumber') ?? 0);
+  const prizeText = String(formData.get('prizeText') ?? '').trim().slice(0, 1500);
+  if (!weekNumber || weekNumber < 1) bail('Semana inválida');
+  if (!prizeText) {
+    // Texto vacío → borrar la entrada
+    await prisma.weeklyPrize.deleteMany({ where: { weekNumber } });
+    revalidatePath('/');
+    revalidatePath('/ranking');
+    done(`Premio de la semana ${weekNumber} eliminado`);
+  }
+  await prisma.weeklyPrize.upsert({
+    where: { weekNumber },
+    update: { prizeText },
+    create: { weekNumber, prizeText },
+  });
+  revalidatePath('/');
+  revalidatePath('/ranking');
+  done(`Premio de la semana ${weekNumber} guardado`);
+}
+
+async function markWeeklyWinner(formData: FormData) {
+  'use server';
+  await requireAdmin();
+  const weekNumber = Number(formData.get('weekNumber') ?? 0);
+  const winnerUserId = String(formData.get('winnerUserId') ?? '').trim() || null;
+  if (!weekNumber) bail('Semana inválida');
+  const existing = await prisma.weeklyPrize.findUnique({ where: { weekNumber } });
+  if (!existing) bail(`No hay premio configurado para la semana ${weekNumber}`);
+  await prisma.weeklyPrize.update({
+    where: { weekNumber },
+    data: {
+      winnerUserId,
+      awardedAt: winnerUserId ? new Date() : null,
+    },
+  });
+  revalidatePath('/ranking');
+  done(winnerUserId ? `Ganador semana ${weekNumber} registrado` : `Ganador semana ${weekNumber} desmarcado`);
 }
 
 async function toggleMethod(formData: FormData) {
@@ -188,7 +231,7 @@ export default async function PagosAdmin({
   const params = await searchParams;
   const errorMsg = params.error;
   const okMsg = params.ok;
-  const [rules, pool, methods, paidUsers] = await Promise.all([
+  const [rules, pool, methods, paidUsers, weeklyPrizes] = await Promise.all([
     prisma.rules.findUnique({ where: { id: 1 } }),
     getPool(),
     prisma.paymentMethod.findMany({ orderBy: { sortOrder: 'asc' } }),
@@ -205,7 +248,14 @@ export default async function PagosAdmin({
         paidNote: true,
       },
     }),
+    prisma.weeklyPrize.findMany({ orderBy: { weekNumber: 'asc' } }),
   ]);
+
+  const tournamentStart = rules?.tournamentStartAt ?? null;
+  const allWeeks = tournamentStart ? getAllWeeks(tournamentStart) : [];
+  const currentWeek = tournamentStart ? getCurrentWeek(new Date(), tournamentStart) : 1;
+  const weeklyPrizeByWeek = new Map(weeklyPrizes.map((p) => [p.weekNumber, p]));
+  const userById = new Map(paidUsers.map((u) => [u.id, u]));
 
   // Agregaciones por método de pago
   const byMethod = new Map<string, { count: number; users: typeof paidUsers }>();
@@ -291,26 +341,154 @@ export default async function PagosAdmin({
         </form>
       </section>
 
-      {/* Premios de esta semana — texto libre */}
-      <section className="rounded-xl border border-line bg-bg-elev p-5 max-w-2xl">
-        <h2 className="font-display text-xl">Premios de esta semana</h2>
-        <p className="text-sm text-muted mt-1">
-          Lo que aparece en el dashboard a todos los socios. Edítalo cada semana.
-          Acepta texto plano y emojis (máx 1500 caracteres). Déjalo vacío para ocultar el bloque.
+      {/* Premios semanales — uno por semana */}
+      <section className="max-w-2xl">
+        <h2 className="font-display text-xl">Premios semanales</h2>
+        <p className="text-sm text-muted mt-1 mb-4">
+          {tournamentStart ? (
+            <>
+              Cada semana del Mundial puede tener su premio propio. Solo creas
+              entrada para las semanas que vayas a premiar. Al cerrar la semana,
+              marca el ganador (sale del top del ranking semanal).
+            </>
+          ) : (
+            <>
+              <strong className="text-warning">Configura primero la fecha de inicio del torneo</strong>{' '}
+              en <Link href="/admin/reglas" className="text-accent underline">/admin/reglas</Link> para generar las semanas.
+            </>
+          )}
         </p>
-        <form action={updateWeeklyPrizes} className="mt-4">
-          <textarea
-            name="weeklyPrizesText"
-            defaultValue={rules?.weeklyPrizesText ?? ''}
-            maxLength={1500}
-            rows={5}
-            placeholder={'Ej:\n🥇 1er lugar: Gift card $50 DELISH\n🍔 Top 5: Combo Vinny\'s\n🌮 Premio sorpresa: 3 docenas de tacos Tacoberto'}
-            className="w-full rounded-lg border border-line bg-bg p-3 text-sm font-mono text-ink resize-y min-h-[140px] focus:outline-none focus:ring-2 focus:ring-accent"
-          />
-          <div className="flex justify-end mt-3">
-            <Button type="submit">Guardar premios de la semana</Button>
+
+        {tournamentStart && allWeeks.length > 0 && (
+          <div className="space-y-2">
+            {allWeeks.map((w) => {
+              const prize = weeklyPrizeByWeek.get(w.weekNumber);
+              const winner = prize?.winnerUserId ? userById.get(prize.winnerUserId) : null;
+              const isCurrent = w.weekNumber === currentWeek;
+              return (
+                <details
+                  key={w.weekNumber}
+                  className={
+                    'rounded-xl border bg-bg-elev ' +
+                    (isCurrent ? 'border-accent' : 'border-line')
+                  }
+                  open={isCurrent && !prize}
+                >
+                  <summary className="cursor-pointer px-4 py-3 flex items-center justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-sm">
+                        Semana {w.weekNumber}
+                        {isCurrent && (
+                          <span className="ml-2 text-[10px] uppercase tracking-[0.15em] text-accent">
+                            actual
+                          </span>
+                        )}
+                        {w.isPartial && (
+                          <span className="ml-2 text-[10px] uppercase tracking-[0.15em] text-muted">
+                            parcial
+                          </span>
+                        )}
+                      </p>
+                      <p className="text-xs text-muted">{w.label}</p>
+                    </div>
+                    <span className="text-xs text-right shrink-0">
+                      {prize ? (
+                        winner ? (
+                          <span className="text-success">✓ {winner.name ?? winner.email}</span>
+                        ) : (
+                          <span className="text-accent">Premio configurado</span>
+                        )
+                      ) : (
+                        <span className="text-muted">Sin premio</span>
+                      )}
+                    </span>
+                  </summary>
+                  <div className="p-4 border-t border-line space-y-4">
+                    {/* Edit text */}
+                    <form action={upsertWeeklyPrize} className="space-y-2">
+                      <input type="hidden" name="weekNumber" value={w.weekNumber} />
+                      <label className="text-xs uppercase tracking-[0.18em] text-muted">
+                        Texto del premio
+                      </label>
+                      <textarea
+                        name="prizeText"
+                        defaultValue={prize?.prizeText ?? ''}
+                        maxLength={1500}
+                        rows={3}
+                        placeholder={'Ej:\n🥇 1er lugar: Gift card $50 DELISH\n🍔 Top 5: Combo Vinny\'s'}
+                        className="w-full rounded-lg border border-line bg-bg p-3 text-sm font-mono text-ink resize-y min-h-[80px] focus:outline-none focus:ring-2 focus:ring-accent"
+                      />
+                      <p className="text-[11px] text-muted">
+                        Vacío = elimina el premio de esta semana.
+                      </p>
+                      <div className="flex justify-end">
+                        <Button type="submit" size="sm">
+                          {prize ? 'Actualizar' : 'Guardar premio'}
+                        </Button>
+                      </div>
+                    </form>
+
+                    {/* Mark winner — solo si hay premio */}
+                    {prize && (
+                      <form action={markWeeklyWinner} className="space-y-2 border-t border-line pt-3">
+                        <input type="hidden" name="weekNumber" value={w.weekNumber} />
+                        <label className="text-xs uppercase tracking-[0.18em] text-muted">
+                          Ganador
+                        </label>
+                        <div className="flex gap-2 flex-wrap">
+                          <select
+                            name="winnerUserId"
+                            defaultValue={prize.winnerUserId ?? ''}
+                            className="flex-1 min-w-[200px] h-10 bg-bg border border-line rounded-md px-3 text-sm text-ink"
+                          >
+                            <option value="">— Sin asignar —</option>
+                            {paidUsers.map((u) => (
+                              <option key={u.id} value={u.id}>
+                                {u.name ?? u.email}
+                              </option>
+                            ))}
+                          </select>
+                          <Button type="submit" size="sm" variant="secondary">
+                            Guardar ganador
+                          </Button>
+                        </div>
+                        {prize.awardedAt && (
+                          <p className="text-[11px] text-muted">
+                            Otorgado el {formatDateTime(prize.awardedAt)}
+                          </p>
+                        )}
+                      </form>
+                    )}
+                  </div>
+                </details>
+              );
+            })}
           </div>
-        </form>
+        )}
+
+        {/* Texto legacy — campo Rules.weeklyPrizesText (queda como compat) */}
+        <details className="rounded-xl border border-line bg-bg-elev mt-4">
+          <summary className="cursor-pointer px-4 py-3 text-xs text-muted">
+            Texto legacy de premios (compatibilidad con app móvil v8)
+          </summary>
+          <form action={updateWeeklyPrizes} className="p-4 border-t border-line">
+            <p className="text-xs text-muted mb-2">
+              La app móvil aún lee este campo único. Lo mantendremos hasta que la próxima
+              versión de la app consuma WeeklyPrize por semana.
+            </p>
+            <textarea
+              name="weeklyPrizesText"
+              defaultValue={rules?.weeklyPrizesText ?? ''}
+              maxLength={1500}
+              rows={4}
+              placeholder={'Vacío = oculta el bloque'}
+              className="w-full rounded-lg border border-line bg-bg p-3 text-sm font-mono text-ink resize-y min-h-[100px] focus:outline-none focus:ring-2 focus:ring-accent"
+            />
+            <div className="flex justify-end mt-3">
+              <Button type="submit" size="sm">Guardar texto legacy</Button>
+            </div>
+          </form>
+        </details>
       </section>
 
       {/* Métodos de pago — editor completo */}

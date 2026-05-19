@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db';
 import { publicDisplayName } from '@/lib/display';
+import { getWeekRange } from '@/lib/weeks';
 import type { RankingRow } from '@/components/RankingTable';
 
 /**
@@ -51,6 +52,61 @@ export async function computeRanking(): Promise<RankingRow[]> {
       // Email se envia MASCARADO al cliente — fallback display si no hay name.
       // Esto evita scraping de la lista completa de correos de socios.
       // El admin tiene su propia vista (admin/usuarios) sin mascara.
+      email: publicDisplayName({ name: u.name, email: u.email }),
+      played,
+      exact,
+      points,
+      createdAt: u.createdAt,
+    };
+  });
+
+  rows.sort((a, b) => {
+    if (b.points !== a.points) return b.points - a.points;
+    if (b.exact !== a.exact) return b.exact - a.exact;
+    return a.createdAt.getTime() - b.createdAt.getTime();
+  });
+
+  return rows.map(({ createdAt: _c, ...r }) => r);
+}
+
+/**
+ * Ranking restringido a las predicciones cuyo match.kickoff cae dentro
+ * de la semana dada. No incluye bonus de campeón (eso es del general).
+ *
+ * Devuelve null si el torneo no tiene fecha de arranque configurada.
+ */
+export async function computeWeeklyRanking(weekNumber: number): Promise<RankingRow[] | null> {
+  const rules = await prisma.rules.findUnique({ where: { id: 1 }, select: { tournamentStartAt: true } });
+  if (!rules?.tournamentStartAt) return null;
+
+  const range = getWeekRange(weekNumber, rules.tournamentStartAt);
+
+  const users = await prisma.user.findMany({
+    where: { hasPaid: true },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      createdAt: true,
+      predictions: {
+        where: {
+          points: { not: null },
+          match: {
+            kickoff: { gte: range.start, lt: range.end },
+          },
+        },
+        select: { points: true },
+      },
+    },
+  });
+
+  const rows: (RankingRow & { createdAt: Date })[] = users.map((u) => {
+    const played = u.predictions.length;
+    const points = u.predictions.reduce((acc, p) => acc + (p.points ?? 0), 0);
+    const exact = u.predictions.filter((p) => p.points === 3).length;
+    return {
+      userId: u.id,
+      name: u.name,
       email: publicDisplayName({ name: u.name, email: u.email }),
       played,
       exact,

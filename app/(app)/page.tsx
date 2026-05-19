@@ -7,6 +7,7 @@ import { Countdown } from '@/components/Countdown';
 import { AliadosStrip } from '@/components/AliadosStrip';
 import { AppStoreBadges } from '@/components/AppStoreBadges';
 import { formatDateTime } from '@/lib/format';
+import { getCurrentWeek, getWeekRange } from '@/lib/weeks';
 
 export const metadata = { title: 'Inicio · Quiniela PADELBOX' };
 export const dynamic = 'force-dynamic';
@@ -39,8 +40,20 @@ export default async function DashboardPage() {
       return { total, filled };
     })(),
     prisma.user.findUnique({ where: { id: userId }, select: { hasPaid: true } }),
-    prisma.rules.findUnique({ where: { id: 1 }, select: { weeklyPrizesText: true } }),
+    prisma.rules.findUnique({ where: { id: 1 }, select: { weeklyPrizesText: true, tournamentStartAt: true } }),
   ]);
+
+  // Premio de la semana actual desde WeeklyPrize; fallback a Rules.weeklyPrizesText
+  const currentWeek = rules?.tournamentStartAt
+    ? getCurrentWeek(new Date(), rules.tournamentStartAt)
+    : null;
+  const currentWeekRange = rules?.tournamentStartAt && currentWeek
+    ? getWeekRange(currentWeek, rules.tournamentStartAt)
+    : null;
+  const currentWeekPrize = currentWeek
+    ? await prisma.weeklyPrize.findUnique({ where: { weekNumber: currentWeek } })
+    : null;
+  const weeklyPrizeText = currentWeekPrize?.prizeText ?? rules?.weeklyPrizesText ?? null;
 
   const myPrediction = nextMatch?.predictions?.[0];
 
@@ -153,14 +166,24 @@ export default async function DashboardPage() {
         </section>
       )}
 
-      {/* Premios de esta semana — el admin lo edita en /admin/pagos */}
-      {rules?.weeklyPrizesText && (
+      {/* Premio de esta semana — el admin lo edita en /admin/pagos por semana */}
+      {weeklyPrizeText && (
         <section className="max-w-2xl mx-auto rounded-2xl border-2 border-[#f14826]/50 bg-[#f14826]/10 p-5">
-          <p className="text-[10px] uppercase tracking-[0.28em] font-bold" style={{ color: '#f14826' }}>
-            🍔 Premios de esta semana
-          </p>
+          <div className="flex items-baseline justify-between gap-3 flex-wrap">
+            <p className="text-[10px] uppercase tracking-[0.28em] font-bold" style={{ color: '#f14826' }}>
+              🍔 Premio de esta semana
+            </p>
+            {currentWeek && currentWeekRange && (
+              <Link
+                href={`/ranking?tab=semanal&week=${currentWeek}`}
+                className="text-[10px] uppercase tracking-[0.15em] text-muted hover:text-accent"
+              >
+                Semana {currentWeek} · {currentWeekRange.label} →
+              </Link>
+            )}
+          </div>
           <p className="font-display text-sm text-ink mt-2 whitespace-pre-line leading-relaxed">
-            {rules.weeklyPrizesText}
+            {weeklyPrizeText}
           </p>
         </section>
       )}

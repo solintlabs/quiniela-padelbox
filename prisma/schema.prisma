@@ -291,6 +291,20 @@ model Sponsor {
   @@index([tenantId, enabled, sortOrder])
 }
 
+// Premios semanales — uno por cada semana del torneo que el admin decida premiar.
+// La semana 1 va del día de arranque al domingo siguiente; las siguientes son
+// Lunes-Domingo completas. Si el admin no crea entrada para una semana, esa
+// semana no muestra premio (es opcional). Ver lib/weeks.ts para el cálculo.
+model WeeklyPrize {
+  id            String    @id @default(cuid())
+  weekNumber    Int       @unique  // 1, 2, 3, ...
+  prizeText     String              // texto libre con emojis, ej "🍔 1er lugar: Combo DELISH"
+  winnerUserId  String?             // admin marca ganador al cerrar la semana
+  awardedAt     DateTime?           // cuándo se otorgó (sello temporal)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
 // Métodos de pago configurables desde /admin/pagos.
 // En la fase SaaS multi-tenant se añadirá tenantId (por ahora null = global).
 model PaymentMethod {
