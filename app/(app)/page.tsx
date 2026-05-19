@@ -175,6 +175,40 @@ export default async function DashboardPage() {
         <AppStoreBadges variant="hero" />
       </div>
 
+      {/* Accesos rapidos — atajos a secciones clave */}
+      <section className="max-w-2xl mx-auto">
+        <p className="text-xs uppercase tracking-[0.18em] text-muted text-center mb-4">
+          Accesos rápidos
+        </p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <QuickTile
+            href="/partidos"
+            icon="🎯"
+            title="Mis pronósticos"
+            subtitle="Predice y edita"
+          />
+          <QuickTile
+            href="/ranking"
+            icon="🏆"
+            title="Ranking"
+            subtitle={me ? `Posición #${me.position}` : 'Ver tabla'}
+          />
+          <QuickTile
+            href="/perfil"
+            icon="👤"
+            title="Mi perfil"
+            subtitle={me_user?.hasPaid ? '✓ Activado' : '⚠ Pendiente'}
+            badgeColor={me_user?.hasPaid ? 'text-success' : 'text-warning'}
+          />
+          <QuickTile
+            href="/reglas"
+            icon="📋"
+            title="Reglas"
+            subtitle="Cómo funciona"
+          />
+        </div>
+      </section>
+
       {/* Cross-sell: "quiero mi quiniela" — link discreto */}
       <p className="text-center text-[11px] text-muted">
         ¿Conoces un club que quiera su quiniela?{' '}
@@ -213,5 +247,30 @@ export default async function DashboardPage() {
         )}
       </section>
     </div>
+  );
+}
+
+function QuickTile({
+  href,
+  icon,
+  title,
+  subtitle,
+  badgeColor,
+}: {
+  href: string;
+  icon: string;
+  title: string;
+  subtitle: string;
+  badgeColor?: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="group rounded-xl border border-line bg-bg-elev p-4 hover:border-accent hover:bg-accent/5 transition-colors flex flex-col items-center text-center"
+    >
+      <span className="text-2xl mb-2">{icon}</span>
+      <p className="font-display text-sm leading-tight">{title}</p>
+      <p className={`text-[11px] mt-1 ${badgeColor ?? 'text-muted'}`}>{subtitle}</p>
+    </Link>
   );
 }
