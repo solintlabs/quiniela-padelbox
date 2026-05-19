@@ -162,7 +162,7 @@ export default async function LoginPage() {
             <span className="text-accent font-bold uppercase tracking-[0.18em] text-[10px]">¿Cómo entro?</span>
             <br />
             Pones tu correo y te llega un <strong className="text-ink">código de 6 dígitos por email</strong>. Lo introduces aquí y listo —{' '}
-            <strong className="text-ink">sin contraseñas que recordar</strong>. Las próximas veces basta con el email, te llegará un código nuevo cada vez.
+            <strong className="text-ink">sin contraseñas que recordar</strong>. Tu sesión queda guardada en este dispositivo, así que solo pedimos el código la primera vez (o si cierras sesión).
           </p>
           <p className="text-[10px] text-zinc-500 mt-2">
             Tu cuenta se crea sola la primera vez. El admin de PADELBOX valida tu pago para activarte.
