@@ -26,30 +26,30 @@ export function PodioHero({ top, me }: PodioHeroProps) {
   return (
     <section>
       <header className="text-center">
-        <p className="text-xs uppercase tracking-[0.18em] text-muted">Ranking PADELBOX</p>
-        <h1 className="font-display text-4xl mt-1">El Podio</h1>
+        <p className="text-[10px] sm:text-xs uppercase tracking-[0.18em] text-muted">Ranking PADELBOX</p>
+        <h1 className="font-display text-2xl sm:text-4xl mt-1">El Podio</h1>
       </header>
 
-      <div className="grid grid-cols-3 gap-2 sm:gap-3 max-w-2xl mx-auto mt-10">
+      <div className="grid grid-cols-3 gap-2 sm:gap-3 max-w-2xl mx-auto mt-5 sm:mt-10">
         <PodioColumn row={second} pos={2} />
         <PodioColumn row={first} pos={1} crown />
         <PodioColumn row={third} pos={3} />
       </div>
 
       {me && (
-        <div className="mt-8 rounded-xl border border-line bg-bg-elev p-4 flex items-center justify-between max-w-xl mx-auto">
+        <div className="mt-5 sm:mt-8 rounded-xl border border-line bg-bg-elev p-3 sm:p-4 flex items-center justify-between max-w-xl mx-auto">
           <div>
-            <p className="text-xs text-muted">Tu posición</p>
-            <p className="font-display text-2xl tabular-nums">
+            <p className="text-[11px] sm:text-xs text-muted">Tu posición</p>
+            <p className="font-display text-lg sm:text-2xl tabular-nums">
               #{me.position} · <span className="text-accent">{me.row.points}</span> pts
             </p>
           </div>
           {me.pointsToPodium > 0 ? (
-            <p className="text-xs text-muted text-right">
+            <p className="text-[11px] sm:text-xs text-muted text-right">
               A <span className="text-ink tabular-nums">{me.pointsToPodium} pts</span><br />del podio
             </p>
           ) : (
-            <p className="text-xs text-success">¡Estás en el podio!</p>
+            <p className="text-[11px] sm:text-xs text-success">¡Estás en el podio!</p>
           )}
         </div>
       )}
@@ -66,8 +66,13 @@ function PodioColumn({
   pos: 1 | 2 | 3;
   crown?: boolean;
 }) {
-  // Alturas del escalón en píxeles (1º más alto, 2º medio, 3º más bajo)
-  const stepHeight = pos === 1 ? 'h-32' : pos === 2 ? 'h-24' : 'h-16';
+  // Alturas del escalón (móvil más compacto, desktop original)
+  const stepHeight =
+    pos === 1
+      ? 'h-20 sm:h-32'
+      : pos === 2
+        ? 'h-16 sm:h-24'
+        : 'h-12 sm:h-16';
   const stepColors =
     pos === 1
       ? 'bg-accent/15 border-accent/60'
@@ -76,30 +81,30 @@ function PodioColumn({
         : 'bg-orange-400/10 border-orange-400/40';
   const stepNumberColor =
     pos === 1 ? 'text-accent' : pos === 2 ? 'text-zinc-300' : 'text-orange-300';
-  const stepNumberSize = pos === 1 ? 'text-4xl' : 'text-3xl';
+  const stepNumberSize = pos === 1 ? 'text-2xl sm:text-4xl' : 'text-xl sm:text-3xl';
 
   return (
     <div className="flex flex-col items-center min-w-0">
       {/* Bloque info arriba (altura uniforme para que el podio esté alineado) */}
-      <div className="flex-1 flex flex-col items-center justify-end gap-1 pb-3 min-w-0 w-full">
+      <div className="flex-1 flex flex-col items-center justify-end gap-0.5 sm:gap-1 pb-2 sm:pb-3 min-w-0 w-full">
         {/* Corona ocupa espacio incluso si está vacía, para alinear avatares */}
-        <div className="h-6 flex items-center">
-          {crown && <span className="text-xl">🥇</span>}
+        <div className="h-5 sm:h-6 flex items-center">
+          {crown && <span className="text-base sm:text-xl">🥇</span>}
         </div>
         <div
           className={cn(
             'rounded-full flex items-center justify-center font-display shrink-0',
             pos === 1
-              ? 'w-14 h-14 bg-accent text-accent-fg text-xl'
-              : 'w-11 h-11 bg-bg-elev text-ink text-base border border-line',
+              ? 'w-10 h-10 sm:w-14 sm:h-14 bg-accent text-accent-fg text-base sm:text-xl'
+              : 'w-8 h-8 sm:w-11 sm:h-11 bg-bg-elev text-ink text-sm sm:text-base border border-line',
           )}
         >
           {row ? initial(row) : '—'}
         </div>
         <p
           className={cn(
-            'text-center text-xs truncate w-full',
-            pos === 1 ? 'font-semibold text-sm' : 'text-muted',
+            'text-center text-[11px] sm:text-xs truncate w-full',
+            pos === 1 ? 'font-semibold sm:text-sm' : 'text-muted',
           )}
         >
           {row?.name ?? row?.email ?? '—'}
