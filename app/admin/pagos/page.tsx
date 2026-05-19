@@ -67,15 +67,26 @@ async function toggleMethod(formData: FormData) {
 }
 
 function parseFields(raw: string): Array<{ label: string; value: string; mono?: boolean }> {
-  // Acepta lineas "label = value" o "label = value | mono"
+  // Acepta lineas "label = value" o "label : value" (con o sin espacios)
+  // Modifier opcional al final: "label = value | mono"
   const lines = raw.split('\n').map((l) => l.trim()).filter(Boolean);
   return lines.map((line) => {
-    const [labelRaw, ...valParts] = line.split('=');
-    const label = (labelRaw ?? '').trim();
-    const restRaw = valParts.join('=').trim();
-    const [valuePart, modifier] = restRaw.split('|').map((s) => s.trim());
-    const mono = (modifier ?? '').toLowerCase() === 'mono';
-    return { label, value: valuePart ?? '', mono: mono || undefined };
+    // Buscar primer separador (= o :) y dividir solo por el PRIMERO
+    const sepIndex = (() => {
+      const eq = line.indexOf('=');
+      const co = line.indexOf(':');
+      if (eq === -1) return co;
+      if (co === -1) return eq;
+      return Math.min(eq, co);
+    })();
+    if (sepIndex < 0) return { label: '', value: '', mono: undefined };
+    const label = line.slice(0, sepIndex).trim();
+    const restRaw = line.slice(sepIndex + 1).trim();
+    const pipeIdx = restRaw.lastIndexOf('|');
+    const valuePart = pipeIdx >= 0 ? restRaw.slice(0, pipeIdx).trim() : restRaw;
+    const modifier = pipeIdx >= 0 ? restRaw.slice(pipeIdx + 1).trim() : '';
+    const mono = modifier.toLowerCase() === 'mono';
+    return { label, value: valuePart, mono: mono || undefined };
   }).filter((f) => f.label && f.value);
 }
 
@@ -88,7 +99,10 @@ async function createMethod(formData: FormData) {
   const icon = String(formData.get('icon') ?? '').trim() || null;
   const fieldsRaw = String(formData.get('fields') ?? '');
   const fields = parseFields(fieldsRaw);
-  if (!type || !title || fields.length === 0) return;
+  if (!type || !title) throw new Error('Tipo y título son obligatorios');
+  if (fields.length === 0) {
+    throw new Error('Datos a mostrar inválidos. Usa formato "Etiqueta = valor" (una línea por dato).');
+  }
   const max = await prisma.paymentMethod.aggregate({ _max: { sortOrder: true } });
   await prisma.paymentMethod.create({
     data: {
@@ -115,7 +129,11 @@ async function updateMethod(formData: FormData) {
   const icon = String(formData.get('icon') ?? '').trim() || null;
   const fieldsRaw = String(formData.get('fields') ?? '');
   const fields = parseFields(fieldsRaw);
-  if (!id || !type || !title || fields.length === 0) return;
+  if (!id) throw new Error('Falta id del método');
+  if (!type || !title) throw new Error('Tipo y título son obligatorios');
+  if (fields.length === 0) {
+    throw new Error('Datos a mostrar inválidos. Usa formato "Etiqueta = valor" (una línea por dato).');
+  }
   await prisma.paymentMethod.update({
     where: { id },
     data: { type, title, subtitle, icon, fields },
@@ -310,8 +328,9 @@ export default async function PagosAdmin() {
                 Datos a mostrar *
               </label>
               <p className="text-xs text-muted">
-                Una línea por dato. Formato: <code>Etiqueta = valor</code> · añade{' '}
-                <code>| mono</code> al final si quieres fuente monoespaciada (cuentas, IBAN).
+                Una línea por dato. Formato: <code>Etiqueta = valor</code> (también vale{' '}
+                <code>Etiqueta : valor</code>). Añade <code>| mono</code> al final si quieres
+                fuente monoespaciada (cuentas, IBAN).
               </p>
               <textarea
                 name="fields"
