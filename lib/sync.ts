@@ -147,6 +147,23 @@ export async function lockAndScore() {
     }
   }
 
+  // 0ter. Auto-unlock defensivo: si un partido SCHEDULED tiene lockedAt
+  // pero su kickoff sigue siendo futuro (con margen del offset), es data
+  // corrupta (un sync antiguo, un test, edición manual mala...). Lo limpiamos
+  // antes de la fase de bloqueo. Solo afectaria a partidos que de todas formas
+  // se volveran a bloquear en su momento correcto.
+  const unlocked = await prisma.match.updateMany({
+    where: {
+      status: 'SCHEDULED',
+      lockedAt: { not: null },
+      kickoff: { gt: new Date(now + offsetMs) },
+    },
+    data: { lockedAt: null },
+  });
+  if (unlocked.count > 0) {
+    console.log(`[lock-and-score] auto-unlock corrigio ${unlocked.count} partido(s) mal bloqueado(s)`);
+  }
+
   // 1. Bloqueo por hora
   const toLock = await prisma.match.findMany({
     where: { lockedAt: null, kickoff: { lte: new Date(now + offsetMs) } },
