@@ -12,6 +12,10 @@ function bail(reason: string): never {
   redirect(`/admin/pagos?error=${encodeURIComponent(reason)}#metodos`);
 }
 
+function done(message: string): never {
+  redirect(`/admin/pagos?ok=${encodeURIComponent(message)}#metodos`);
+}
+
 export const metadata = { title: 'Pagos · Admin' };
 export const dynamic = 'force-dynamic';
 
@@ -25,8 +29,8 @@ async function updateFee(formData: FormData) {
     update: { feeAmount, feeCurrency },
     create: { id: 1, feeAmount, feeCurrency },
   });
-  revalidatePath('/admin/pagos');
   revalidatePath('/admin/usuarios');
+  done('Cuota guardada');
 }
 
 async function updateChampionPrizes(formData: FormData) {
@@ -39,9 +43,9 @@ async function updateChampionPrizes(formData: FormData) {
     update: { championPrizesText: value },
     create: { id: 1, championPrizesText: value },
   });
-  revalidatePath('/admin/pagos');
   revalidatePath('/');
   revalidatePath('/partidos');
+  done('Premios del campeonato guardados');
 }
 
 async function updateWeeklyPrizes(formData: FormData) {
@@ -54,9 +58,9 @@ async function updateWeeklyPrizes(formData: FormData) {
     update: { weeklyPrizesText: value },
     create: { id: 1, weeklyPrizesText: value },
   });
-  revalidatePath('/admin/pagos');
   revalidatePath('/');
   revalidatePath('/partidos');
+  done('Premios de la semana guardados');
 }
 
 async function toggleMethod(formData: FormData) {
@@ -67,8 +71,8 @@ async function toggleMethod(formData: FormData) {
   const m = await prisma.paymentMethod.findUnique({ where: { id } });
   if (!m) return;
   await prisma.paymentMethod.update({ where: { id }, data: { enabled: !m.enabled } });
-  revalidatePath('/admin/pagos');
   revalidatePath('/inscripcion');
+  done(m.enabled ? `"${m.title}" desactivado` : `"${m.title}" activado`);
 }
 
 function parseFields(raw: string): Array<{ label: string; value: string; mono?: boolean }> {
@@ -120,8 +124,8 @@ async function createMethod(formData: FormData) {
       sortOrder: (max._max.sortOrder ?? 0) + 10,
     },
   });
-  revalidatePath('/admin/pagos');
   revalidatePath('/inscripcion');
+  done(`Método "${title}" añadido`);
 }
 
 async function updateMethod(formData: FormData) {
@@ -143,8 +147,8 @@ async function updateMethod(formData: FormData) {
     where: { id },
     data: { type, title, subtitle, icon, fields },
   });
-  revalidatePath('/admin/pagos');
   revalidatePath('/inscripcion');
+  done(`Método "${title}" actualizado`);
 }
 
 async function deleteMethod(formData: FormData) {
@@ -153,8 +157,8 @@ async function deleteMethod(formData: FormData) {
   const id = String(formData.get('id') ?? '');
   if (!id) return;
   await prisma.paymentMethod.delete({ where: { id } });
-  revalidatePath('/admin/pagos');
   revalidatePath('/inscripcion');
+  done('Método eliminado');
 }
 
 async function reorderMethod(formData: FormData) {
@@ -179,9 +183,11 @@ async function reorderMethod(formData: FormData) {
 export default async function PagosAdmin({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; ok?: string }>;
 }) {
-  const errorMsg = (await searchParams).error;
+  const params = await searchParams;
+  const errorMsg = params.error;
+  const okMsg = params.ok;
   const [rules, pool, methods, paidUsers] = await Promise.all([
     prisma.rules.findUnique({ where: { id: 1 } }),
     getPool(),
@@ -221,6 +227,11 @@ export default async function PagosAdmin({
       {errorMsg && (
         <div className="rounded-xl border border-danger bg-danger/10 text-danger px-5 py-3 text-sm">
           <strong>Error:</strong> {errorMsg}
+        </div>
+      )}
+      {okMsg && (
+        <div className="rounded-xl border border-success bg-success/10 text-success px-5 py-3 text-sm">
+          ✓ {okMsg}
         </div>
       )}
 
