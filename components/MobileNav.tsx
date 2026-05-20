@@ -85,7 +85,7 @@ export function MobileNav({ links, isAdmin, userEmail, signOutAction }: Props) {
                 </li>
               )}
               <li className="mt-2 pt-3 border-t border-line">
-                <form action={signOutAction} onClick={() => setOpen(false)}>
+                <form action={signOutAction}>
                   <button
                     type="submit"
                     className="block w-full text-left px-4 py-3 rounded-md text-base text-muted hover:bg-bg-elev"

@@ -28,14 +28,11 @@ function IconBall({ active }: IconProps) {
   );
 }
 
-function IconTrophy({ active }: IconProps) {
+function IconTicket({ active }: IconProps) {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M7 4h10v4a5 5 0 0 1-10 0V4Z" />
-      <path d="M7 6H4a1 1 0 0 0-1 1c0 2.5 1.5 4.5 4 5" />
-      <path d="M17 6h3a1 1 0 0 1 1 1c0 2.5-1.5 4.5-4 5" />
-      <path d="M10 14v2.5c0 .8-.4 1.5-1 2L8 19h8l-1-.5c-.6-.5-1-1.2-1-2V14" />
-      <path d="M7 21h10" />
+      <path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4V8Z" />
+      <path d="M13 6v2M13 11v2M13 16v2" />
     </svg>
   );
 }
@@ -61,14 +58,14 @@ export function BottomQuickNav({ hasPaid }: BottomQuickNavProps) {
   }> = [
     { href: '/', label: 'Inicio', Icon: IconHome, active: (p) => p === '/' },
     { href: '/partidos', label: 'Partidos', Icon: IconBall, active: (p) => p.startsWith('/partidos') },
-    { href: '/ranking', label: 'Ranking', Icon: IconTrophy, active: (p) => p.startsWith('/ranking') },
     {
-      href: '/perfil',
-      label: 'Perfil',
-      Icon: IconUser,
-      active: (p) => p.startsWith('/perfil'),
-      badge: hasPaid ? 'paid' : 'unpaid',
+      href: '/inscripcion',
+      label: 'Inscripción',
+      Icon: IconTicket,
+      active: (p) => p.startsWith('/inscripcion'),
+      badge: hasPaid ? undefined : 'unpaid',
     },
+    { href: '/perfil', label: 'Perfil', Icon: IconUser, active: (p) => p.startsWith('/perfil') },
   ];
 
   return (
