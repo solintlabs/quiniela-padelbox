@@ -20,11 +20,20 @@ Quiniela privada del **Mundial de Fútbol 2026** para socios y conocidos del clu
 
 | Dominio | Uso |
 |---|---|
-| `quinielabox.com` | Dominio principal de la web (usuarios, landing, auth) |
-| `quiniela.solint.cloud` | Alias activo — la app móvil lo usa hardcoded como `API_URL` |
+| `quinielabox.com` / `www.quinielabox.com` | Dominio principal de la web (usuarios, landing, auth) |
+| `quiniela.solint.cloud` | Alias del MISMO proyecto Vercel. La app móvil lo usa hardcoded como `API_URL`. Sirve `/api/*` |
 | `quiniela-padelbox.vercel.app` | URL interna Vercel — no usar en producción |
 
-**Regla crítica:** No añadir redirect de `/api/*` desde `solint.cloud → quinielabox.com` hasta que la app móvil se actualice en stores. El endpoint `/api/auth/code/*` y todos los demás deben seguir respondiendo en `quiniela.solint.cloud`.
+**⚠️ Split intencional `/api/*` (mientras Apple revisa la app móvil):**
+- `quinielabox.com` **rechaza** `/api/*` con 403 (para que el reviewer de Apple no llegue a endpoints internos desde el dominio público).
+- Toda llamada API (web, app móvil, crons externos, debugging) debe ir a **`https://quiniela.solint.cloud`**.
+- No añadir redirect `/api/*` quinielabox.com → solint.cloud hasta que la app móvil se apruebe en stores.
+
+**Cron externo (GitHub Actions):**
+- Workflow `.github/workflows/lock-and-score.yml` corre cada 10 min, llama a `/api/cron/sync-matches` y `/api/cron/lock-and-score`.
+- Secret `APP_URL` en GitHub debe ser `https://quiniela.solint.cloud` (NO `quinielabox.com` → daría 403).
+- Secret `CRON_SECRET` en GitHub debe coincidir con el de Vercel Production env.
+- Si cambias `CRON_SECRET` en Vercel: **redeploy** obligatorio (Vercel no aplica env vars retroactivamente a deployments ya construidos).
 
 `AUTH_URL` y `NEXTAUTH_URL` en Vercel (Production) apuntan a `https://quinielabox.com`.
 
