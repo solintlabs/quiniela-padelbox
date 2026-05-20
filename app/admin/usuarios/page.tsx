@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { prisma } from '@/lib/db';
 import { requireAdmin } from '@/lib/permissions';
 import { Button } from '@/components/ui/button';
+import { DeleteUserButton } from '@/components/DeleteUserButton';
 import { formatDateTime } from '@/lib/format';
 import { getPool } from '@/lib/pool';
 import { getInscriptionsStatus } from '@/lib/inscriptions';
@@ -49,6 +50,20 @@ async function markUnpaid(formData: FormData) {
   revalidatePath('/admin/usuarios');
   revalidatePath('/');
   revalidatePath('/admin/reglas');
+}
+
+async function deleteUser(id: string) {
+  'use server';
+  const admin = await requireAdmin();
+  if (!id) throw new Error('id requerido');
+  if (id === admin.id) throw new Error('No puedes eliminarte a ti mismo');
+  const target = await prisma.user.findUnique({ where: { id }, select: { role: true } });
+  if (!target) throw new Error('Usuario no encontrado');
+  if (target.role === 'ADMIN') throw new Error('No se pueden eliminar admins desde aquí');
+  await prisma.user.delete({ where: { id } });
+  revalidatePath('/admin/usuarios');
+  revalidatePath('/');
+  revalidatePath('/ranking');
 }
 
 export default async function UsuariosAdmin() {
@@ -132,6 +147,15 @@ export default async function UsuariosAdmin() {
                 <p className="text-[10px] text-muted mt-1">
                   Registrado: {formatDateTime(u.createdAt)}
                 </p>
+                {u.role !== 'ADMIN' && (
+                  <div className="mt-2">
+                    <DeleteUserButton
+                      userId={u.id}
+                      userLabel={u.name ?? u.email}
+                      deleteAction={deleteUser}
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="w-full sm:w-auto">
