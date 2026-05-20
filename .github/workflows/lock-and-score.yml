@@ -10,10 +10,13 @@
 #      - CRON_SECRET      → el mismo valor que en Vercel Env (Production)
 # 2. Hacer push de este archivo. El workflow se activa solo.
 #
-# ⚠️ Importante: APP_URL DEBE ser quiniela.solint.cloud, NO quinielabox.com.
-#    quinielabox.com rechaza /api/* por configuración intencional (mientras
-#    Apple revisa la app móvil, que tiene quiniela.solint.cloud hardcoded
-#    como API_URL). Si lo cambias a quinielabox.com → 403 Forbidden.
+# ⚠️ APP_URL debe ser un host SIN redirect. Opciones válidas:
+#    - https://quiniela.solint.cloud (recomendado, mismo host que la app móvil)
+#    - https://www.quinielabox.com   (también vale, con www)
+#    NO usar el apex https://quinielabox.com → redirige 307 a www y los
+#    clientes HTTP estripean el header Authorization al seguir el redirect
+#    (RFC standard), así que el endpoint recibe la petición sin auth y
+#    devuelve 403 Forbidden.
 #
 # Si subes Vercel a Pro, puedes borrar este workflow y volver al cron nativo.
 

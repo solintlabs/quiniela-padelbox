@@ -24,14 +24,13 @@ Quiniela privada del **Mundial de Fútbol 2026** para socios y conocidos del clu
 | `quiniela.solint.cloud` | Alias del MISMO proyecto Vercel. La app móvil lo usa hardcoded como `API_URL`. Sirve `/api/*` |
 | `quiniela-padelbox.vercel.app` | URL interna Vercel — no usar en producción |
 
-**⚠️ Split intencional `/api/*` (mientras Apple revisa la app móvil):**
-- `quinielabox.com` **rechaza** `/api/*` con 403 (para que el reviewer de Apple no llegue a endpoints internos desde el dominio público).
-- Toda llamada API (web, app móvil, crons externos, debugging) debe ir a **`https://quiniela.solint.cloud`**.
-- No añadir redirect `/api/*` quinielabox.com → solint.cloud hasta que la app móvil se apruebe en stores.
+**Regla crítica:** No añadir redirect `/api/* solint.cloud → quinielabox.com` hasta que la app móvil se actualice en stores. La app móvil tiene `quiniela.solint.cloud` hardcoded — debe seguir sirviendo `/api/*` directamente.
+
+**Gotcha apex→www + Authorization header:** `quinielabox.com` (apex sin `www`) hace 307 → `www.quinielabox.com`. Los clientes HTTP **estripean el header `Authorization` al seguir redirects** por seguridad → cualquier llamada a `https://quinielabox.com/api/*` con `Bearer <token>` llega al destino sin auth y devuelve 403. Para crons o pruebas, usar `https://quiniela.solint.cloud` o `https://www.quinielabox.com` (con www), nunca el apex.
 
 **Cron externo (GitHub Actions):**
-- Workflow `.github/workflows/lock-and-score.yml` corre cada 10 min, llama a `/api/cron/sync-matches` y `/api/cron/lock-and-score`.
-- Secret `APP_URL` en GitHub debe ser `https://quiniela.solint.cloud` (NO `quinielabox.com` → daría 403).
+- Workflow `.github/workflows/lock-and-score.yml` corre cada 10 min → `/api/cron/sync-matches` y `/api/cron/lock-and-score`.
+- Secret `APP_URL` en GitHub: `https://quiniela.solint.cloud` (también valdría `https://www.quinielabox.com`).
 - Secret `CRON_SECRET` en GitHub debe coincidir con el de Vercel Production env.
 - Si cambias `CRON_SECRET` en Vercel: **redeploy** obligatorio (Vercel no aplica env vars retroactivamente a deployments ya construidos).
 
