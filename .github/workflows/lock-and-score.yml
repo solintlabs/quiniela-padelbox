@@ -1,35 +1,51 @@
 # GitHub Actions — workaround para Vercel Hobby (cron diario único).
-# Llama al endpoint /api/cron/lock-and-score cada 10 minutos.
+# Llama cada 10 minutos a /api/cron/sync-matches (descarga ESPN)
+# y luego a /api/cron/lock-and-score (cierra + puntúa).
 # Gratis e ilimitado para repos privados de orgs (2000 min/mes incluidos).
 #
 # ACTIVACIÓN:
 # 1. En el repo de GitHub → Settings → Secrets and variables → Actions → New repository secret.
 #    Añadir:
-#      - APP_URL          → https://quiniela-padelbox.vercel.app (sin barra final)
+#      - APP_URL          → https://quinielabox.com (sin barra final)
 #      - CRON_SECRET      → el mismo valor que en Vercel Env
 # 2. Hacer push de este archivo. El workflow se activa solo.
 #
 # Si subes Vercel a Pro, puedes borrar este workflow y volver al cron nativo.
 
-name: lock-and-score
+name: sync-and-score
 on:
   schedule:
-    - cron: '*/10 * * * *'  # cada 10 min (GitHub puede retrasar ~10-20min en horas pico)
+    - cron: '*/10 * * * *'  # cada 10 min (GitHub puede retrasar ~10-30min en horas pico)
   workflow_dispatch: {}     # permite ejecutarlo manual desde la UI
 
 jobs:
   ping:
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 5
     steps:
-      - name: Call /api/cron/lock-and-score
+      - name: Verificar secrets
         run: |
           if [ -z "${{ secrets.APP_URL }}" ] || [ -z "${{ secrets.CRON_SECRET }}" ]; then
-            echo "Faltan secrets APP_URL o CRON_SECRET — workflow no configurado."
+            echo "::error::Faltan secrets APP_URL o CRON_SECRET — workflow no configurado."
             exit 1
           fi
+
+      - name: Sync matches desde ESPN
+        run: |
+          echo "→ POST ${{ secrets.APP_URL }}/api/cron/sync-matches"
+          curl -fsSL -X POST \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.APP_URL }}/api/cron/sync-matches" \
+            -o /tmp/sync.json
+          cat /tmp/sync.json
+          echo
+
+      - name: Lock & score
+        run: |
+          echo "→ POST ${{ secrets.APP_URL }}/api/cron/lock-and-score"
           curl -fsSL -X POST \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             "${{ secrets.APP_URL }}/api/cron/lock-and-score" \
-            -o /tmp/response.json
-          cat /tmp/response.json
+            -o /tmp/lock.json
+          cat /tmp/lock.json
+          echo
