@@ -6,9 +6,14 @@
 # ACTIVACIÓN:
 # 1. En el repo de GitHub → Settings → Secrets and variables → Actions → New repository secret.
 #    Añadir:
-#      - APP_URL          → https://quinielabox.com (sin barra final)
-#      - CRON_SECRET      → el mismo valor que en Vercel Env
+#      - APP_URL          → https://quiniela.solint.cloud (sin barra final)
+#      - CRON_SECRET      → el mismo valor que en Vercel Env (Production)
 # 2. Hacer push de este archivo. El workflow se activa solo.
+#
+# ⚠️ Importante: APP_URL DEBE ser quiniela.solint.cloud, NO quinielabox.com.
+#    quinielabox.com rechaza /api/* por configuración intencional (mientras
+#    Apple revisa la app móvil, que tiene quiniela.solint.cloud hardcoded
+#    como API_URL). Si lo cambias a quinielabox.com → 403 Forbidden.
 #
 # Si subes Vercel a Pro, puedes borrar este workflow y volver al cron nativo.
 
