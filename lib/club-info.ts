@@ -48,8 +48,8 @@ export const CLUB_INFO = {
 
   contact: {
     email: 'info@solint.cloud',
-    /** Número internacional sin '+' ni espacios */
-    whatsapp: '34635171649',
+    /** Número internacional con '+'. Para wa.me se elimina con replace(/\D/g,''). */
+    whatsapp: '+17864027294',
     /** Mensaje pre-rellenado al abrir WhatsApp */
     whatsappPrefill: 'Quiero inscribirme en la Quiniela PADELBOX',
     instagram: '',

@@ -173,7 +173,7 @@ export default async function LoginPage({
             <Link href="/public/reglas" className="flex items-center gap-1 hover:text-ink">📖 Reglas</Link>
             <Link href="/public/inscripcion" className="flex items-center gap-1 hover:text-ink">💳 Inscripción</Link>
             <a
-              href="https://wa.me/34635171649?text=Quiero%20inscribirme%20en%20la%20Quiniela%20PADELBOX"
+              href="https://wa.me/17864027294?text=Quiero%20inscribirme%20en%20la%20Quiniela%20PADELBOX"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1 text-[#25D366]"
