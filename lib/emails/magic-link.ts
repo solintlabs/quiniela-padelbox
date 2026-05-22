@@ -37,7 +37,7 @@ export function buildMagicLinkEmail({ url, origin }: MagicLinkParams) {
   const text = [
     'Quiniela Mundial 2026 — PADELBOX',
     '',
-    'Has solicitado entrar a la quiniela del club.',
+    'Has solicitado entrar a la quiniela.',
     'Pulsa el siguiente enlace para acceder (caduca en 24 horas y solo funciona una vez):',
     '',
     url,
@@ -97,7 +97,7 @@ export function buildMagicLinkEmail({ url, origin }: MagicLinkParams) {
                 Tu enlace para entrar
               </h1>
               <p style="margin:0 0 32px;font-size:15px;line-height:1.55;color:${PALETTE.muted};">
-                Has pedido acceso a la quiniela privada del club. Pulsa el botón de abajo y entrarás directo — sin contraseñas.
+                Has pedido acceso a la quiniela. Pulsa el botón de abajo y entrarás directo — sin contraseñas.
               </p>
             </td>
           </tr>
@@ -174,7 +174,7 @@ export function buildMagicLinkEmail({ url, origin }: MagicLinkParams) {
           <tr>
             <td align="center" style="padding:8px 32px 24px;">
               <p style="margin:0;font-size:11px;line-height:1.5;color:${PALETTE.muted};letter-spacing:0.04em;">
-                © ${year} PADELBOX Sports Club · Quiniela privada del club
+                © ${year} PADELBOX · Quiniela patrocinada
               </p>
             </td>
           </tr>

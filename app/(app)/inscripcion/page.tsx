@@ -26,7 +26,7 @@ export default async function InscripcionPage() {
         <p className="text-xs uppercase tracking-[0.18em] text-muted">Cómo participar</p>
         <h1 className="font-display text-4xl mt-1">Inscripción y pago</h1>
         <p className="text-sm text-muted mt-3 max-w-xl">
-          La quiniela es privada para los socios del club. Para activar tu cuenta
+          La quiniela está patrocinada por PADELBOX. Para activar tu cuenta
           y poder enviar pronósticos, paga la cuota por cualquiera de los métodos
           de abajo y avísanos. Tu acceso se activa en cuanto confirmemos el pago.
         </p>

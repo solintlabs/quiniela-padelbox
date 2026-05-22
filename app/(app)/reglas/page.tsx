@@ -16,7 +16,7 @@ export default async function ReglasPage() {
         <p className="text-xs uppercase tracking-[0.18em] text-muted">Cómo funciona</p>
         <h1 className="font-display text-4xl mt-1">Reglas de la Quiniela</h1>
         <p className="text-sm text-muted mt-3">
-          Quiniela privada del Mundial 2026 para los socios del club PADELBOX.
+          Quiniela del Mundial 2026 patrocinada por PADELBOX.
         </p>
       </header>
 
@@ -122,7 +122,7 @@ export default async function ReglasPage() {
       <section className="space-y-3">
         <h2 className="font-display text-2xl">6. Privacidad de los pronósticos</h2>
         <p className="text-sm text-muted">
-          Los pronósticos de los demás socios <span className="text-ink font-semibold">solo son visibles
+          Los pronósticos del resto de participantes <span className="text-ink font-semibold">solo son visibles
           una vez que el partido se ha cerrado</span> (kickoff − {lock} min). Antes del cierre, cada
           uno solo ve los suyos. Después, todos podemos ver qué predijo cada uno — sin trampas
           posibles, ya que nadie puede modificar tras el cierre.
@@ -133,7 +133,7 @@ export default async function ReglasPage() {
       <section className="space-y-3">
         <h2 className="font-display text-2xl">7. Premios</h2>
         <p className="text-sm text-muted">
-          Los premios se entregan en el club al finalizar el Mundial. Lista actual en{' '}
+          Los premios se entregan en PADELBOX al finalizar el Mundial. Lista actual en{' '}
           <a href="/inscripcion" className="text-accent underline">/inscripcion</a>.
         </p>
         <p className="text-sm text-muted">
@@ -147,7 +147,7 @@ export default async function ReglasPage() {
         <p className="font-semibold">¿Dudas?</p>
         <p className="text-sm text-muted mt-2">
           Escríbenos a <a href="mailto:info@solint.cloud" className="text-accent underline">info@solint.cloud</a> o
-          contacta con el organizador del club. Tu cuenta y tus pronósticos están registrados — siempre podemos
+          contacta con el organizador de la quiniela. Tu cuenta y tus pronósticos están registrados — siempre podemos
           revisar tu historial si hay alguna duda.
         </p>
       </section>

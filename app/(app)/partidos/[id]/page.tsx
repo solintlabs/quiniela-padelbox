@@ -131,13 +131,13 @@ async function AllPredictions({
         <h2 className="font-display text-xl mb-3">Pronósticos de los demás</h2>
         <div className="rounded-xl border border-line bg-bg-elev p-5 text-center space-y-2">
           <p className="text-sm">
-            🔒 Los pronósticos de los demás socios se desbloquean{' '}
+            🔒 Los pronósticos del resto de participantes se desbloquean{' '}
             <strong>15 minutos antes del kickoff</strong>, cuando ya nadie pueda
             modificarlos.
           </p>
           <p className="text-xs text-muted">
             {count > 0
-              ? `${count} ${count === 1 ? 'socio ha' : 'socios han'} hecho pronóstico para este partido.`
+              ? `${count} ${count === 1 ? 'participante ha' : 'participantes han'} hecho pronóstico para este partido.`
               : 'Aún no hay pronósticos para este partido.'}
           </p>
           <p className="text-xs text-muted">

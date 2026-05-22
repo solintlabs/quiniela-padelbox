@@ -137,7 +137,7 @@ export function buildLoginCodeEmail({ code, origin }: LoginCodeParams) {
           <tr>
             <td align="center" style="padding:0 32px 24px;">
               <p style="margin:0;font-size:11px;line-height:1.5;color:${PALETTE.muted};letter-spacing:0.04em;">
-                © ${year} PADELBOX Sports Club · Quiniela privada del club
+                © ${year} PADELBOX · Quiniela patrocinada
               </p>
             </td>
           </tr>

@@ -18,7 +18,7 @@ const archivoBlack = Archivo_Black({
 
 export const metadata: Metadata = {
   title: 'Quiniela Mundial 2026 · PADELBOX',
-  description: 'La quiniela privada del Mundial 2026 para los socios del club PADELBOX.',
+  description: 'La quiniela del Mundial 2026 patrocinada por PADELBOX.',
 };
 
 export const viewport: Viewport = {

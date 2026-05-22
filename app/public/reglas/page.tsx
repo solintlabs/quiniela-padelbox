@@ -16,7 +16,7 @@ export default async function PublicReglasPage() {
         <p className="text-xs uppercase tracking-[0.18em] text-muted">Cómo funciona</p>
         <h1 className="font-display text-4xl mt-1">Reglas de la Quiniela</h1>
         <p className="text-sm text-muted mt-3">
-          Quiniela privada del Mundial 2026 para los socios del club PADELBOX.
+          Quiniela del Mundial 2026 patrocinada por PADELBOX.
         </p>
       </header>
 
@@ -78,7 +78,7 @@ export default async function PublicReglasPage() {
       <section className="space-y-3">
         <h2 className="font-display text-2xl">Privacidad de los pronósticos</h2>
         <p className="text-sm text-muted">
-          Los pronósticos de los demás socios solo son visibles tras el cierre del partido.
+          Los pronósticos del resto de participantes solo son visibles tras el cierre del partido.
           Sin trampas posibles: nadie puede modificar tras el cierre.
         </p>
       </section>

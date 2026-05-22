@@ -12,17 +12,17 @@ export default function TermsPage() {
       <section>
         <h2 className="font-display text-2xl mt-8">1. Qué es Quiniela PADELBOX</h2>
         <p className="text-sm text-muted mt-2">
-          Quiniela PADELBOX es una aplicación privada del club PADELBOX Sports Club operada
-          técnicamente por Solintlabs. Permite a los socios del club participar en una quiniela
-          del Mundial de Fútbol 2026: predecir marcadores de los partidos, competir por puntos
-          y optar a los premios definidos por el club.
+          Quiniela PADELBOX es una aplicación patrocinada por el complejo de pádel PADELBOX y
+          operada técnicamente por Solintlabs. Permite a los participantes inscritos competir
+          en una quiniela del Mundial de Fútbol 2026: predecir marcadores de los partidos, competir
+          por puntos y optar a los premios definidos por la organización.
         </p>
       </section>
 
       <section>
         <h2 className="font-display text-2xl mt-8">2. Quién puede participar</h2>
         <p className="text-sm text-muted mt-2">
-          Socios del club PADELBOX o personas invitadas por el club. Hay que ser <strong className="text-ink">mayor de edad</strong>
+          Cualquier persona que desee inscribirse a la quiniela patrocinada por PADELBOX. Hay que ser <strong className="text-ink">mayor de edad</strong>
           y pagar la cuota única de inscripción por uno de los métodos publicados en la app.
           La cuenta queda activada únicamente tras la confirmación manual del pago por parte del admin.
         </p>
@@ -35,7 +35,7 @@ export default function TermsPage() {
           en{' '}
           <a href="/reglas" className="text-accent underline">/reglas</a>{' '}
           y pueden modificarse antes del primer partido. Cualquier cambio posterior se anunciará
-          por email a todos los socios.
+          por email a todos los participantes.
         </p>
       </section>
 
@@ -55,7 +55,7 @@ export default function TermsPage() {
           Los premios se entregan a los ganadores en el plazo de <strong className="text-ink">30 días</strong> tras la
           final del Mundial. Los importes y desglose se publican en{' '}
           <a href="/inscripcion" className="text-accent underline">/inscripcion</a>.
-          La entrega se hace en el club o por transferencia, a elección del ganador.
+          La entrega se hace en PADELBOX o por transferencia, a elección del ganador.
         </p>
       </section>
 
@@ -94,16 +94,16 @@ export default function TermsPage() {
       <section>
         <h2 className="font-display text-2xl mt-8">9. Limitación de responsabilidad</h2>
         <p className="text-sm text-muted mt-2">
-          Quiniela PADELBOX es una actividad lúdica entre socios. La participación no constituye
+          Quiniela PADELBOX es una actividad lúdica entre participantes. La participación no constituye
           una apuesta sujeta a regulación de juego — los premios se financian con la propia cuota
-          colectiva. Solintlabs no es responsable de disputas entre socios sobre los premios.
+          colectiva. Solintlabs no es responsable de disputas entre participantes sobre los premios.
         </p>
       </section>
 
       <section>
         <h2 className="font-display text-2xl mt-8">10. Jurisdicción</h2>
         <p className="text-sm text-muted mt-2">
-          Estos términos se rigen por la legislación aplicable al lugar de operación del club.
+          Estos términos se rigen por la legislación aplicable al lugar de operación de PADELBOX.
           Cualquier controversia se resolverá en los tribunales correspondientes.
         </p>
       </section>

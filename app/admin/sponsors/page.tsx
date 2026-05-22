@@ -122,7 +122,7 @@ export default async function SponsorsAdminPage() {
       <header>
         <h1 className="font-display text-3xl">Patrocinadores</h1>
         <p className="text-sm text-muted mt-1">
-          Logos visibles en login y dashboard. El orden definido aquí es el que ven los socios.
+          Logos visibles en login y dashboard. El orden definido aquí es el que ven los participantes.
         </p>
       </header>
 

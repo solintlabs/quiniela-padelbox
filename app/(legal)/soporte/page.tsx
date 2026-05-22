@@ -45,7 +45,7 @@ export default function SoportePage() {
           <div>
             <h3 className="font-semibold text-base">No puedo guardar mi pronóstico — me dice que no tengo cuenta activa</h3>
             <p className="text-sm text-muted mt-1">
-              Tu cuenta necesita confirmación de pago por el admin del club. Habla con el
+              Tu cuenta necesita confirmación de pago por el organizador de la quiniela. Habla con el
               administrador para que active tu inscripción.
             </p>
           </div>
@@ -61,7 +61,7 @@ export default function SoportePage() {
           </div>
 
           <div>
-            <h3 className="font-semibold text-base">¿Puedo ver los pronósticos de los demás socios?</h3>
+            <h3 className="font-semibold text-base">¿Puedo ver los pronósticos del resto de participantes?</h3>
             <p className="text-sm text-muted mt-1">
               Sí, pero solo después de que cada partido cierre. Hasta ese momento los pronósticos
               ajenos son privados — sin trampas.

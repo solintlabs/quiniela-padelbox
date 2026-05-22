@@ -28,12 +28,20 @@ export function Nav({ isAdmin, userEmail }: NavProps) {
   return (
     <header className="sticky top-0 z-40 backdrop-blur bg-bg/85 border-b border-line">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-2">
-        <Link href="/" className="flex items-center gap-2 sm:gap-3 shrink-0">
-          <Logo size={32} />
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <a
+            href="https://instagram.com/padelbox.ve"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="PADELBOX en Instagram (@padelbox.ve)"
+            title="@padelbox.ve"
+          >
+            <Logo size={32} />
+          </a>
           <span className="font-display text-xl text-zinc-500 leading-none">×</span>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/partners/delish.svg" alt="DELISH" className="h-10 w-auto" />
-        </Link>
+        </div>
 
         {/* Desktop nav — solo md+ */}
         <nav className="hidden md:flex items-center gap-1 text-sm">

@@ -497,7 +497,7 @@ export default async function PagosAdmin({
           <div>
             <h2 className="font-display text-xl">Métodos de pago</h2>
             <p className="text-sm text-muted mt-1">
-              Lo que ven los socios en <code className="bg-bg-elev px-1 rounded">/inscripcion</code> (web y app).
+              Lo que ven los participantes en <code className="bg-bg-elev px-1 rounded">/inscripcion</code> (web y app).
               Si no hay ninguno activo, se muestra empty-state.
             </p>
           </div>
@@ -640,7 +640,7 @@ export default async function PagosAdmin({
             <div className="rounded-xl border border-dashed border-line py-8 text-center">
               <p className="text-sm text-muted">
                 Sin métodos configurados. Pulsa <strong>Añadir método de pago</strong> arriba para
-                empezar. Los socios verán un mensaje invitándoles a contactar por WhatsApp mientras tanto.
+                empezar. Los participantes verán un mensaje invitándoles a contactar por WhatsApp mientras tanto.
               </p>
             </div>
           )}

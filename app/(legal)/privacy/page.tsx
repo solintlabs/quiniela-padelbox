@@ -11,8 +11,8 @@ export default function PrivacyPage() {
 
       <p className="text-sm">
         Esta política describe cómo <strong>Quiniela PADELBOX</strong> (operada por Solintlabs, S.Baldini)
-        recopila, usa y protege los datos personales de los socios del club que participan en la
-        quiniela del Mundial 2026.
+        recopila, usa y protege los datos personales de los participantes inscritos en la
+        quiniela del Mundial 2026 patrocinada por PADELBOX.
       </p>
 
       <section>
@@ -42,10 +42,10 @@ export default function PrivacyPage() {
         <h2 className="font-display text-2xl mt-8">3. Para qué usamos tus datos</h2>
         <ul className="text-sm text-muted space-y-1.5 mt-2 list-disc list-inside">
           <li>Autenticarte mediante enlace mágico o código de un solo uso.</li>
-          <li>Calcular y mostrar el ranking entre los socios.</li>
+          <li>Calcular y mostrar el ranking entre los participantes.</li>
           <li>Mostrar tus pronósticos en tu perfil y, tras el cierre de cada partido, en la página pública del partido.</li>
           <li>Enviar emails transaccionales (códigos de acceso, recordatorios de cierre).</li>
-          <li>Enviar notificaciones push si nos das permiso (recordatorios de partidos, cierres de pronóstico, resultados, novedades del club). Puedes desactivarlas en cualquier momento desde Ajustes &gt; Notificaciones de tu iPhone.</li>
+          <li>Enviar notificaciones push si nos das permiso (recordatorios de partidos, cierres de pronóstico, resultados, novedades de la quiniela). Puedes desactivarlas en cualquier momento desde Ajustes &gt; Notificaciones de tu iPhone.</li>
         </ul>
       </section>
 
