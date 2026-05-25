@@ -1,18 +1,23 @@
 /**
  * Badges para descargar la app (iOS App Store + Google Play).
  *
- * Configurable via env (NEXT_PUBLIC_APP_STORE_URL / NEXT_PUBLIC_PLAY_STORE_URL).
- * Si las URLs NO están seteadas, los badges salen igualmente pero como
- * "Próximamente" (no clickables). Cuando publiques la app, setea las env
- * vars en Vercel y se vuelven clickables automáticamente.
+ * App Store: QuinielaBOX live en https://apps.apple.com/app/id6770234104
+ * Google Play: pendiente — sigue mostrando "Próximamente" hasta que se publique.
+ *
+ * Cada URL se puede override via env (NEXT_PUBLIC_APP_STORE_URL / NEXT_PUBLIC_PLAY_STORE_URL)
+ * — útil para tenants SaaS con sus propias apps. Si el env var no está, usa los defaults
+ * de PADELBOX.
  *
  * Iconos como SVG inline (no dependencia de fuente del sistema para
  * la manzana, que en Windows/Linux no se renderiza).
  */
 
+const DEFAULT_APP_STORE_URL = 'https://apps.apple.com/app/id6770234104';
+const DEFAULT_PLAY_STORE_URL: string | null = null; // todavía no publicada
+
 export function AppStoreBadges({ variant = 'compact' }: { variant?: 'compact' | 'hero' }) {
-  const appStore = process.env.NEXT_PUBLIC_APP_STORE_URL ?? null;
-  const playStore = process.env.NEXT_PUBLIC_PLAY_STORE_URL ?? null;
+  const appStore = process.env.NEXT_PUBLIC_APP_STORE_URL ?? DEFAULT_APP_STORE_URL;
+  const playStore = process.env.NEXT_PUBLIC_PLAY_STORE_URL ?? DEFAULT_PLAY_STORE_URL;
 
   if (variant === 'hero') {
     return (
