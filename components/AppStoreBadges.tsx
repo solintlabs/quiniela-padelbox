@@ -16,8 +16,10 @@ const DEFAULT_APP_STORE_URL = 'https://apps.apple.com/app/id6770234104';
 const DEFAULT_PLAY_STORE_URL: string | null = null; // todavía no publicada
 
 export function AppStoreBadges({ variant = 'compact' }: { variant?: 'compact' | 'hero' }) {
-  const appStore = process.env.NEXT_PUBLIC_APP_STORE_URL ?? DEFAULT_APP_STORE_URL;
-  const playStore = process.env.NEXT_PUBLIC_PLAY_STORE_URL ?? DEFAULT_PLAY_STORE_URL;
+  // Uso || (no ??) para tratar string vacio como "sin valor": un override de
+  // env var a "" cae al default, igual que si la var no existiera.
+  const appStore = process.env.NEXT_PUBLIC_APP_STORE_URL || DEFAULT_APP_STORE_URL;
+  const playStore = process.env.NEXT_PUBLIC_PLAY_STORE_URL || DEFAULT_PLAY_STORE_URL;
 
   if (variant === 'hero') {
     return (
