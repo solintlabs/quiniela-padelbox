@@ -2,7 +2,17 @@ import { CLUB_INFO } from '@/lib/club-info';
 import { prisma } from '@/lib/db';
 import { formatCurrency } from '@/lib/pool';
 
-export const metadata = { title: 'Inscripción · Quiniela PADELBOX' };
+export const metadata = {
+  title: 'Inscripción · Quiniela del Mundial 2026',
+  description:
+    'Inscríbete a la Quiniela PADELBOX × DELISH del Mundial 2026. Métodos de pago, cuota y cómo activar tu cuenta para empezar a pronosticar.',
+  alternates: { canonical: '/public/inscripcion' },
+  openGraph: {
+    title: 'Inscríbete a la Quiniela del Mundial 2026 · PADELBOX × DELISH',
+    description: 'Únete a la quiniela, predice los partidos y compite por premios semanales.',
+    url: '/public/inscripcion',
+  },
+};
 export const dynamic = 'force-dynamic';
 
 interface Row {

@@ -1,4 +1,9 @@
-export const metadata = { title: 'Política de Privacidad · Quiniela PADELBOX' };
+export const metadata = {
+  title: 'Política de Privacidad',
+  description:
+    'Cómo recopilamos, usamos y protegemos tus datos en la Quiniela PADELBOX × DELISH del Mundial 2026.',
+  alternates: { canonical: '/privacy' },
+};
 
 export default function PrivacyPage() {
   return (

@@ -2,8 +2,9 @@ import { OnboardingForm } from './OnboardingForm';
 import { Logo } from '@/components/Logo';
 
 export const metadata = {
-  title: 'Crear mi quiniela · QuinielaBOX',
+  title: 'Crear mi quiniela',
   description: 'Lanza la quiniela de tu club en minutos.',
+  robots: { index: false, follow: true },
 };
 
 export const dynamic = 'force-dynamic';

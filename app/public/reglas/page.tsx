@@ -1,6 +1,16 @@
 import { prisma } from '@/lib/db';
 
-export const metadata = { title: 'Reglas · Quiniela PADELBOX' };
+export const metadata = {
+  title: 'Reglas de la Quiniela del Mundial 2026',
+  description:
+    'Cómo se juega la Quiniela PADELBOX × DELISH del Mundial 2026: sistema de puntos 3/1/0, bonus de +25 por el campeón, plazos, cuota y premios semanales.',
+  alternates: { canonical: '/public/reglas' },
+  openGraph: {
+    title: 'Reglas · Quiniela del Mundial 2026 · PADELBOX × DELISH',
+    description: 'Sistema 3/1/0, +25 puntos por acertar al campeón, premios semanales.',
+    url: '/public/reglas',
+  },
+};
 export const dynamic = 'force-dynamic';
 
 export default async function PublicReglasPage() {

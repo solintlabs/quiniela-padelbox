@@ -1,4 +1,9 @@
-export const metadata = { title: 'Soporte · Quiniela PADELBOX' };
+export const metadata = {
+  title: 'Soporte y contacto',
+  description:
+    'Ayuda y contacto de la Quiniela PADELBOX × DELISH. Resuelve dudas sobre inscripción, pagos, predicciones y premios del Mundial 2026.',
+  alternates: { canonical: '/soporte' },
+};
 
 export default function SoportePage() {
   return (

@@ -2,7 +2,10 @@ import Link from 'next/link';
 import { requireAdmin } from '@/lib/permissions';
 import { Nav } from '@/components/Nav';
 
-export const metadata = { title: 'Admin · Quiniela PADELBOX' };
+export const metadata = {
+  title: 'Admin',
+  robots: { index: false, follow: false, nocache: true },
+};
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const user = await requireAdmin();

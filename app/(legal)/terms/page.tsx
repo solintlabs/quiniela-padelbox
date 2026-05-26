@@ -1,4 +1,9 @@
-export const metadata = { title: 'Términos de uso · Quiniela PADELBOX' };
+export const metadata = {
+  title: 'Términos de Uso',
+  description:
+    'Condiciones de uso de la Quiniela PADELBOX × DELISH del Mundial 2026: participación, premios, sistema de puntos y reglas.',
+  alternates: { canonical: '/terms' },
+};
 
 export default function TermsPage() {
   return (

@@ -10,7 +10,18 @@ import { Footer } from '@/components/Footer';
 import { WhatsappFab } from '@/components/WhatsappFab';
 import { AppStoreBadges } from '@/components/AppStoreBadges';
 
-export const metadata = { title: 'Entrar · Quiniela PADELBOX' };
+export const metadata = {
+  title: 'Entrar a la Quiniela del Mundial 2026',
+  description:
+    'Entra a la Quiniela PADELBOX × DELISH del Mundial 2026. Pronostica marcadores, sube en el ranking y gana premios semanales en gift cards de DELISH y aliados.',
+  alternates: { canonical: '/login' },
+  openGraph: {
+    title: 'Entrar a la Quiniela del Mundial 2026 · PADELBOX × DELISH',
+    description:
+      'Pronostica los partidos del Mundial 2026 y compite por $1.5K, $600 y $300 + gift cards en DELISH.',
+    url: '/login',
+  },
+};
 export const dynamic = 'force-dynamic';
 
 export default async function LoginPage({
@@ -31,8 +42,36 @@ export default async function LoginPage({
   const inscriptions = getInscriptionsStatus(rules?.inscriptionsCloseAt ?? null);
   const hasGoogle = !!process.env.GOOGLE_CLIENT_ID && !!process.env.GOOGLE_CLIENT_SECRET;
 
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'SportsEvent',
+    name: 'Quiniela del Mundial 2026 — PADELBOX × DELISH',
+    sport: 'Football',
+    description:
+      'Quiniela privada del Mundial de Fútbol 2026 para socios y amigos del club PADELBOX. Sistema de puntos 3/1/0 y bonus de +25 puntos por acertar al campeón.',
+    startDate: '2026-06-11',
+    endDate: '2026-07-19',
+    eventStatus: 'https://schema.org/EventScheduled',
+    eventAttendanceMode: 'https://schema.org/OnlineEventAttendanceMode',
+    organizer: {
+      '@type': 'Organization',
+      name: 'PADELBOX',
+      url: 'https://www.quinielabox.com',
+    },
+    sponsor: { '@type': 'Organization', name: 'DELISH! BURGERS' },
+    location: {
+      '@type': 'VirtualLocation',
+      url: 'https://www.quinielabox.com',
+    },
+  };
+
   return (
     <main className="min-h-screen relative overflow-hidden">
+      <link rel="preconnect" href="https://images.unsplash.com" crossOrigin="anonymous" />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       {/* Foto de tribuna del estadio (asientos) */}
       <div
         aria-hidden

@@ -2,13 +2,52 @@ import { Logo } from '@/components/Logo';
 import { LeadForm } from './LeadForm';
 
 export const metadata = {
-  title: 'Lanza tu quiniela · QuinielaBOX',
-  description: 'Crea la quiniela de tu club, empresa o grupo de amigos en minutos. Premios, ranking, app móvil incluidos.',
+  title: 'Lanza tu propia quiniela para club, peña u oficina',
+  description:
+    'Crea la quiniela de tu club, empresa o grupo de amigos en minutos. Mundial, La Liga, Champions, Copa América — con app iOS + Android, ranking en vivo, premios y patrocinadores. Por Solintlabs.',
+  alternates: { canonical: '/lanza-tu-quiniela' },
+  openGraph: {
+    title: 'Lanza tu propia quiniela — Club, peña, oficina · QuinielaBOX',
+    description:
+      'Plataforma de quinielas privadas. App móvil iOS + Android, ranking, premios, patrocinadores. La misma que usa PADELBOX × DELISH.',
+    url: '/lanza-tu-quiniela',
+  },
+  twitter: {
+    title: 'Lanza tu propia quiniela · QuinielaBOX',
+    description:
+      'Plataforma de quinielas privadas para clubs, peñas y oficinas. App iOS + Android incluida.',
+  },
+};
+
+const jsonLdProduct = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: 'QuinielaBOX',
+  applicationCategory: 'SportsApplication',
+  operatingSystem: 'Web, iOS, Android',
+  description:
+    'Plataforma SaaS para crear quinielas privadas de torneos de fútbol con ranking en vivo, app móvil iOS + Android, patrocinadores y premios semanales.',
+  offers: {
+    '@type': 'Offer',
+    price: '0',
+    priceCurrency: 'USD',
+    availability: 'https://schema.org/InStock',
+    url: 'https://www.quinielabox.com/lanza-tu-quiniela',
+  },
+  provider: {
+    '@type': 'Organization',
+    name: 'Solintlabs',
+    url: 'https://solint.cloud',
+  },
 };
 
 export default function LanzaTuQuinielaPage() {
   return (
     <main className="min-h-screen bg-bg">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdProduct) }}
+      />
       <header className="max-w-5xl mx-auto px-6 py-6 flex items-center justify-between">
         <Logo size={32} />
         <a href="/login" className="text-sm text-muted hover:text-ink">Entrar a mi quiniela →</a>
