@@ -16,10 +16,21 @@ export const metadata = {
     'Entra a la Quiniela PADELBOX × DELISH del Mundial 2026. Pronostica marcadores, sube en el ranking y gana premios semanales en gift cards de DELISH y aliados.',
   alternates: { canonical: '/login' },
   openGraph: {
+    type: 'website',
+    locale: 'es_ES',
+    siteName: 'QuinielaBOX',
     title: 'Entrar a la Quiniela del Mundial 2026 · PADELBOX × DELISH',
     description:
       'Pronostica los partidos del Mundial 2026 y compite por $1.5K, $600 y $300 + gift cards en DELISH.',
     url: '/login',
+    images: [
+      {
+        url: '/opengraph-image',
+        width: 1200,
+        height: 630,
+        alt: 'QuinielaBOX — Quiniela del Mundial 2026 PADELBOX × DELISH',
+      },
+    ],
   },
 };
 export const dynamic = 'force-dynamic';

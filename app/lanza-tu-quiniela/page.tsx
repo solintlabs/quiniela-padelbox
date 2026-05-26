@@ -7,10 +7,21 @@ export const metadata = {
     'Crea la quiniela de tu club, empresa o grupo de amigos en minutos. Mundial, La Liga, Champions, Copa América — con app iOS + Android, ranking en vivo, premios y patrocinadores. Por Solintlabs.',
   alternates: { canonical: '/lanza-tu-quiniela' },
   openGraph: {
+    type: 'website',
+    locale: 'es_ES',
+    siteName: 'QuinielaBOX',
     title: 'Lanza tu propia quiniela — Club, peña, oficina · QuinielaBOX',
     description:
       'Plataforma de quinielas privadas. App móvil iOS + Android, ranking, premios, patrocinadores. La misma que usa PADELBOX × DELISH.',
     url: '/lanza-tu-quiniela',
+    images: [
+      {
+        url: '/opengraph-image',
+        width: 1200,
+        height: 630,
+        alt: 'QuinielaBOX — Plataforma de quinielas privadas para clubs',
+      },
+    ],
   },
   twitter: {
     title: 'Lanza tu propia quiniela · QuinielaBOX',

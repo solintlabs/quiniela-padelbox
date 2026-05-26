@@ -8,9 +8,13 @@ export const metadata = {
     'Inscríbete a la Quiniela PADELBOX × DELISH del Mundial 2026. Métodos de pago, cuota y cómo activar tu cuenta para empezar a pronosticar.',
   alternates: { canonical: '/public/inscripcion' },
   openGraph: {
+    type: 'website',
+    locale: 'es_ES',
+    siteName: 'QuinielaBOX',
     title: 'Inscríbete a la Quiniela del Mundial 2026 · PADELBOX × DELISH',
     description: 'Únete a la quiniela, predice los partidos y compite por premios semanales.',
     url: '/public/inscripcion',
+    images: [{ url: '/opengraph-image', width: 1200, height: 630, alt: 'QuinielaBOX' }],
   },
 };
 export const dynamic = 'force-dynamic';
