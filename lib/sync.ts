@@ -161,7 +161,7 @@ export async function lockAndScore() {
     data: { lockedAt: null },
   });
   if (unlocked.count > 0) {
-    console.log(`[lock-and-score] auto-unlock corrigio ${unlocked.count} partido(s) mal bloqueado(s)`);
+    console.warn(`[lock-and-score] auto-unlock corrigio ${unlocked.count} partido(s) mal bloqueado(s)`);
   }
 
   // 1. Bloqueo por hora

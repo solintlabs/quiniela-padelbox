@@ -108,6 +108,12 @@ export default async function DashboardPage() {
         </section>
       )}
 
+      {/* Descarga la app móvil — al inicio del dashboard para máxima visibilidad
+          tras login. Se muestra a todos los usuarios autenticados. */}
+      <div className="max-w-2xl mx-auto">
+        <AppStoreBadges variant="hero" />
+      </div>
+
       {nextMatch ? (
         <section className="rounded-xl border border-accent/30 bg-accent/5 p-4 sm:p-6 shadow-glow-accent max-w-2xl mx-auto">
           <div className="flex items-center justify-between text-[10px] sm:text-xs text-muted mb-3 sm:mb-5">
@@ -200,11 +206,6 @@ export default async function DashboardPage() {
       {/* Aliados comerciales — premios semanales cortesía de */}
       <div className="max-w-2xl mx-auto">
         <AliadosStrip variant="dashboard" />
-      </div>
-
-      {/* Descarga la app — solo visible si las URLs estan en env (post-publicacion) */}
-      <div className="max-w-2xl mx-auto">
-        <AppStoreBadges variant="hero" />
       </div>
 
       {/* Cross-sell: "quiero mi quiniela" — link discreto */}

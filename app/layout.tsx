@@ -86,6 +86,13 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
+  // Apple Smart App Banner — Safari iOS muestra automaticamente un banner
+  // nativo en la parte superior con "QuinielaBOX — View / Open" enlazando
+  // al App Store. Sin coste, dismissable por el usuario, sin JS.
+  // https://developer.apple.com/documentation/webkit/promoting_apps_with_smart_app_banners
+  other: {
+    'apple-itunes-app': 'app-id=6770234104',
+  },
 };
 
 export const viewport: Viewport = {

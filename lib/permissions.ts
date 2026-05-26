@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { timingSafeEqual } from 'node:crypto';
 import { auth } from '@/lib/auth';
 import { verifyAppToken } from '@/lib/jwt';
 import { prisma } from '@/lib/db';
@@ -90,9 +91,15 @@ export async function requirePaidApi(req?: Request) {
 
 /** Comprueba el header de los crons. */
 export function verifyCronSecret(req: Request): Response | null {
-  const auth = req.headers.get('authorization');
-  const expected = `Bearer ${process.env.CRON_SECRET ?? ''}`;
-  if (!process.env.CRON_SECRET || auth !== expected) {
+  const secret = process.env.CRON_SECRET;
+  if (!secret) return new Response('Forbidden', { status: 403 });
+  const auth = req.headers.get('authorization') ?? '';
+  const expected = `Bearer ${secret}`;
+  // Comparacion timing-safe: requiere buffers de igual longitud,
+  // por eso forzamos el length-check antes del compare.
+  const a = Buffer.from(auth);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length || !timingSafeEqual(a, b)) {
     return new Response('Forbidden', { status: 403 });
   }
   return null;
