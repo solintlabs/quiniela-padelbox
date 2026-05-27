@@ -202,9 +202,16 @@ export async function lockAndScore() {
     });
   }
 
-  // 3. Scoring
+  // 3. Scoring — excluye matches marcados como excludeFromScoring (Liga
+  // desactivada antes del Mundial, por ej.). Esos NO entran al ranking.
   const toScore = await prisma.match.findMany({
-    where: { status: 'FINISHED', scoredAt: null, homeScore: { not: null }, awayScore: { not: null } },
+    where: {
+      status: 'FINISHED',
+      scoredAt: null,
+      homeScore: { not: null },
+      awayScore: { not: null },
+      excludeFromScoring: false,
+    },
     include: { predictions: true },
   });
   let scored = 0;
@@ -251,7 +258,12 @@ export async function recomputeAll() {
   const pointsWinner = rules?.pointsWinner ?? 1;
 
   const matches = await prisma.match.findMany({
-    where: { status: 'FINISHED', homeScore: { not: null }, awayScore: { not: null } },
+    where: {
+      status: 'FINISHED',
+      homeScore: { not: null },
+      awayScore: { not: null },
+      excludeFromScoring: false,
+    },
     include: { predictions: true },
   });
   let updated = 0;

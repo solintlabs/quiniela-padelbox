@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { requireAdmin } from '@/lib/permissions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { ResetForMundialButton } from '@/components/ResetForMundialButton';
 import { formatDateTime, STAGE_LABEL } from '@/lib/format';
 import { calcPoints } from '@/lib/scoring';
 import { syncMatchesFromApi, recomputeAll } from '@/lib/sync';
@@ -137,6 +138,33 @@ async function createMatch(formData: FormData) {
   revalidatePath('/admin/partidos');
 }
 
+/**
+ * Excluye TODOS los partidos de La Liga (group='LIGA') del scoring, pasados y
+ * futuros, y pone points=null en las predicciones de partidos excluidos.
+ * Resultado: ranking arranca limpio para el Mundial.
+ * Las predicciones quedan en DB como historico, solo se anulan los puntos.
+ */
+async function resetForMundial() {
+  'use server';
+  await requireAdmin();
+
+  // 1. Marcar todos los partidos de La Liga como excluidos
+  await prisma.match.updateMany({
+    where: { group: 'LIGA' },
+    data: { excludeFromScoring: true },
+  });
+
+  // 2. Anular puntos de predicciones cuyo match esta excluido
+  await prisma.prediction.updateMany({
+    where: { match: { excludeFromScoring: true } },
+    data: { points: null },
+  });
+
+  revalidatePath('/admin/partidos');
+  revalidatePath('/');
+  revalidatePath('/ranking');
+}
+
 async function deleteMatch(formData: FormData) {
   'use server';
   await requireAdmin();
@@ -154,13 +182,20 @@ function toDatetimeLocal(d: Date): string {
 }
 
 export default async function PartidosAdmin() {
-  const [matches, rules] = await Promise.all([
+  const [matches, rules, ligaStats, ligaPredictionsCount] = await Promise.all([
     prisma.match.findMany({
       orderBy: { kickoff: 'asc' },
       take: 250,
       include: { _count: { select: { predictions: true } } },
     }),
     prisma.rules.findUnique({ where: { id: 1 } }),
+    prisma.match.count({ where: { group: 'LIGA', excludeFromScoring: false } }),
+    prisma.prediction.count({
+      where: {
+        points: { not: null },
+        match: { group: 'LIGA', excludeFromScoring: false },
+      },
+    }),
   ]);
   const syncPaused = rules?.syncPaused ?? false;
 
@@ -210,6 +245,35 @@ export default async function PartidosAdmin() {
           </Button>
         </form>
       </section>
+
+      {/* Preparar para Mundial: excluir Liga del ranking */}
+      {ligaStats > 0 && (
+        <section className="rounded-xl border border-danger/40 bg-danger/5 p-4 space-y-3">
+          <div>
+            <p className="font-semibold">🌍 Preparar para el Mundial</p>
+            <p className="text-xs text-muted mt-1">
+              Excluye todos los partidos de La Liga del ranking (pasados y futuros) y anula los puntos
+              acumulados. El ranking arranca limpio para el Mundial. Las predicciones que los usuarios
+              hicieron quedan guardadas en DB como histórico.
+            </p>
+          </div>
+          <div className="text-xs grid grid-cols-2 gap-2 max-w-md">
+            <div className="rounded-md border border-line bg-bg-elev px-3 py-2">
+              <p className="text-muted">Partidos La Liga activos</p>
+              <p className="font-display text-lg tabular-nums">{ligaStats}</p>
+            </div>
+            <div className="rounded-md border border-line bg-bg-elev px-3 py-2">
+              <p className="text-muted">Predicciones con puntos</p>
+              <p className="font-display text-lg tabular-nums">{ligaPredictionsCount}</p>
+            </div>
+          </div>
+          <ResetForMundialButton
+            ligaMatchesCount={ligaStats}
+            affectedPredictionsCount={ligaPredictionsCount}
+            resetAction={resetForMundial}
+          />
+        </section>
+      )}
 
       {/* Crear partido manual */}
       <details className="rounded-xl border border-line bg-bg-elev">

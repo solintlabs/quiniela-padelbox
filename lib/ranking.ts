@@ -22,7 +22,12 @@ export async function computeRanking(): Promise<RankingRow[]> {
         championPick: true,
         championLockedAt: true,
         predictions: {
-          where: { points: { not: null } },
+          where: {
+            points: { not: null },
+            // No contar predicciones de partidos excluidos del scoring
+            // (ej. La Liga desactivada antes del Mundial).
+            match: { excludeFromScoring: false },
+          },
           select: { points: true },
         },
       },
@@ -93,6 +98,7 @@ export async function computeWeeklyRanking(weekNumber: number): Promise<RankingR
           points: { not: null },
           match: {
             kickoff: { gte: range.start, lt: range.end },
+            excludeFromScoring: false,
           },
         },
         select: { points: true },
