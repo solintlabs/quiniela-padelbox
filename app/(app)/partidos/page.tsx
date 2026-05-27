@@ -178,13 +178,71 @@ export default async function PartidosPage({
         </section>
       )}
 
-      <PartidosClient hasPaid={hasPaid} sections={sections} />
+      <div className="screen-only">
+        <PartidosClient hasPaid={hasPaid} sections={sections} />
 
-      {matches.length === 0 && (
-        <p className="text-sm text-muted text-center py-10">
-          No hay partidos cargados en esta competición.
-        </p>
-      )}
+        {matches.length === 0 && (
+          <p className="text-sm text-muted text-center py-10">
+            No hay partidos cargados en esta competición.
+          </p>
+        )}
+      </div>
+
+      {/* Vista compacta solo para impresion / PDF: 1 linea por partido */}
+      <PrintCompactView
+        title={tab === 'mundial' ? 'Mi quiniela · Mundial 2026' : 'Mi quiniela · La Liga'}
+        sections={sections}
+      />
+    </div>
+  );
+}
+
+function PrintCompactView({
+  title,
+  sections,
+}: {
+  title: string;
+  sections: Array<{ title: string; items: InlineMatch[] }>;
+}) {
+  // Numeracion continua 1..N a traves de todas las secciones
+  let counter = 0;
+  const today = new Date().toLocaleDateString('es-ES', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+
+  return (
+    <div className="only-print">
+      <div className="print-header">
+        <h1>{title}</h1>
+        <p>Generado {today} · quinielabox.com</p>
+      </div>
+      {sections.map((section) => {
+        if (section.items.length === 0) return null;
+        return (
+          <div key={section.title} className="print-section">
+            <h3>{section.title}</h3>
+            <ol className="print-matches-list">
+              {section.items.map((m) => {
+                counter += 1;
+                const home = m.initial?.homeScore ?? '—';
+                const away = m.initial?.awayScore ?? '—';
+                return (
+                  <li key={m.id}>
+                    <span className="print-num">{counter}.</span>
+                    <span>{m.homeTeam}</span>
+                    <span className="print-score">
+                      {home}–{away}
+                    </span>
+                    <span>{m.awayTeam}</span>
+                  </li>
+                );
+              })}
+            </ol>
+          </div>
+        );
+      })}
     </div>
   );
 }

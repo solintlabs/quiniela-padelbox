@@ -3,10 +3,11 @@ import { prisma } from '@/lib/db';
 import { requireAdmin } from '@/lib/permissions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ResetForMundialButton } from '@/components/ResetForMundialButton';
+import { CompetitionToggleButton } from '@/components/CompetitionToggleButton';
 import { formatDateTime, STAGE_LABEL } from '@/lib/format';
 import { calcPoints } from '@/lib/scoring';
 import { syncMatchesFromApi, recomputeAll } from '@/lib/sync';
+import { COMPETITIONS, getCompetitionById } from '@/lib/competitions';
 
 export const dynamic = 'force-dynamic';
 
@@ -139,26 +140,36 @@ async function createMatch(formData: FormData) {
 }
 
 /**
- * Excluye TODOS los partidos de La Liga (group='LIGA') del scoring, pasados y
- * futuros, y pone points=null en las predicciones de partidos excluidos.
- * Resultado: ranking arranca limpio para el Mundial.
- * Las predicciones quedan en DB como historico, solo se anulan los puntos.
+ * Toggle de una competición entera: marca todos sus matches como excluidos
+ * (o reactiva) y anula los points de sus predicciones cuando se desactiva.
+ *
+ * Recibe el id de la competición tal y como esta en COMPETITIONS, y el modo
+ * 'disable' o 'enable'. Si se desactiva: excludeFromScoring=true en todos los
+ * matches de esos groups, y points=null en sus predicciones. Si se reactiva:
+ * excludeFromScoring=false (los puntos hay que recalcular manualmente con
+ * "Recalcular puntos" para que vuelvan a salir).
  */
-async function resetForMundial() {
+async function toggleCompetition(competitionId: string, mode: 'disable' | 'enable') {
   'use server';
   await requireAdmin();
 
-  // 1. Marcar todos los partidos de La Liga como excluidos
+  const comp = getCompetitionById(competitionId);
+  if (!comp) throw new Error('Competición desconocida');
+
+  const exclude = mode === 'disable';
+
   await prisma.match.updateMany({
-    where: { group: 'LIGA' },
-    data: { excludeFromScoring: true },
+    where: { group: { in: [...comp.groups] } },
+    data: { excludeFromScoring: exclude },
   });
 
-  // 2. Anular puntos de predicciones cuyo match esta excluido
-  await prisma.prediction.updateMany({
-    where: { match: { excludeFromScoring: true } },
-    data: { points: null },
-  });
+  // Si la desactivamos, anulamos puntos para que no contaminen el ranking
+  if (exclude) {
+    await prisma.prediction.updateMany({
+      where: { match: { group: { in: [...comp.groups] } } },
+      data: { points: null },
+    });
+  }
 
   revalidatePath('/admin/partidos');
   revalidatePath('/');
@@ -182,22 +193,37 @@ function toDatetimeLocal(d: Date): string {
 }
 
 export default async function PartidosAdmin() {
-  const [matches, rules, ligaStats, ligaPredictionsCount] = await Promise.all([
+  const [matches, rules] = await Promise.all([
     prisma.match.findMany({
       orderBy: { kickoff: 'asc' },
       take: 250,
       include: { _count: { select: { predictions: true } } },
     }),
     prisma.rules.findUnique({ where: { id: 1 } }),
-    prisma.match.count({ where: { group: 'LIGA', excludeFromScoring: false } }),
-    prisma.prediction.count({
-      where: {
-        points: { not: null },
-        match: { group: 'LIGA', excludeFromScoring: false },
-      },
-    }),
   ]);
   const syncPaused = rules?.syncPaused ?? false;
+
+  // Stats por competición (para el panel de toggle)
+  const compStats = await Promise.all(
+    COMPETITIONS.map(async (c) => {
+      const total = await prisma.match.count({ where: { group: { in: [...c.groups] } } });
+      if (total === 0) return null; // si no hay matches, no mostramos esta comp
+      const excluded = await prisma.match.count({
+        where: { group: { in: [...c.groups] }, excludeFromScoring: true },
+      });
+      const predsWithPoints = await prisma.prediction.count({
+        where: { points: { not: null }, match: { group: { in: [...c.groups] } } },
+      });
+      return {
+        comp: c,
+        total,
+        excluded,
+        active: total - excluded,
+        predsWithPoints,
+        currentMode: excluded === total ? ('disabled' as const) : ('active' as const),
+      };
+    }),
+  ).then((arr) => arr.filter((x): x is NonNullable<typeof x> => x !== null));
 
   return (
     <div className="space-y-6">
@@ -246,32 +272,58 @@ export default async function PartidosAdmin() {
         </form>
       </section>
 
-      {/* Preparar para Mundial: excluir Liga del ranking */}
-      {ligaStats > 0 && (
-        <section className="rounded-xl border border-danger/40 bg-danger/5 p-4 space-y-3">
+      {/* Competiciones: cada una se puede activar/desactivar independientemente */}
+      {compStats.length > 0 && (
+        <section className="rounded-xl border border-line bg-bg-elev p-4 space-y-3">
           <div>
-            <p className="font-semibold">🌍 Preparar para el Mundial</p>
+            <p className="font-semibold">🏆 Competiciones</p>
             <p className="text-xs text-muted mt-1">
-              Excluye todos los partidos de La Liga del ranking (pasados y futuros) y anula los puntos
-              acumulados. El ranking arranca limpio para el Mundial. Las predicciones que los usuarios
-              hicieron quedan guardadas en DB como histórico.
+              Cada competición se puede desactivar (no entra en el ranking ni en el scoring) o reactivar.
+              Las predicciones se conservan siempre — solo se anulan los puntos al desactivar.
             </p>
           </div>
-          <div className="text-xs grid grid-cols-2 gap-2 max-w-md">
-            <div className="rounded-md border border-line bg-bg-elev px-3 py-2">
-              <p className="text-muted">Partidos La Liga activos</p>
-              <p className="font-display text-lg tabular-nums">{ligaStats}</p>
-            </div>
-            <div className="rounded-md border border-line bg-bg-elev px-3 py-2">
-              <p className="text-muted">Predicciones con puntos</p>
-              <p className="font-display text-lg tabular-nums">{ligaPredictionsCount}</p>
-            </div>
+          <div className="space-y-2">
+            {compStats.map((cs) => {
+              const isDisabled = cs.currentMode === 'disabled';
+              return (
+                <div
+                  key={cs.comp.id}
+                  className={
+                    'rounded-md border p-3 flex items-start gap-3 flex-wrap justify-between ' +
+                    (isDisabled ? 'border-warning/40 bg-warning/5' : 'border-line bg-bg')
+                  }
+                >
+                  <div className="flex-1 min-w-[200px]">
+                    <p className="font-semibold text-sm flex items-center gap-2">
+                      {cs.comp.label}
+                      {isDisabled && (
+                        <span className="text-[10px] uppercase tracking-wider text-warning px-1.5 py-0.5 rounded bg-warning/15 border border-warning/30">
+                          Desactivada
+                        </span>
+                      )}
+                    </p>
+                    {cs.comp.description && (
+                      <p className="text-[11px] text-muted mt-0.5">{cs.comp.description}</p>
+                    )}
+                    <p className="text-[11px] text-muted mt-1 tabular-nums">
+                      {cs.total} partidos
+                      {!isDisabled && cs.predsWithPoints > 0 && (
+                        <> · {cs.predsWithPoints} predicciones con puntos</>
+                      )}
+                    </p>
+                  </div>
+                  <CompetitionToggleButton
+                    competitionId={cs.comp.id}
+                    competitionLabel={cs.comp.label}
+                    mode={isDisabled ? 'enable' : 'disable'}
+                    matchesCount={cs.total}
+                    predictionsWithPointsCount={cs.predsWithPoints}
+                    toggleAction={toggleCompetition}
+                  />
+                </div>
+              );
+            })}
           </div>
-          <ResetForMundialButton
-            ligaMatchesCount={ligaStats}
-            affectedPredictionsCount={ligaPredictionsCount}
-            resetAction={resetForMundial}
-          />
         </section>
       )}
 

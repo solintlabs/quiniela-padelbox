@@ -48,7 +48,34 @@ export async function GET(req: Request) {
     const CARD_GAP = 12;
     const PADDING = 48;
     const COLS = 4;
-    const CARD_W = (1200 - PADDING * 2 - CARD_GAP * (COLS - 1)) / COLS;
+    const WIDTH = 1200;
+    const HEIGHT = 800;
+    const CARD_W = (WIDTH - PADDING * 2 - CARD_GAP * (COLS - 1)) / COLS;
+
+    // Acortamos nombres largos para que quepan completos en la card sin "..."
+    // que oculta info. Para selecciones muy populares mantenemos identidad clara.
+    const TEAM_SHORT: Record<string, string> = {
+      'United States': 'USA',
+      'Korea Republic': 'Korea',
+      'South Korea': 'Korea',
+      'Bosnia and Herzegovina': 'Bosnia',
+      'Bosnia-Herzegovina': 'Bosnia',
+      'South Africa': 'S. Africa',
+      'Saudi Arabia': 'Saudi A.',
+      "Côte d'Ivoire": 'C. Ivoire',
+      'Cote d Ivoire': 'C. Ivoire',
+      'Ivory Coast': 'C. Ivoire',
+      'New Zealand': 'N. Zealand',
+      'Czech Republic': 'Czechia',
+      'DR Congo': 'DR Congo',
+      'Democratic Republic of the Congo': 'DR Congo',
+      'Cape Verde Islands': 'Cape Verde',
+    };
+    function displayTeam(t: string): string {
+      if (TEAM_SHORT[t]) return TEAM_SHORT[t];
+      if (t.length > 12) return t.slice(0, 11) + '…';
+      return t;
+    }
 
     return new ImageResponse(
       (
@@ -200,7 +227,7 @@ export async function GET(req: Request) {
                           marginLeft: 4,
                         }}
                       >
-                        {s.team.length > 11 ? s.team.slice(0, 10) + '…' : s.team}
+                        {displayTeam(s.team)}
                       </span>
                       <span style={{ fontSize: 11, fontWeight: 900, color: posColor }}>{s.pts}</span>
                     </div>
@@ -221,14 +248,14 @@ export async function GET(req: Request) {
               borderTop: `2px solid ${ACCENT}`,
             }}
           >
-            <span style={{ fontSize: 14, color: MUTED }}>quiniela.solint.cloud</span>
+            <span style={{ fontSize: 14, color: MUTED }}>quinielabox.com</span>
             <span style={{ fontSize: 14, color: ACCENT, fontWeight: 700 }}>¿Te animas a competir?</span>
           </div>
         </div>
       ),
       {
-        width: 1200,
-        height: 630,
+        width: WIDTH,
+        height: HEIGHT,
         headers: {
           'cache-control': 'no-store, max-age=0',
         },
