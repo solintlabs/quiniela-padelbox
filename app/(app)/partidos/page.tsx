@@ -26,16 +26,22 @@ export default async function PartidosPage({
   const tab: Tab = searchParams.tab === 'liga' ? 'liga' : 'mundial';
 
   const [mundialCount, ligaCount, me] = await Promise.all([
-    prisma.match.count({ where: { group: { in: MUNDIAL_GROUPS } } }),
-    prisma.match.count({ where: { group: 'LIGA' } }),
+    prisma.match.count({ where: { group: { in: MUNDIAL_GROUPS }, excludeFromScoring: false } }),
+    prisma.match.count({ where: { group: 'LIGA', excludeFromScoring: false } }),
     prisma.user.findUnique({
       where: { id: userId },
       select: { championPick: true, championLockedAt: true },
     }),
   ]);
 
+  // Si la tab pedida (Liga) ya no tiene matches activos, caemos a Mundial
+  const effectiveTab: Tab = tab === 'liga' && ligaCount === 0 ? 'mundial' : tab;
+
   const matches = await prisma.match.findMany({
-    where: tab === 'liga' ? { group: 'LIGA' } : { group: { in: MUNDIAL_GROUPS } },
+    where:
+      effectiveTab === 'liga'
+        ? { group: 'LIGA', excludeFromScoring: false }
+        : { group: { in: MUNDIAL_GROUPS }, excludeFromScoring: false },
     orderBy: { kickoff: 'asc' },
     include: {
       predictions: {
@@ -72,7 +78,7 @@ export default async function PartidosPage({
   // Construir secciones segun la tab
   let sections: Array<{ title: string; items: InlineMatch[]; dim?: boolean }> = [];
 
-  if (tab === 'mundial') {
+  if (effectiveTab === 'mundial') {
     // Mundial: secciones por grupo A-L, luego rondas eliminatorias.
     for (const g of MUNDIAL_GROUPS) {
       const groupMatches = matches.filter((m) => m.group === g);
@@ -112,7 +118,7 @@ export default async function PartidosPage({
       <header>
         <h1 className="font-display text-2xl sm:text-3xl">Partidos</h1>
         <p className="text-xs sm:text-sm text-muted mt-1">
-          {tab === 'mundial'
+          {effectiveTab === 'mundial'
             ? `Mundial 2026 · ${matches.length} partidos`
             : `La Liga · ${matches.length} partidos`}
         </p>
@@ -128,10 +134,12 @@ export default async function PartidosPage({
         </p>
       </header>
 
-      {/* Tabs Mundial / La Liga */}
+      {/* Tabs Mundial / La Liga (Liga solo si tiene matches activos) */}
       <nav className="flex gap-1 sm:gap-2 border-b border-line items-end overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
-        <TabLink href="/partidos?tab=mundial" active={tab === 'mundial'} label="🌍 Mundial 2026" count={mundialCount} />
-        <TabLink href="/partidos?tab=liga" active={tab === 'liga'} label="🇪🇸 La Liga" count={ligaCount} />
+        <TabLink href="/partidos?tab=mundial" active={effectiveTab === 'mundial'} label="🌍 Mundial 2026" count={mundialCount} />
+        {ligaCount > 0 && (
+          <TabLink href="/partidos?tab=liga" active={effectiveTab === 'liga'} label="🇪🇸 La Liga" count={ligaCount} />
+        )}
         {/* Botones export — solo en desktop, en móvil van debajo */}
         <div className="ml-auto pb-2 hidden sm:flex gap-2 no-print">
           <ShareImageButton />
@@ -146,7 +154,7 @@ export default async function PartidosPage({
       </div>
 
       {/* Card MI CAMPEÓN (solo en tab Mundial) */}
-      {tab === 'mundial' && (
+      {effectiveTab === 'mundial' && (
         <section className="rounded-2xl border-2 border-accent/60 bg-accent/10 p-3 sm:p-5 flex items-center justify-between gap-3 sm:gap-4 flex-wrap">
           <div className="min-w-0">
             <p className="text-[10px] uppercase tracking-[0.22em] sm:tracking-[0.28em] text-accent font-bold">
@@ -190,7 +198,7 @@ export default async function PartidosPage({
 
       {/* Vista compacta solo para impresion / PDF: 1 linea por partido */}
       <PrintCompactView
-        title={tab === 'mundial' ? 'Mi quiniela · Mundial 2026' : 'Mi quiniela · La Liga'}
+        title={effectiveTab === 'mundial' ? 'Mi quiniela · Mundial 2026' : 'Mi quiniela · La Liga'}
         sections={sections}
       />
     </div>

@@ -7,6 +7,10 @@ export async function GET(req: Request) {
   if (user instanceof Response) return user;
 
   const matches = await prisma.match.findMany({
+    // Ocultar matches de competiciones desactivadas (excludeFromScoring=true).
+    // La app movil consume este endpoint para listar Mundial / Liga; si una
+    // competicion entera esta desactivada, sus matches no deben aparecer.
+    where: { excludeFromScoring: false },
     orderBy: { kickoff: 'asc' },
     include: {
       predictions: {
