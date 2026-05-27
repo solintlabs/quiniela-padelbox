@@ -72,8 +72,9 @@ export function InlinePredictionRow({
 
   return (
     <article
+      id={`match-${match.id}`}
       className={cn(
-        'rounded-xl border p-3 sm:p-4',
+        'rounded-xl border p-3 sm:p-4 scroll-mt-32',
         isLocked && !isFinished && 'border-line bg-bg-elev/60',
         !isLocked && dirty && 'border-warning/60 bg-warning/5',
         !isLocked && !dirty && hasInitial && 'border-accent/40 bg-accent/5',

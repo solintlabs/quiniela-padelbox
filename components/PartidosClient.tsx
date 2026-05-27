@@ -151,25 +151,68 @@ export function PartidosClient({ hasPaid, sections }: Props) {
     });
   }
 
-  const dirtyCount = [...values.keys()].filter((id) => isDirty(id)).length;
+  // Lista de matches dirty con sus team names, para la barra superior.
+  const dirtyMatches = useMemo(() => {
+    const all: Array<{ id: string; home: string; away: string; section: string }> = [];
+    for (const sec of sections) {
+      for (const m of sec.items) {
+        if (isDirty(m.id)) {
+          all.push({ id: m.id, home: m.homeTeam, away: m.awayTeam, section: sec.title });
+        }
+      }
+    }
+    return all;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sections, values]);
+  const dirtyCount = dirtyMatches.length;
+
+  function scrollToMatch(id: string) {
+    const el = document.getElementById(`match-${id}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Flash de atención
+      el.classList.add('ring-2', 'ring-warning', 'ring-offset-2', 'ring-offset-bg');
+      setTimeout(() => el.classList.remove('ring-2', 'ring-warning', 'ring-offset-2', 'ring-offset-bg'), 1800);
+    }
+  }
 
   return (
     <>
       {/* Barra flotante "Guardar todo" cuando hay cambios */}
       {hasPaid && dirtyCount > 0 && (
-        <div className="sticky top-14 z-30 -mx-4 sm:-mx-6 px-4 sm:px-6 py-3 backdrop-blur bg-bg/90 border-b border-warning/40 flex items-center justify-between gap-3">
-          <p className="text-sm text-warning">
-            ● <span className="font-semibold tabular-nums">{dirtyCount}</span>{' '}
-            pronóstico{dirtyCount !== 1 && 's'} sin guardar
-          </p>
-          <button
-            type="button"
-            onClick={saveAll}
-            disabled={bulkSaving}
-            className="h-10 px-5 rounded-lg bg-accent text-accent-fg font-display text-sm disabled:opacity-60"
-          >
-            {bulkSaving ? 'Guardando…' : `Guardar todo (${dirtyCount}) →`}
-          </button>
+        <div className="sticky top-14 z-30 -mx-4 sm:-mx-6 px-4 sm:px-6 py-3 backdrop-blur bg-bg/90 border-b border-warning/40 space-y-2">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm text-warning">
+              ● <span className="font-semibold tabular-nums">{dirtyCount}</span>{' '}
+              pronóstico{dirtyCount !== 1 && 's'} sin guardar
+            </p>
+            <button
+              type="button"
+              onClick={saveAll}
+              disabled={bulkSaving}
+              className="h-10 px-5 rounded-lg bg-accent text-accent-fg font-display text-sm disabled:opacity-60"
+            >
+              {bulkSaving ? 'Guardando…' : `Guardar todo (${dirtyCount}) →`}
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {dirtyMatches.slice(0, 8).map((dm) => (
+              <button
+                key={dm.id}
+                type="button"
+                onClick={() => scrollToMatch(dm.id)}
+                className="text-[11px] px-2 py-1 rounded-md border border-warning/40 bg-warning/10 text-ink hover:bg-warning/20"
+                title={`${dm.section} · ir al partido`}
+              >
+                {dm.home} vs {dm.away} ↗
+              </button>
+            ))}
+            {dirtyMatches.length > 8 && (
+              <span className="text-[11px] text-muted self-center">
+                + {dirtyMatches.length - 8} más
+              </span>
+            )}
+          </div>
         </div>
       )}
 
