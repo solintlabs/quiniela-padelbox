@@ -85,17 +85,47 @@ interface EspnEvent {
   __league?: string;
 }
 
+/**
+ * Fetch a una competicion de ESPN con timeout duro y retry x1.
+ * Sin esto, una llamada lenta a ESPN puede hacer expirar la funcion serverless
+ * de Vercel (Hobby = 10s default) y devolver 500. Mejor fail-fast + retry.
+ */
 async function fetchCompetition(slug: string, start: string, end: string): Promise<EspnEvent[]> {
   const url = `https://${HOST}/apis/site/v2/sports/soccer/${slug}/scoreboard?dates=${start}-${end}`;
-  const res = await fetch(url, {
-    headers: { 'User-Agent': 'quiniela-padelbox/1.0' },
-    next: { revalidate: 60 },
-  });
-  if (!res.ok) {
-    throw new Error(`ESPN ${slug} ${res.status}: ${await res.text()}`);
+  const PER_ATTEMPT_TIMEOUT_MS = 8000;
+  const MAX_ATTEMPTS = 2;
+
+  let lastErr: unknown = null;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), PER_ATTEMPT_TIMEOUT_MS);
+    try {
+      const res = await fetch(url, {
+        headers: { 'User-Agent': 'quiniela-padelbox/1.0' },
+        next: { revalidate: 60 },
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      if (!res.ok) {
+        // 5xx -> retry; 4xx -> abort
+        if (res.status >= 500 && attempt < MAX_ATTEMPTS) {
+          lastErr = new Error(`ESPN ${slug} ${res.status} (attempt ${attempt})`);
+          continue;
+        }
+        throw new Error(`ESPN ${slug} ${res.status}: ${await res.text().catch(() => '')}`);
+      }
+      const json = (await res.json()) as { events?: EspnEvent[] };
+      return (json.events ?? []).map((e) => ({ ...e, __league: slug }));
+    } catch (e) {
+      clearTimeout(timeoutId);
+      lastErr = e;
+      // En el ultimo intento relanzamos
+      if (attempt >= MAX_ATTEMPTS) break;
+      // Backoff corto antes del retry
+      await new Promise((r) => setTimeout(r, 500));
+    }
   }
-  const json = (await res.json()) as { events?: EspnEvent[] };
-  return (json.events ?? []).map((e) => ({ ...e, __league: slug }));
+  throw lastErr instanceof Error ? lastErr : new Error(`ESPN ${slug}: unknown error`);
 }
 
 /**

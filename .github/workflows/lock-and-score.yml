@@ -39,21 +39,27 @@ jobs:
           fi
 
       - name: Sync matches desde ESPN
+        continue-on-error: true   # si ESPN falla, sigue al lock-and-score
         run: |
           echo "→ POST ${{ secrets.APP_URL }}/api/cron/sync-matches"
-          curl -fsSL -X POST \
+          # -f (fail) eliminado: el endpoint devuelve 200 con ok:false al fallar,
+          # asi distinguimos "endpoint roto" de "ESPN momentaneamente lento".
+          curl -sS -X POST \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             "${{ secrets.APP_URL }}/api/cron/sync-matches" \
-            -o /tmp/sync.json
+            -o /tmp/sync.json \
+            -w "HTTP %{http_code}\n"
           cat /tmp/sync.json
           echo
 
       - name: Lock & score
+        continue-on-error: true
         run: |
           echo "→ POST ${{ secrets.APP_URL }}/api/cron/lock-and-score"
-          curl -fsSL -X POST \
+          curl -sS -X POST \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             "${{ secrets.APP_URL }}/api/cron/lock-and-score" \
-            -o /tmp/lock.json
+            -o /tmp/lock.json \
+            -w "HTTP %{http_code}\n"
           cat /tmp/lock.json
           echo
