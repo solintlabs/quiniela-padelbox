@@ -2,13 +2,14 @@ import Link from 'next/link';
 import { Logo } from '@/components/Logo';
 import { Footer } from '@/components/Footer';
 import { WhatsappFab } from '@/components/WhatsappFab';
+import { BottomQuickNavIfAuth } from '@/components/BottomQuickNavIfAuth';
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
       <header className="sticky top-0 z-40 backdrop-blur bg-bg/85 border-b border-line">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-          <Link href="/login" className="flex items-center gap-3">
+          <Link href="/" className="flex items-center gap-3" title="Inicio">
             <Logo size={28} />
             <span className="text-xs text-muted hidden sm:inline">Quiniela Mundial 2026</span>
           </Link>
@@ -21,11 +22,12 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
           </nav>
         </div>
       </header>
-      <main className="max-w-6xl mx-auto px-6 py-8">
+      <main className="max-w-6xl mx-auto px-6 py-8 pb-24 sm:pb-8">
         {children}
         <Footer variant="app" />
       </main>
       <WhatsappFab />
+      <BottomQuickNavIfAuth />
     </>
   );
 }
