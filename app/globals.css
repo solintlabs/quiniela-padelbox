@@ -6,16 +6,18 @@
   :root {
     --bg: 0 0% 98%;          /* #FAFAFA */
     --bg-elev: 0 0% 100%;    /* #FFFFFF */
-    --ink: 0 0% 4%;          /* #0A0A0A */
-    --muted: 0 0% 45%;       /* #737373 */
-    --border: 0 0% 90%;      /* #E5E5E5 */
+    --ink: 0 0% 9%;          /* #171717 */
+    --muted: 0 0% 38%;       /* #616161 — antes 45%, sube contraste */
+    --border: 0 0% 78%;      /* #C7C7C7 — antes 90% (invisible), ahora se distingue */
 
-    --accent: 76 100% 62%;   /* #B6FF3C */
-    --accent-fg: 0 0% 4%;    /* #0A0A0A */
+    /* En light el lime #B6FF3C es palido. Bajo a verde mas saturado y oscuro
+       para que los fills tipo bg-accent/15 y los textos text-accent se vean. */
+    --accent: 90 70% 38%;    /* verde lima oscuro #5CA31E */
+    --accent-fg: 0 0% 100%;  /* blanco sobre el chip relleno */
 
-    --success: 142 71% 45%;
-    --danger:  0 84% 60%;
-    --warning: 38 92% 50%;
+    --success: 142 71% 36%;  /* mas oscuro para legibilidad */
+    --danger:  0 78% 52%;
+    --warning: 28 92% 48%;   /* naranja, no amarillo, mejor en light */
   }
 
   .dark {

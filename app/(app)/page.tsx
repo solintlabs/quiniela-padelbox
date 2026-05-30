@@ -203,11 +203,6 @@ export default async function DashboardPage() {
         </section>
       )}
 
-      {/* Aliados comerciales — premios semanales cortesía de */}
-      <div className="max-w-2xl mx-auto">
-        <AliadosStrip variant="dashboard" />
-      </div>
-
       {/* Cross-sell: "quiero mi quiniela" — link discreto */}
       <p className="text-center text-[11px] text-muted">
         ¿Conoces un club que quiera su quiniela?{' '}
@@ -245,6 +240,11 @@ export default async function DashboardPage() {
           </p>
         )}
       </section>
+
+      {/* Aliados comerciales — al final del dashboard, cerrando con marca */}
+      <div className="max-w-2xl mx-auto">
+        <AliadosStrip variant="dashboard" />
+      </div>
     </div>
   );
 }

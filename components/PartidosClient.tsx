@@ -49,6 +49,17 @@ export function PartidosClient({ hasPaid, sections }: Props) {
   const [saving, setSaving] = useState<Set<string>>(new Set());
   const [errors, setErrors] = useState<Map<string, string>>(new Map());
   const [bulkSaving, startBulkSave] = useTransition();
+  // Secciones (Grupo A, B…) plegadas por el usuario. Set de titles.
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+
+  function toggleCollapsed(title: string) {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(title)) next.delete(title);
+      else next.add(title);
+      return next;
+    });
+  }
 
   function getValue(id: string): PendingState {
     return values.get(id) ?? initial.get(id) ?? { home: 0, away: 0 };
@@ -216,32 +227,89 @@ export function PartidosClient({ hasPaid, sections }: Props) {
         </div>
       )}
 
-      {sections.map((sec) =>
-        sec.items.length === 0 ? null : (
-          <section key={sec.title}>
-            <h2 className="text-xs uppercase tracking-[0.18em] text-muted mb-3">{sec.title}</h2>
-            <div className={'space-y-2 ' + (sec.dim ? 'opacity-80' : '')}>
-              {sec.items.map((m) => {
-                const v = getValue(m.id);
-                return (
-                  <InlinePredictionRow
-                    key={m.id}
-                    match={m}
-                    canEdit={hasPaid}
-                    homeValue={v.home}
-                    awayValue={v.away}
-                    onChange={onChange}
-                    dirty={isDirty(m.id)}
-                    saving={saving.has(m.id) || bulkSaving}
-                    error={errors.get(m.id) ?? null}
-                    onSave={saveOne}
-                  />
-                );
-              })}
-            </div>
-          </section>
-        ),
+      {/* Botones colapsar/expandir todo - solo si hay grupos (secciones colapsables) */}
+      {sections.some((s) => s.items.length > 0) && (
+        <div className="flex gap-1.5 -mb-2 no-print">
+          <button
+            type="button"
+            onClick={() => setCollapsed(new Set(sections.map((s) => s.title)))}
+            className="text-[11px] px-2.5 py-1 rounded-md border border-line text-muted hover:text-ink hover:bg-bg-elev"
+          >
+            ⊟ Plegar todos
+          </button>
+          <button
+            type="button"
+            onClick={() => setCollapsed(new Set())}
+            className="text-[11px] px-2.5 py-1 rounded-md border border-line text-muted hover:text-ink hover:bg-bg-elev"
+          >
+            ⊞ Desplegar todos
+          </button>
+        </div>
       )}
+
+      {sections.map((sec) => {
+        if (sec.items.length === 0) return null;
+        const isCollapsed = collapsed.has(sec.title);
+        const filled = sec.items.filter((m) => {
+          const v = getValue(m.id);
+          // "rellenado" si tiene predicción inicial guardada o si tiene cambios sin 0-0
+          const hasInitial = !!m.initial;
+          return hasInitial || v.home !== 0 || v.away !== 0;
+        }).length;
+        const dirtyInSection = sec.items.filter((m) => isDirty(m.id)).length;
+        return (
+          <section key={sec.title}>
+            <button
+              type="button"
+              onClick={() => toggleCollapsed(sec.title)}
+              className="w-full flex items-center justify-between gap-2 mb-3 group"
+              aria-expanded={!isCollapsed}
+            >
+              <span className="flex items-center gap-2">
+                <span
+                  aria-hidden
+                  className={
+                    'text-muted transition-transform inline-block text-xs ' +
+                    (isCollapsed ? '' : 'rotate-90')
+                  }
+                >
+                  ▶
+                </span>
+                <h2 className="text-xs uppercase tracking-[0.18em] text-muted group-hover:text-ink">
+                  {sec.title}
+                </h2>
+              </span>
+              <span className="text-[11px] text-muted tabular-nums">
+                {filled}/{sec.items.length}
+                {dirtyInSection > 0 && (
+                  <span className="ml-1.5 text-warning">● {dirtyInSection}</span>
+                )}
+              </span>
+            </button>
+            {!isCollapsed && (
+              <div className={'space-y-2 ' + (sec.dim ? 'opacity-80' : '')}>
+                {sec.items.map((m) => {
+                  const v = getValue(m.id);
+                  return (
+                    <InlinePredictionRow
+                      key={m.id}
+                      match={m}
+                      canEdit={hasPaid}
+                      homeValue={v.home}
+                      awayValue={v.away}
+                      onChange={onChange}
+                      dirty={isDirty(m.id)}
+                      saving={saving.has(m.id) || bulkSaving}
+                      error={errors.get(m.id) ?? null}
+                      onSave={saveOne}
+                    />
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        );
+      })}
     </>
   );
 }

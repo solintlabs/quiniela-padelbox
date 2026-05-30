@@ -281,6 +281,13 @@ model Rules {
   // marcar como pagado. Si es null, las inscripciones quedan abiertas para
   // siempre. El admin lo edita desde /admin/reglas.
   inscriptionsCloseAt DateTime?
+  // Si true: la pagina /ranking publica muestra un placeholder en vez de la
+  // lista de participantes. Util cuando hay poca gente inscrita y no se
+  // quiere mostrar "solo 4 personas" como senal social negativa.
+  rankingHidden     Boolean   @default(false)
+  // Texto que se muestra en /ranking cuando rankingHidden=true. Si null,
+  // usa el copy default. Editable desde /admin/reglas.
+  rankingHiddenText String?
   updatedAt         DateTime  @updatedAt
 }
 

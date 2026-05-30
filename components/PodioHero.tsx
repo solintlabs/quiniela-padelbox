@@ -27,17 +27,17 @@ export function PodioHero({ top, me }: PodioHeroProps) {
     <section>
       <header className="text-center">
         <p className="text-[10px] sm:text-xs uppercase tracking-[0.18em] text-muted">Ranking PADELBOX</p>
-        <h1 className="font-display text-2xl sm:text-4xl mt-1">El Podio</h1>
+        <h1 className="font-display text-xl sm:text-3xl mt-0.5">El Podio</h1>
       </header>
 
-      <div className="grid grid-cols-3 gap-2 sm:gap-3 max-w-2xl mx-auto mt-5 sm:mt-10">
+      <div className="grid grid-cols-3 gap-2 sm:gap-3 max-w-xl mx-auto mt-3 sm:mt-6">
         <PodioColumn row={second} pos={2} />
         <PodioColumn row={first} pos={1} crown />
         <PodioColumn row={third} pos={3} />
       </div>
 
       {me && (
-        <div className="mt-5 sm:mt-8 rounded-xl border border-line bg-bg-elev p-3 sm:p-4 flex items-center justify-between max-w-xl mx-auto">
+        <div className="mt-3 sm:mt-5 rounded-xl border border-line bg-bg-elev p-2.5 sm:p-3 flex items-center justify-between max-w-lg mx-auto">
           <div>
             <p className="text-[11px] sm:text-xs text-muted">Tu posición</p>
             <p className="font-display text-lg sm:text-2xl tabular-nums">
@@ -66,22 +66,27 @@ function PodioColumn({
   pos: 1 | 2 | 3;
   crown?: boolean;
 }) {
-  // Alturas del escalón (móvil más compacto, desktop original)
+  // Alturas del escalón (más compacto que antes)
   const stepHeight =
     pos === 1
-      ? 'h-20 sm:h-32'
+      ? 'h-14 sm:h-20'
       : pos === 2
-        ? 'h-16 sm:h-24'
-        : 'h-12 sm:h-16';
+        ? 'h-10 sm:h-14'
+        : 'h-8 sm:h-10';
+  // Colores con mas opacidad para que se vean tanto en dark como en light
   const stepColors =
     pos === 1
-      ? 'bg-accent/15 border-accent/60'
+      ? 'bg-accent/25 border-accent/70 dark:bg-accent/15 dark:border-accent/60'
       : pos === 2
-        ? 'bg-zinc-400/15 border-zinc-400/40'
-        : 'bg-orange-400/10 border-orange-400/40';
+        ? 'bg-zinc-400/25 border-zinc-400/60 dark:bg-zinc-400/15 dark:border-zinc-400/40'
+        : 'bg-orange-400/25 border-orange-400/70 dark:bg-orange-400/10 dark:border-orange-400/40';
   const stepNumberColor =
-    pos === 1 ? 'text-accent' : pos === 2 ? 'text-zinc-300' : 'text-orange-300';
-  const stepNumberSize = pos === 1 ? 'text-2xl sm:text-4xl' : 'text-xl sm:text-3xl';
+    pos === 1
+      ? 'text-accent'
+      : pos === 2
+        ? 'text-zinc-500 dark:text-zinc-300'
+        : 'text-orange-500 dark:text-orange-300';
+  const stepNumberSize = pos === 1 ? 'text-xl sm:text-3xl' : 'text-lg sm:text-2xl';
 
   return (
     <div className="flex flex-col items-center min-w-0">

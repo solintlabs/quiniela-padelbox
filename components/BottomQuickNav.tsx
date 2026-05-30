@@ -2,9 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { MoreSheet } from './MoreSheet';
 
 interface BottomQuickNavProps {
   hasPaid: boolean;
+  isAdmin?: boolean;
+  userEmail?: string | null;
+  signOutAction: () => Promise<void>;
 }
 
 type IconProps = { active: boolean };
@@ -46,7 +50,7 @@ function IconUser({ active }: IconProps) {
   );
 }
 
-export function BottomQuickNav({ hasPaid }: BottomQuickNavProps) {
+export function BottomQuickNav({ hasPaid, isAdmin, userEmail, signOutAction }: BottomQuickNavProps) {
   const pathname = usePathname() ?? '/';
 
   const tabs: Array<{
@@ -74,7 +78,7 @@ export function BottomQuickNav({ hasPaid }: BottomQuickNavProps) {
       className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-bg/95 backdrop-blur-md border-t border-line"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
-      <ul className="grid grid-cols-4">
+      <ul className="grid grid-cols-5">
         {tabs.map((t) => {
           const isActive = t.active(pathname);
           const Icon = t.Icon;
@@ -104,6 +108,13 @@ export function BottomQuickNav({ hasPaid }: BottomQuickNavProps) {
             </li>
           );
         })}
+        <li>
+          <MoreSheet
+            isAdmin={!!isAdmin}
+            userEmail={userEmail ?? null}
+            signOutAction={signOutAction}
+          />
+        </li>
       </ul>
     </nav>
   );

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { requireUser } from '@/lib/permissions';
+import { signOut } from '@/lib/auth';
 import { Nav } from '@/components/Nav';
 import { Footer } from '@/components/Footer';
 import { BottomQuickNav } from '@/components/BottomQuickNav';
@@ -10,15 +11,28 @@ export const metadata = {
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
+
+  async function signOutAction() {
+    'use server';
+    await signOut({ redirectTo: '/login' });
+  }
+
+  const isAdmin = user.role === 'ADMIN';
+
   return (
     <>
-      <Nav isAdmin={user.role === 'ADMIN'} userEmail={user.email ?? undefined} />
+      <Nav isAdmin={isAdmin} userEmail={user.email ?? undefined} />
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 pb-24 sm:pb-8">
         {!user.hasPaid && <PaymentBanner />}
         {children}
         <Footer variant="app" />
       </main>
-      <BottomQuickNav hasPaid={user.hasPaid} />
+      <BottomQuickNav
+        hasPaid={user.hasPaid}
+        isAdmin={isAdmin}
+        userEmail={user.email ?? null}
+        signOutAction={signOutAction}
+      />
     </>
   );
 }

@@ -66,13 +66,18 @@ export function Nav({ isAdmin, userEmail }: NavProps) {
             </button>
           </form>
 
-          {/* Hamburger — solo mobile */}
-          <MobileNav
-            links={links}
-            isAdmin={isAdmin}
-            userEmail={userEmail}
-            signOutAction={signOutAction}
-          />
+          {/* Hamburger desactivado en móvil — ahora la navegación secundaria
+              vive en el tab "Más" del BottomQuickNav. Mantenemos MobileNav
+              oculto por si en el futuro se reactiva.
+              Si se quiere reactivar, quitar el `hidden`. */}
+          <div className="hidden">
+            <MobileNav
+              links={links}
+              isAdmin={isAdmin}
+              userEmail={userEmail}
+              signOutAction={signOutAction}
+            />
+          </div>
         </div>
       </div>
     </header>

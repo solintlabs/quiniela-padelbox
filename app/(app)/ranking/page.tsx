@@ -22,11 +22,23 @@ export default async function RankingPage({
   const tab = params.tab === 'semanal' ? 'semanal' : 'general';
 
   const session = await auth();
+  const isAdmin = session?.user?.role === 'ADMIN';
 
   const [rules, weeklyPrizes] = await Promise.all([
-    prisma.rules.findUnique({ where: { id: 1 }, select: { tournamentStartAt: true } }),
+    prisma.rules.findUnique({
+      where: { id: 1 },
+      select: {
+        tournamentStartAt: true,
+        rankingHidden: true,
+        rankingHiddenText: true,
+      },
+    }),
     prisma.weeklyPrize.findMany({ orderBy: { weekNumber: 'asc' } }),
   ]);
+
+  // El admin siempre ve el ranking real. Los usuarios normales ven placeholder
+  // cuando rankingHidden=true (util cuando aun hay poca gente inscrita).
+  const showPlaceholder = !!rules?.rankingHidden && !isAdmin;
 
   const tournamentStart = rules?.tournamentStartAt ?? null;
   const allWeeks = tournamentStart ? getAllWeeks(tournamentStart) : [];
@@ -127,7 +139,26 @@ export default async function RankingPage({
         </p>
       )}
 
-      <RankingTable rows={ranking} meId={session?.user.id} />
+      {showPlaceholder ? (
+        <section className="rounded-xl border border-accent/40 bg-accent/5 p-8 text-center space-y-3">
+          <p className="text-4xl">⏳</p>
+          <h2 className="font-display text-xl sm:text-2xl">Ranking en construcción</h2>
+          <p className="text-sm text-muted max-w-md mx-auto whitespace-pre-line">
+            {rules?.rankingHiddenText ??
+              'Los participantes y posiciones se mostrarán más cercano a la fecha de inicio del torneo, cuando todos hayan completado su inscripción.'}
+          </p>
+        </section>
+      ) : (
+        <>
+          {isAdmin && rules?.rankingHidden && (
+            <div className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning">
+              ⓘ Ranking <strong>oculto al público</strong>. Solo tú (admin) lo ves. Cambia el estado en{' '}
+              <Link href="/admin/reglas" className="underline">/admin/reglas</Link>.
+            </div>
+          )}
+          <RankingTable rows={ranking} meId={session?.user.id} />
+        </>
+      )}
     </div>
   );
 }

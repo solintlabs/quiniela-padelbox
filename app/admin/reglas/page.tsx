@@ -22,6 +22,8 @@ async function updateRules(formData: FormData) {
   const championWinnerRaw = String(formData.get('championWinner') ?? '').trim();
   const championWinner = championWinnerRaw && FIFA_2026_TEAMS.includes(championWinnerRaw)
     ? championWinnerRaw : null;
+  const rankingHidden = formData.get('rankingHidden') === 'on';
+  const rankingHiddenText = String(formData.get('rankingHiddenText') ?? '').trim() || null;
 
   await prisma.rules.upsert({
     where: { id: 1 },
@@ -33,6 +35,8 @@ async function updateRules(formData: FormData) {
       tournamentStartAt: tournamentStartAt ? new Date(tournamentStartAt) : null,
       inscriptionsCloseAt: inscriptionsCloseAt ? new Date(inscriptionsCloseAt) : null,
       championWinner,
+      rankingHidden,
+      rankingHiddenText,
     },
     create: {
       id: 1,
@@ -43,6 +47,8 @@ async function updateRules(formData: FormData) {
       tournamentStartAt: tournamentStartAt ? new Date(tournamentStartAt) : null,
       inscriptionsCloseAt: inscriptionsCloseAt ? new Date(inscriptionsCloseAt) : null,
       championWinner,
+      rankingHidden,
+      rankingHiddenText,
     },
   });
   revalidatePath('/admin/reglas');
@@ -97,6 +103,42 @@ export default async function ReglasAdmin() {
             name="inscriptionsCloseAt"
             defaultValue={rules?.inscriptionsCloseAt ? new Date(rules.inscriptionsCloseAt).toISOString().slice(0, 16) : ''}
           />
+        </div>
+
+        <hr className="border-line my-4" />
+
+        <div className="space-y-2">
+          <label className="text-xs uppercase tracking-[0.18em] text-muted">
+            Visibilidad del ranking
+          </label>
+          <p className="text-xs text-muted">
+            Si lo ocultas, los participantes ven un placeholder en /ranking en lugar de la tabla.
+            Útil al principio cuando aún hay poca gente inscrita y no quieres que la prueba social
+            sea negativa. Tú (admin) sigues viéndolo siempre.
+          </p>
+          <label className="flex items-start gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              name="rankingHidden"
+              defaultChecked={rules?.rankingHidden ?? false}
+              className="mt-0.5 h-4 w-4 rounded border-line"
+            />
+            <span className="text-sm">
+              Ocultar ranking público (solo el admin lo ve)
+            </span>
+          </label>
+          <div className="space-y-1">
+            <label className="text-xs text-muted">
+              Mensaje que verán los participantes cuando esté oculto (opcional)
+            </label>
+            <textarea
+              name="rankingHiddenText"
+              defaultValue={rules?.rankingHiddenText ?? ''}
+              rows={2}
+              placeholder="Por defecto: «Los participantes se mostrarán más cercano al inicio del torneo, cuando todos hayan completado su inscripción.»"
+              className="w-full bg-bg border border-line rounded-lg px-3 py-2 text-sm text-ink resize-y"
+            />
+          </div>
         </div>
 
         <hr className="border-line my-4" />
