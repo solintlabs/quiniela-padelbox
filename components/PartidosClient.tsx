@@ -262,24 +262,21 @@ export function PartidosClient({ hasPaid, sections }: Props) {
             <button
               type="button"
               onClick={() => toggleCollapsed(sec.title)}
-              className="w-full flex items-center justify-between gap-2 mb-3 group"
+              className="w-full flex items-center justify-between gap-3 mb-3 py-1 text-left group"
               aria-expanded={isCollapsed ? false : true}
             >
-              <span className="flex items-center gap-2">
+              <span className="flex items-baseline gap-2 min-w-0">
                 <span
                   aria-hidden
-                  className={
-                    'text-muted transition-transform inline-block text-xs ' +
-                    (isCollapsed ? '' : 'rotate-90')
-                  }
+                  className="text-muted text-[10px] shrink-0 leading-none w-3 inline-block"
                 >
-                  ▶
+                  {isCollapsed ? '▶' : '▼'}
                 </span>
-                <h2 className="text-xs uppercase tracking-[0.18em] text-muted group-hover:text-ink">
-                  {sec.title}
-                </h2>
+                <span className="text-xs font-semibold tracking-wider text-muted group-hover:text-ink whitespace-nowrap">
+                  {sec.title.toUpperCase()}
+                </span>
               </span>
-              <span className="text-[11px] text-muted tabular-nums">
+              <span className="text-[11px] text-muted tabular-nums shrink-0 whitespace-nowrap">
                 {filled}/{sec.items.length}
                 {dirtyInSection > 0 && (
                   <span className="ml-1.5 text-warning">● {dirtyInSection}</span>
