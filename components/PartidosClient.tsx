@@ -263,7 +263,7 @@ export function PartidosClient({ hasPaid, sections }: Props) {
               type="button"
               onClick={() => toggleCollapsed(sec.title)}
               className="w-full flex items-center justify-between gap-2 mb-3 group"
-              aria-expanded={!isCollapsed}
+              aria-expanded={isCollapsed ? false : true}
             >
               <span className="flex items-center gap-2">
                 <span
