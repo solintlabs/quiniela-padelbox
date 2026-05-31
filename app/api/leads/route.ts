@@ -86,35 +86,80 @@ async function notifyAdminOfLead(lead: LeadRow): Promise<void> {
     return;
   }
 
-  const subject = `🟢 Nuevo lead QuinielaBOX: ${lead.clubName ?? lead.name ?? lead.email}`;
-  const lines = [
-    `Email:  ${lead.email}`,
-    lead.name && `Nombre: ${lead.name}`,
-    lead.clubName && `Club:   ${lead.clubName}`,
-    lead.phone && `Tel:    ${lead.phone}`,
-    lead.expectedSize && `Socios: ~${lead.expectedSize}`,
-    lead.source && `Source: ${lead.source}`,
-    '',
-    lead.notes && `Notas:\n${lead.notes}`,
-    '',
-    `Ver en super-admin: https://quiniela.solint.cloud/admin/saas`,
-  ].filter(Boolean).join('\n');
+  // Helper: muestra el valor o "(sin datos)" en gris si está vacío.
+  const display = (v: string | number | null | undefined) =>
+    v != null && String(v).trim() !== '' ? String(v) : '(sin datos)';
 
-  const html = `<div style="font-family:-apple-system,sans-serif;color:#111;background:#fff;padding:20px;max-width:560px;">
-    <h2 style="margin:0 0 16px;font-size:20px;">🟢 Nuevo lead QuinielaBOX</h2>
-    <table style="border-collapse:collapse;width:100%;font-size:14px;">
-      <tr><td style="padding:6px 0;color:#666;width:80px;">Email</td><td><a href="mailto:${escapeHtml(lead.email)}">${escapeHtml(lead.email)}</a></td></tr>
-      ${lead.name ? `<tr><td style="padding:6px 0;color:#666;">Nombre</td><td>${escapeHtml(lead.name)}</td></tr>` : ''}
-      ${lead.clubName ? `<tr><td style="padding:6px 0;color:#666;">Club</td><td><strong>${escapeHtml(lead.clubName)}</strong></td></tr>` : ''}
-      ${lead.phone ? `<tr><td style="padding:6px 0;color:#666;">WhatsApp</td><td><a href="https://wa.me/${lead.phone.replace(/\D/g, '')}">${escapeHtml(lead.phone)}</a></td></tr>` : ''}
-      ${lead.expectedSize ? `<tr><td style="padding:6px 0;color:#666;">Socios</td><td>~${lead.expectedSize}</td></tr>` : ''}
-      ${lead.source ? `<tr><td style="padding:6px 0;color:#666;">Source</td><td>${escapeHtml(lead.source)}</td></tr>` : ''}
+  const phoneDigits = lead.phone ? lead.phone.replace(/\D/g, '') : '';
+  const subject = `🟢 Lead QuinielaBOX: ${display(lead.name ?? lead.clubName ?? lead.email)}`;
+
+  // PLAIN TEXT — siempre lista TODOS los campos, marca los vacíos.
+  // Algunos clientes de email muestran solo text si no soportan HTML.
+  const text = [
+    '=== NUEVO LEAD QUINIELABOX ===',
+    '',
+    `Fecha:    ${lead.createdAt.toISOString()}`,
+    '',
+    '--- DATOS DEL INTERESADO ---',
+    `Nombre:   ${display(lead.name)}`,
+    `Email:    ${display(lead.email)}`,
+    `WhatsApp: ${display(lead.phone)}`,
+    `Club:     ${display(lead.clubName)}`,
+    `Socios:   ${lead.expectedSize ? `~${lead.expectedSize}` : '(sin datos)'}`,
+    '',
+    '--- ORIGEN ---',
+    `Source:   ${display(lead.source)}`,
+    `Notas:    ${display(lead.notes)}`,
+    '',
+    '--- ACCIONES SUGERIDAS ---',
+    `Responder email:  mailto:${lead.email}`,
+    phoneDigits ? `WhatsApp:         https://wa.me/${phoneDigits}` : 'WhatsApp:         (no facilito)',
+    '',
+    `Panel admin: https://quinielabox.com/admin/saas`,
+  ].join('\n');
+
+  // HTML — limpio, todos los campos, sin colapsar los vacíos.
+  const row = (label: string, value: string, accent = false) => `
+    <tr>
+      <td style="padding:8px 12px;color:#71717a;font-size:13px;border-bottom:1px solid #e4e4e7;width:100px;white-space:nowrap;">${label}</td>
+      <td style="padding:8px 12px;color:${accent ? '#0a0a0a' : '#27272a'};font-size:14px;border-bottom:1px solid #e4e4e7;${accent ? 'font-weight:600;' : ''}">${value}</td>
+    </tr>
+  `;
+
+  const html = `<!DOCTYPE html><html><body style="margin:0;padding:24px;background:#fafafa;font-family:-apple-system,'Segoe UI',Arial,sans-serif;">
+  <div style="max-width:560px;margin:0 auto;background:#fff;border:1px solid #e4e4e7;border-radius:12px;overflow:hidden;">
+    <div style="padding:20px 24px;background:#0a0a0a;color:#fff;">
+      <p style="margin:0;font-size:11px;color:#a1a1aa;letter-spacing:2px;text-transform:uppercase;">Nuevo lead · ${escapeHtml(lead.source ?? 'unknown')}</p>
+      <h1 style="margin:6px 0 0;font-size:22px;color:#B6FF3C;">🟢 ${escapeHtml(lead.name ?? lead.clubName ?? lead.email)}</h1>
+      <p style="margin:6px 0 0;font-size:12px;color:#a1a1aa;">${escapeHtml(lead.createdAt.toUTCString())}</p>
+    </div>
+
+    <table style="width:100%;border-collapse:collapse;margin:0;">
+      ${row('Nombre', escapeHtml(display(lead.name)), true)}
+      ${row('Email', `<a href="mailto:${escapeHtml(lead.email)}" style="color:#5CA31E;text-decoration:none;">${escapeHtml(lead.email)}</a>`, true)}
+      ${row('WhatsApp', lead.phone
+        ? `<a href="https://wa.me/${phoneDigits}" style="color:#25D366;text-decoration:none;">${escapeHtml(lead.phone)}</a>`
+        : `<span style="color:#a1a1aa;">(sin datos)</span>`)}
+      ${row('Club / grupo', escapeHtml(display(lead.clubName)))}
+      ${row('Socios estimados', lead.expectedSize ? `~${lead.expectedSize}` : `<span style="color:#a1a1aa;">(sin datos)</span>`)}
+      ${row('Source', escapeHtml(display(lead.source)))}
     </table>
-    ${lead.notes ? `<div style="margin-top:16px;padding:12px;background:#f4f4f5;border-radius:6px;white-space:pre-wrap;font-size:13px;">${escapeHtml(lead.notes)}</div>` : ''}
-    <p style="margin-top:24px;font-size:12px;color:#666;">
-      <a href="https://quiniela.solint.cloud/admin/saas" style="color:#6BA50A;">Ver en super-admin →</a>
-    </p>
-  </div>`;
+
+    ${lead.notes ? `<div style="margin:12px 24px;padding:14px;background:#f4f4f5;border-radius:8px;font-size:13px;white-space:pre-wrap;color:#27272a;">
+      <strong style="color:#71717a;font-size:11px;text-transform:uppercase;letter-spacing:1px;">Notas</strong><br/>
+      ${escapeHtml(lead.notes)}
+    </div>` : ''}
+
+    <div style="padding:16px 24px;border-top:1px solid #e4e4e7;background:#fafafa;">
+      <a href="https://quinielabox.com/admin/saas" style="display:inline-block;background:#5CA31E;color:#fff;text-decoration:none;padding:10px 16px;border-radius:8px;font-size:13px;font-weight:600;">
+        Ver en panel admin →
+      </a>
+      ${lead.phone ? `<a href="https://wa.me/${phoneDigits}?text=Hola%20${encodeURIComponent(lead.name ?? '')},%20te%20escribo%20de%20QuinielaBOX..." style="display:inline-block;background:#25D366;color:#fff;text-decoration:none;padding:10px 16px;border-radius:8px;font-size:13px;font-weight:600;margin-left:8px;">
+        💬 Responder por WhatsApp
+      </a>` : ''}
+    </div>
+  </div>
+  </body></html>`;
 
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
@@ -127,7 +172,7 @@ async function notifyAdminOfLead(lead: LeadRow): Promise<void> {
       to: [to],
       reply_to: lead.email,
       subject,
-      text: lines,
+      text,
       html,
     }),
   });

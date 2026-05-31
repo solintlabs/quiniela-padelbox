@@ -120,30 +120,99 @@ async function AllPredictions({
   isLocked: boolean;
   kickoff: Date;
 }) {
-  // Cuántas predicciones hay (lo mostramos siempre, no es info sensible)
-  const count = await prisma.prediction.count({ where: { matchId } });
-
-  // Si aún no está cerrado, NO devolvemos los pronósticos (anti-trampa).
+  // Si aún no está cerrado, mostramos solo DISTRIBUCION agregada
+  // (cuántos votan home/empate/away) — no exponemos predicciones individuales.
   if (!isLocked) {
+    const allPreds = await prisma.prediction.findMany({
+      where: { matchId },
+      select: { homeScore: true, awayScore: true },
+    });
+    const count = allPreds.length;
     const lockTime = new Date(kickoff.getTime() - 15 * 60_000);
+
+    const homeWins = allPreds.filter((p) => p.homeScore > p.awayScore).length;
+    const draws = allPreds.filter((p) => p.homeScore === p.awayScore).length;
+    const awayWins = allPreds.filter((p) => p.homeScore < p.awayScore).length;
+    const pct = (n: number) => (count === 0 ? 0 : Math.round((n / count) * 100));
+
+    // Obtener nombres de equipos para la distribución
+    const matchInfo = await prisma.match.findUnique({
+      where: { id: matchId },
+      select: { homeTeam: true, awayTeam: true },
+    });
+
     return (
       <section>
-        <h2 className="font-display text-xl mb-3">Pronósticos de los demás</h2>
-        <div className="rounded-xl border border-line bg-bg-elev p-5 text-center space-y-2">
-          <p className="text-sm">
-            🔒 Los pronósticos del resto de participantes se desbloquean{' '}
-            <strong>15 minutos antes del kickoff</strong>, cuando ya nadie pueda
-            modificarlos.
-          </p>
-          <p className="text-xs text-muted">
-            {count > 0
-              ? `${count} ${count === 1 ? 'participante ha' : 'participantes han'} hecho pronóstico para este partido.`
-              : 'Aún no hay pronósticos para este partido.'}
-          </p>
-          <p className="text-xs text-muted">
-            Disponible a partir del{' '}
-            <span className="text-ink">{formatDateTime(lockTime)}</span>.
-          </p>
+        <h2 className="font-display text-xl mb-3">Cómo predicen los demás</h2>
+        <div className="rounded-xl border border-line bg-bg-elev p-4 sm:p-5 space-y-4">
+          {count === 0 ? (
+            <p className="text-sm text-muted text-center py-2">
+              Aún no hay pronósticos para este partido.
+            </p>
+          ) : (
+            <>
+              <p className="text-xs text-muted text-center">
+                <strong className="text-ink tabular-nums">{count}</strong>{' '}
+                {count === 1 ? 'predicción' : 'predicciones'} ·{' '}
+                <span className="text-accent">tendencias agregadas</span>
+              </p>
+
+              {/* Barra apilada home / empate / away */}
+              <div className="space-y-1.5">
+                <div className="flex h-8 sm:h-10 w-full rounded-md overflow-hidden bg-bg-elev">
+                  {homeWins > 0 && (
+                    <div
+                      className="bg-success/80 flex items-center justify-center text-xs sm:text-sm font-semibold text-white"
+                      style={{ width: `${pct(homeWins)}%`, minWidth: pct(homeWins) > 0 ? '32px' : '0' }}
+                    >
+                      {pct(homeWins)}%
+                    </div>
+                  )}
+                  {draws > 0 && (
+                    <div
+                      className="bg-warning/80 flex items-center justify-center text-xs sm:text-sm font-semibold text-white"
+                      style={{ width: `${pct(draws)}%`, minWidth: pct(draws) > 0 ? '32px' : '0' }}
+                    >
+                      {pct(draws)}%
+                    </div>
+                  )}
+                  {awayWins > 0 && (
+                    <div
+                      className="bg-info/80 bg-blue-500/80 flex items-center justify-center text-xs sm:text-sm font-semibold text-white"
+                      style={{ width: `${pct(awayWins)}%`, minWidth: pct(awayWins) > 0 ? '32px' : '0' }}
+                    >
+                      {pct(awayWins)}%
+                    </div>
+                  )}
+                </div>
+                <div className="flex text-[10px] sm:text-xs text-muted">
+                  <div className="flex-1 text-left">
+                    <span className="inline-block w-2 h-2 rounded-full bg-success/80 mr-1 align-middle" />
+                    Gana {matchInfo?.homeTeam ?? 'local'}
+                  </div>
+                  <div className="flex-1 text-center">
+                    <span className="inline-block w-2 h-2 rounded-full bg-warning/80 mr-1 align-middle" />
+                    Empate
+                  </div>
+                  <div className="flex-1 text-right">
+                    <span className="inline-block w-2 h-2 rounded-full bg-blue-500/80 mr-1 align-middle" />
+                    Gana {matchInfo?.awayTeam ?? 'visitante'}
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          <div className="pt-2 border-t border-line text-center space-y-1">
+            <p className="text-xs">
+              🔒 Los pronósticos individuales se desbloquean{' '}
+              <strong>15 min antes del kickoff</strong>
+            </p>
+            <p className="text-[11px] text-muted">
+              Disponible a partir del{' '}
+              <span className="text-ink">{formatDateTime(lockTime)}</span>
+            </p>
+          </div>
         </div>
       </section>
     );
