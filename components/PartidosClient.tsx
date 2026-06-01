@@ -51,6 +51,12 @@ export function PartidosClient({ hasPaid, sections }: Props) {
   const [bulkSaving, startBulkSave] = useTransition();
   // Secciones (Grupo A, B…) plegadas por el usuario. Set de titles.
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  // Matches que el usuario ha tocado (para permitir guardar 0-0 explicito).
+  const [touched, setTouched] = useState<Set<string>>(new Set());
+  // Matches sin predicción previa que se acaban de guardar en este cliente
+  // (antes del refresh del server). Permite que su isDirty compare contra
+  // el valor guardado en vez de quedarse "dirty" eternamente.
+  const [savedNew, setSavedNew] = useState<Set<string>>(new Set());
 
   function toggleCollapsed(title: string) {
     setCollapsed((prev) => {
@@ -65,21 +71,38 @@ export function PartidosClient({ hasPaid, sections }: Props) {
     return values.get(id) ?? initial.get(id) ?? { home: 0, away: 0 };
   }
 
+  function hasSavedPrediction(id: string): boolean {
+    return sections.some((s) => s.items.find((m) => m.id === id && m.initial));
+  }
+
   function isDirty(id: string): boolean {
     const cur = getValue(id);
-    const base = initial.get(id);
-    // dirty si NO hay initial y el user puso algo, o si difiere del initial
-    const hadInitial = sections.some((s) => s.items.find((m) => m.id === id && m.initial));
-    if (!hadInitial) {
-      return cur.home !== 0 || cur.away !== 0;
+    // Si ya hay una predicción guardada: dirty cuando el valor actual difiere.
+    if (hasSavedPrediction(id) && !savedNew.has(id)) {
+      const base = initial.get(id);
+      return base ? cur.home !== base.home || cur.away !== base.away : true;
     }
-    return base ? cur.home !== base.home || cur.away !== base.away : true;
+    // Si se acaba de guardar una predicción nueva en este cliente, comparamos
+    // contra el valor guardado en initial (que ya se actualizó al guardar).
+    if (savedNew.has(id)) {
+      const base = initial.get(id);
+      return base ? cur.home !== base.home || cur.away !== base.away : false;
+    }
+    // Sin predicción guardada: dirty SOLO si el usuario tocó la fila. Asi se
+    // permite guardar un 0-0 explicito (antes 0-0 se confundia con "sin tocar").
+    return touched.has(id);
   }
 
   function onChange(id: string, home: number, away: number) {
     setValues((prev) => {
       const next = new Map(prev);
       next.set(id, { home, away });
+      return next;
+    });
+    setTouched((prev) => {
+      if (prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.add(id);
       return next;
     });
     setErrors((prev) => {
@@ -110,6 +133,14 @@ export function PartidosClient({ hasPaid, sections }: Props) {
       }
       // Marca como guardado: actualiza el "initial" para que dirty=false
       initial.set(id, { home: v.home, away: v.away });
+      if (!hasSavedPrediction(id)) {
+        setSavedNew((s) => new Set(s).add(id));
+      }
+      setTouched((t) => {
+        const n = new Set(t);
+        n.delete(id);
+        return n;
+      });
       router.refresh();
     } catch (e) {
       setErrors((errs) => {
@@ -145,10 +176,22 @@ export function PartidosClient({ hasPaid, sections }: Props) {
           throw new Error(body.message ?? body.error ?? 'No se pudo guardar');
         }
         // Limpia dirty: actualiza initial para todos
+        const newlySaved = new Set<string>();
         for (const id of dirtyIds) {
           const v = getValue(id);
           initial.set(id, { home: v.home, away: v.away });
+          if (!hasSavedPrediction(id)) newlySaved.add(id);
         }
+        setSavedNew((s) => {
+          const n = new Set(s);
+          newlySaved.forEach((id) => n.add(id));
+          return n;
+        });
+        setTouched((t) => {
+          const n = new Set(t);
+          dirtyIds.forEach((id) => n.delete(id));
+          return n;
+        });
         setErrors(new Map());
         router.refresh();
       } catch (e) {
@@ -174,7 +217,7 @@ export function PartidosClient({ hasPaid, sections }: Props) {
     }
     return all;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sections, values]);
+  }, [sections, values, touched, savedNew]);
   const dirtyCount = dirtyMatches.length;
 
   function scrollToMatch(id: string) {
