@@ -19,6 +19,9 @@ export interface InlineMatch {
   status: string;
   lockedAt: string | Date | null;
   initial?: { homeScore: number; awayScore: number; points: number | null } | null;
+  // Tendencia agregada (% gana local / empate / gana visitante). Sin numero
+  // total de predicciones — solo porcentajes. null si hay <3 predicciones.
+  distribution?: { homePct: number; drawPct: number; awayPct: number } | null;
 }
 
 interface Props {
@@ -186,7 +189,72 @@ export function InlinePredictionRow({
           </Link>
         </div>
       </div>
+
+      {/* Tendencia agregada de predicciones (% local/empate/visitante).
+          Solo se muestra si hay datos suficientes (>=3 preds) y el partido
+          no ha finalizado. No revela cuanta gente predijo ni marcadores. */}
+      {match.distribution && !isFinished && (
+        <DistributionBar
+          dist={match.distribution}
+          homeTeam={match.homeTeam}
+          awayTeam={match.awayTeam}
+        />
+      )}
     </article>
+  );
+}
+
+function DistributionBar({
+  dist,
+  homeTeam,
+  awayTeam,
+}: {
+  dist: { homePct: number; drawPct: number; awayPct: number };
+  homeTeam: string;
+  awayTeam: string;
+}) {
+  const { homePct, drawPct, awayPct } = dist;
+  return (
+    <div className="mt-3 pt-3 border-t border-line">
+      <p className="text-[10px] uppercase tracking-wider text-muted mb-1.5">Cómo predicen</p>
+      <div className="flex h-3.5 w-full rounded overflow-hidden bg-bg">
+        {homePct > 0 && (
+          <div
+            className="bg-success/80"
+            style={{ width: `${homePct}%` }}
+            title={`${homeTeam}: ${homePct}%`}
+          />
+        )}
+        {drawPct > 0 && (
+          <div
+            className="bg-warning/80"
+            style={{ width: `${drawPct}%` }}
+            title={`Empate: ${drawPct}%`}
+          />
+        )}
+        {awayPct > 0 && (
+          <div
+            className="bg-blue-500/80"
+            style={{ width: `${awayPct}%` }}
+            title={`${awayTeam}: ${awayPct}%`}
+          />
+        )}
+      </div>
+      <div className="flex text-[10px] text-muted mt-1 tabular-nums">
+        <span className="flex-1 text-left">
+          <span className="inline-block w-1.5 h-1.5 rounded-full bg-success/80 mr-1 align-middle" />
+          {homePct}%
+        </span>
+        <span className="flex-1 text-center">
+          <span className="inline-block w-1.5 h-1.5 rounded-full bg-warning/80 mr-1 align-middle" />
+          {drawPct}% empate
+        </span>
+        <span className="flex-1 text-right">
+          {awayPct}%
+          <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500/80 ml-1 align-middle" />
+        </span>
+      </div>
+    </div>
   );
 }
 

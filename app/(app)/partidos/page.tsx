@@ -51,7 +51,35 @@ export default async function PartidosPage({
     },
   });
 
+  // Distribución agregada de TODAS las predicciones por match (tendencia
+  // gana-local / empate / gana-visitante). No exponemos marcadores
+  // individuales ni el numero total — solo porcentajes. Requiere min 3
+  // predicciones para mostrarse (evita revelar votos individuales).
+  const MIN_PREDS_FOR_DIST = 3;
+  const allPreds = await prisma.prediction.findMany({
+    where: { matchId: { in: matches.map((m) => m.id) } },
+    select: { matchId: true, homeScore: true, awayScore: true },
+  });
+  const distByMatch = new Map<string, { h: number; d: number; a: number; total: number }>();
+  for (const p of allPreds) {
+    const cur = distByMatch.get(p.matchId) ?? { h: 0, d: 0, a: 0, total: 0 };
+    if (p.homeScore > p.awayScore) cur.h += 1;
+    else if (p.homeScore === p.awayScore) cur.d += 1;
+    else cur.a += 1;
+    cur.total += 1;
+    distByMatch.set(p.matchId, cur);
+  }
+
   function toInline(m: typeof matches[number]): InlineMatch {
+    const raw = distByMatch.get(m.id);
+    let distribution: InlineMatch['distribution'] = null;
+    if (raw && raw.total >= MIN_PREDS_FOR_DIST) {
+      distribution = {
+        homePct: Math.round((raw.h / raw.total) * 100),
+        drawPct: Math.round((raw.d / raw.total) * 100),
+        awayPct: Math.round((raw.a / raw.total) * 100),
+      };
+    }
     return {
       id: m.id,
       stage: m.stage,
@@ -65,6 +93,7 @@ export default async function PartidosPage({
       awayScore: m.awayScore,
       status: m.status,
       lockedAt: m.lockedAt ? m.lockedAt.toISOString() : null,
+      distribution,
       initial: m.predictions[0]
         ? {
             homeScore: m.predictions[0].homeScore,
