@@ -4,6 +4,7 @@ import { signOut } from '@/lib/auth';
 import { Nav } from '@/components/Nav';
 import { Footer } from '@/components/Footer';
 import { BottomQuickNav } from '@/components/BottomQuickNav';
+import { ImpersonationBanner } from '@/components/ImpersonationBanner';
 
 export const metadata = {
   robots: { index: false, follow: false },
@@ -21,6 +22,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <>
+      <ImpersonationBanner />
       <Nav isAdmin={isAdmin} userEmail={user.email ?? undefined} />
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 pb-24 sm:pb-8">
         {!user.hasPaid && <PaymentBanner />}

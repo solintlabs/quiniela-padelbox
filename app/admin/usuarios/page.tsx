@@ -5,6 +5,7 @@ import { requireAdmin } from '@/lib/permissions';
 import { Button } from '@/components/ui/button';
 import { DeleteUserButton } from '@/components/DeleteUserButton';
 import { EditUserButton } from '@/components/EditUserButton';
+import { impersonateUser } from '@/lib/impersonation';
 import { formatDateTime } from '@/lib/format';
 import { getPool } from '@/lib/pool';
 import { getInscriptionsStatus } from '@/lib/inscriptions';
@@ -179,7 +180,7 @@ export default async function UsuariosAdmin() {
                 <p className="text-[10px] text-muted mt-1">
                   Registrado: {formatDateTime(u.createdAt)}
                 </p>
-                <div className="mt-2 flex items-center gap-4">
+                <div className="mt-2 flex items-center gap-4 flex-wrap">
                   <EditUserButton
                     userId={u.id}
                     currentName={u.name}
@@ -187,6 +188,14 @@ export default async function UsuariosAdmin() {
                     currentEmail={u.email}
                     updateAction={updateUserProfile}
                   />
+                  {u.role !== 'ADMIN' && (
+                    <form action={impersonateUser}>
+                      <input type="hidden" name="targetId" value={u.id} />
+                      <button type="submit" className="text-[11px] text-accent hover:underline">
+                        👁️ Entrar como este usuario
+                      </button>
+                    </form>
+                  )}
                   {u.role !== 'ADMIN' && (
                     <DeleteUserButton
                       userId={u.id}
