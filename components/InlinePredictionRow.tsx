@@ -107,32 +107,43 @@ export function InlinePredictionRow({
         </div>
       </Link>
 
-      {/* Layout: equipos + score */}
+      {/* Fila de nombres de equipos (ancho completo, no se truncan a 1 letra) */}
       <div className="flex items-center gap-2">
         <div className="flex-1 flex items-center gap-2 min-w-0">
           {match.homeFlag && (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={match.homeFlag} alt="" className="w-6 h-6 rounded-sm shrink-0 object-cover" />
           )}
-          <span className="font-semibold text-sm truncate">{match.homeTeam}</span>
+          <span className="font-semibold text-sm sm:text-base truncate">{match.homeTeam}</span>
         </div>
+        <span className="text-muted text-xs shrink-0">vs</span>
+        <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
+          <span className="font-semibold text-sm sm:text-base truncate text-right">{match.awayTeam}</span>
+          {match.awayFlag && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={match.awayFlag} alt="" className="w-6 h-6 rounded-sm shrink-0 object-cover" />
+          )}
+        </div>
+      </div>
 
+      {/* Fila de marcador / steppers centrada debajo de los nombres */}
+      <div className="flex items-center justify-center mt-2.5">
         {isFinished ? (
-          <span className="font-display tabular-nums text-xl min-w-[68px] text-center">
+          <span className="font-display tabular-nums text-xl text-center">
             {match.homeScore}–{match.awayScore}
           </span>
         ) : isLocked ? (
-          <span className="font-display tabular-nums text-base text-muted min-w-[68px] text-center">
+          <span className="font-display tabular-nums text-base text-muted text-center">
             – vs –
           </span>
         ) : canEdit ? (
-          <div className="flex items-center gap-1 shrink-0">
+          <div className="flex items-center gap-1.5">
             <Stepper
               value={homeValue}
               onChange={(v) => onChange(match.id, clamp(v), awayValue)}
               disabled={saving}
             />
-            <span className="text-muted text-xs">–</span>
+            <span className="text-muted text-sm">–</span>
             <Stepper
               value={awayValue}
               onChange={(v) => onChange(match.id, homeValue, clamp(v))}
@@ -144,17 +155,9 @@ export function InlinePredictionRow({
             href="/inscripcion"
             className="text-[11px] text-warning underline px-2 text-center"
           >
-            Inscríbete<br />para predecir
+            Inscríbete para predecir
           </Link>
         )}
-
-        <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
-          <span className="font-semibold text-sm truncate text-right">{match.awayTeam}</span>
-          {match.awayFlag && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={match.awayFlag} alt="" className="w-6 h-6 rounded-sm shrink-0 object-cover" />
-          )}
-        </div>
       </div>
 
       {/* Footer: status + accion guardar */}
@@ -169,12 +172,15 @@ export function InlinePredictionRow({
               {saving && <span className="text-muted">Guardando…</span>}
               {!saving && dirty && <span className="text-warning">● Sin guardar</span>}
               {!saving && !dirty && hasInitial && <span className="text-success">✓ Guardado</span>}
+              {!saving && !dirty && !hasInitial && <span className="text-muted">Sin pronóstico</span>}
               {error && <span className="text-danger truncate">{error}</span>}
             </>
           ) : null}
         </div>
         <div className="flex items-center gap-3 shrink-0">
-          {!isLocked && canEdit && dirty && (
+          {/* Boton Guardar: visible si hay cambios O si el partido aun no tiene
+              pronostico (permite guardar el 0-0 por defecto directamente). */}
+          {!isLocked && canEdit && (dirty || !hasInitial) && (
             <button
               type="button"
               onClick={() => onSave(match.id)}
