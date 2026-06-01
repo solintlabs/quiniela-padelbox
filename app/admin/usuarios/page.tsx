@@ -67,15 +67,31 @@ async function deleteUser(id: string) {
   revalidatePath('/ranking');
 }
 
-async function updateUserProfile(id: string, name: string, phone: string) {
+async function updateUserProfile(id: string, name: string, phone: string, email: string) {
   'use server';
   await requireAdmin();
   if (!id) throw new Error('id requerido');
   const cleanName = name.trim().slice(0, 60) || null;
   const cleanPhone = phone.trim().slice(0, 20) || null;
+  const cleanEmail = email.trim().toLowerCase().slice(0, 120);
+
+  // El email es la identidad de login. Validamos formato y, si cambia,
+  // comprobamos que no choque con otro usuario (constraint unique).
+  if (!cleanEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+    throw new Error('Email inválido');
+  }
+  const current = await prisma.user.findUnique({ where: { id }, select: { email: true } });
+  if (!current) throw new Error('Usuario no encontrado');
+  if (cleanEmail !== current.email) {
+    const clash = await prisma.user.findUnique({ where: { email: cleanEmail }, select: { id: true } });
+    if (clash && clash.id !== id) {
+      throw new Error('Ya existe otro usuario con ese email');
+    }
+  }
+
   await prisma.user.update({
     where: { id },
-    data: { name: cleanName, phone: cleanPhone },
+    data: { name: cleanName, phone: cleanPhone, email: cleanEmail },
   });
   revalidatePath('/admin/usuarios');
   revalidatePath('/');
@@ -168,6 +184,7 @@ export default async function UsuariosAdmin() {
                     userId={u.id}
                     currentName={u.name}
                     currentPhone={u.phone}
+                    currentEmail={u.email}
                     updateAction={updateUserProfile}
                   />
                   {u.role !== 'ADMIN' && (

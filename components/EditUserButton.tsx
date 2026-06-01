@@ -6,13 +6,16 @@ interface Props {
   userId: string;
   currentName: string | null;
   currentPhone: string | null;
-  updateAction: (id: string, name: string, phone: string) => Promise<void>;
+  currentEmail: string;
+  updateAction: (id: string, name: string, phone: string, email: string) => Promise<void>;
 }
 
-export function EditUserButton({ userId, currentName, currentPhone, updateAction }: Props) {
+export function EditUserButton({ userId, currentName, currentPhone, currentEmail, updateAction }: Props) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(currentName ?? '');
   const [phone, setPhone] = useState(currentPhone ?? '');
+  const [email, setEmail] = useState(currentEmail);
+  const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   if (!editing) {
@@ -51,16 +54,36 @@ export function EditUserButton({ userId, currentName, currentPhone, updateAction
           className="w-full h-9 rounded-md border border-line bg-bg-elev px-2 text-sm font-mono"
         />
       </div>
+      <div className="space-y-1">
+        <label className="text-[10px] uppercase tracking-wider text-muted">Email (login)</label>
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          maxLength={120}
+          placeholder="correo@ejemplo.com"
+          className="w-full h-9 rounded-md border border-warning/40 bg-bg-elev px-2 text-sm"
+        />
+        <p className="text-[10px] text-warning">
+          ⚠ El email es con el que el usuario inicia sesión. Cámbialo solo si es necesario.
+        </p>
+      </div>
+      {error && <p className="text-xs text-danger">{error}</p>}
       <div className="flex gap-2">
         <button
           type="button"
           disabled={pending}
-          onClick={() =>
+          onClick={() => {
+            setError(null);
             startTransition(async () => {
-              await updateAction(userId, name, phone);
-              setEditing(false);
-            })
-          }
+              try {
+                await updateAction(userId, name, phone, email);
+                setEditing(false);
+              } catch (e) {
+                setError(e instanceof Error ? e.message : 'No se pudo guardar');
+              }
+            });
+          }}
           className="px-3 h-8 rounded bg-accent text-accent-fg text-xs font-semibold disabled:opacity-50"
         >
           {pending ? 'Guardando…' : 'Guardar'}
@@ -70,6 +93,8 @@ export function EditUserButton({ userId, currentName, currentPhone, updateAction
           onClick={() => {
             setName(currentName ?? '');
             setPhone(currentPhone ?? '');
+            setEmail(currentEmail);
+            setError(null);
             setEditing(false);
           }}
           disabled={pending}
