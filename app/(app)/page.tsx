@@ -6,6 +6,7 @@ import { PodioHero } from '@/components/PodioHero';
 import { Countdown } from '@/components/Countdown';
 import { AliadosStrip } from '@/components/AliadosStrip';
 import { AppStoreBadges } from '@/components/AppStoreBadges';
+import { DemoTour } from '@/components/DemoTour';
 import { formatDateTime } from '@/lib/format';
 import { getCurrentWeek, getWeekRange } from '@/lib/weeks';
 
@@ -79,6 +80,13 @@ export default async function DashboardPage() {
             <Countdown target={rules.tournamentStartAt} />
           </span>
         </p>
+      )}
+
+      {/* Tour explicativo: solo para quienes aún no han predicho nada (primera vez) */}
+      {groupStats.filled === 0 && (
+        <div className="max-w-2xl mx-auto">
+          <DemoTour variant="card" />
+        </div>
       )}
 
       {groupStats.total > 0 && groupStats.filled < groupStats.total && (

@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Footer } from '@/components/Footer';
 import { WhatsappFab } from '@/components/WhatsappFab';
 import { AppStoreBadges } from '@/components/AppStoreBadges';
+import { DemoTour } from '@/components/DemoTour';
 
 export const metadata = {
   title: 'Entrar a la Quiniela del Mundial 2026',
@@ -199,6 +200,11 @@ export default async function LoginPage({
               ENVIAR ENLACE →
             </Button>
           </form>
+
+          {/* Demo: ver cómo funciona */}
+          <div className="mt-4 flex justify-center">
+            <DemoTour variant="pill" />
+          </div>
 
           {hasGoogle && (
             <>
