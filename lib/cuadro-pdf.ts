@@ -1,4 +1,4 @@
-import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+import { PDFDocument, StandardFonts, rgb, type PDFPage, type PDFFont } from 'pdf-lib';
 import { prisma } from '@/lib/db';
 
 const MUNDIAL_GROUPS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
@@ -21,21 +21,30 @@ function ascii(s: string): string {
     .trim();
 }
 
+/** Trunca un nombre de equipo para que quepa en la columna estrecha. */
+function shortTeam(s: string): string {
+  const t = ascii(s);
+  if (t.length <= 12) return t;
+  return t.slice(0, 11) + '.';
+}
+
 export interface CuadroPdfResult {
   bytes: Uint8Array;
   filename: string;
 }
 
 /**
- * Genera el PDF del cuadro de un usuario: lista numerada de sus pronósticos por
- * grupo + eliminatorias. Nombre de archivo: "Fase de grupos - <nombre> - <fecha> - <email>.pdf".
+ * Genera el PDF del cuadro de un usuario en 2 columnas (2 grupos por fila),
+ * con cabecera de datos (nombre, email, teléfono, fecha de envío).
+ * Nombre de archivo: "Fase de grupos - <nombre> - <fecha> - <email>.pdf".
  */
 export async function buildCuadroPdf(userId: string): Promise<CuadroPdfResult | null> {
-  const user = await prisma.user.findUnique({
+  const userRow = await prisma.user.findUnique({
     where: { id: userId },
-    select: { name: true, email: true, championPick: true },
+    select: { name: true, email: true, phone: true, championPick: true },
   });
-  if (!user) return null;
+  if (!userRow) return null;
+  const user = userRow;
 
   const matches = await prisma.match.findMany({
     where: { excludeFromScoring: false, group: { in: MUNDIAL_GROUPS } },
@@ -49,91 +58,105 @@ export async function buildCuadroPdf(userId: string): Promise<CuadroPdfResult | 
   });
 
   type M = (typeof matches)[number];
-  const sections: Array<{ title: string; items: M[] }> = [];
+  const blocks: Array<{ title: string; items: M[] }> = [];
   for (const g of MUNDIAL_GROUPS) {
     const gm = matches.filter((m) => m.group === g);
-    if (gm.length > 0) sections.push({ title: `Grupo ${g}`, items: gm });
+    if (gm.length > 0) blocks.push({ title: `Grupo ${g}`, items: gm });
   }
   for (const stage of KNOCKOUT_STAGES) {
     const sm = knockout.filter((m) => m.stage === stage);
-    if (sm.length > 0) sections.push({ title: STAGE_LABEL[stage] ?? stage, items: sm });
+    if (sm.length > 0) blocks.push({ title: STAGE_LABEL[stage] ?? stage, items: sm });
   }
 
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   const fontBold = await pdf.embedFont(StandardFonts.HelveticaBold);
 
-  const W = 595; // A4
-  const H = 842;
-  const M = 48; // margen
+  const W = 595, H = 842, MARGIN = 40;
   const accent = rgb(0.36, 0.64, 0.12);
-  const ink = rgb(0.1, 0.1, 0.1);
+  const ink = rgb(0.12, 0.12, 0.12);
   const muted = rgb(0.45, 0.45, 0.45);
+  const lineGrey = rgb(0.85, 0.85, 0.85);
 
-  let page = pdf.addPage([W, H]);
-  let y = H - M;
+  const COL_GAP = 26;
+  const COL_W = (W - MARGIN * 2 - COL_GAP) / 2; // dos columnas
+  const COL_X = [MARGIN, MARGIN + COL_W + COL_GAP];
+  const ROW_H = 13;
+  const TITLE_H = 17;
+  const BLOCK_GAP = 12;
 
   const displayName = ascii(user.name ?? user.email.split('@')[0]);
-  const dateStr = new Date().toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+  const timeStr = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
 
-  // Cabecera
-  page.drawText('QUINIELA PADELBOX x DELISH', { x: M, y, size: 9, font: fontBold, color: accent });
-  y -= 24;
-  page.drawText(`Quiniela de ${displayName}`, { x: M, y, size: 20, font: fontBold, color: ink });
-  y -= 18;
-  const sub = ascii(`${user.email}  -  ${dateStr}${user.championPick ? `  -  Campeon: ${user.championPick}` : ''}`);
-  page.drawText(sub, { x: M, y, size: 10, font, color: muted });
-  y -= 10;
-  page.drawLine({ start: { x: M, y }, end: { x: W - M, y }, thickness: 1, color: rgb(0.85, 0.85, 0.85) });
-  y -= 22;
+  let page: PDFPage = pdf.addPage([W, H]);
 
+  function drawHeader(p: PDFPage): number {
+    let yy = H - MARGIN;
+    p.drawText('QUINIELA PADELBOX x DELISH - MUNDIAL 2026', { x: MARGIN, y: yy, size: 9, font: fontBold, color: accent });
+    yy -= 22;
+    p.drawText(`Quiniela de ${displayName}`, { x: MARGIN, y: yy, size: 19, font: fontBold, color: ink });
+    yy -= 16;
+    const datos1 = ascii(`Email: ${user.email}${user.phone ? `   Tel: ${user.phone}` : ''}`);
+    p.drawText(datos1, { x: MARGIN, y: yy, size: 9.5, font, color: muted });
+    yy -= 13;
+    const datos2 = ascii(
+      `Enviado: ${dateStr} ${timeStr}${user.championPick ? `   Campeon: ${user.championPick}` : ''}`,
+    );
+    p.drawText(datos2, { x: MARGIN, y: yy, size: 9.5, font, color: muted });
+    yy -= 8;
+    p.drawLine({ start: { x: MARGIN, y: yy }, end: { x: W - MARGIN, y: yy }, thickness: 1, color: lineGrey });
+    yy -= 18;
+    return yy;
+  }
+
+  const startY = drawHeader(page);
+  const bottomY = MARGIN + 14;
+  // Altura en y para cada columna (van bajando independientes).
+  const colY = [startY, startY];
   let counter = 0;
-  const lineH = 15;
 
-  for (const section of sections) {
-    // salto de página si no cabe el título + alguna fila
-    if (y < M + 60) {
+  function blockHeight(b: { items: M[] }): number {
+    return TITLE_H + b.items.length * ROW_H + BLOCK_GAP;
+  }
+
+  function drawBlock(b: { title: string; items: M[] }, fontN: PDFFont, fontB: PDFFont): void {
+    // Elige la columna con más espacio disponible (mayor y).
+    let col = colY[0] >= colY[1] ? 0 : 1;
+    const h = blockHeight(b);
+    // Si no cabe en ninguna columna, nueva página.
+    if (colY[col] - h < bottomY && colY[1 - col] - h < bottomY) {
       page = pdf.addPage([W, H]);
-      y = H - M;
+      const sy = drawHeader(page);
+      colY[0] = sy;
+      colY[1] = sy;
+      col = 0;
+    } else if (colY[col] - h < bottomY) {
+      col = 1 - col;
     }
-    page.drawText(section.title.toUpperCase(), { x: M, y, size: 11, font: fontBold, color: accent });
-    y -= 16;
-
-    for (const m of section.items) {
+    const x = COL_X[col];
+    let y = colY[col];
+    page.drawText(b.title.toUpperCase(), { x, y, size: 11, font: fontB, color: accent });
+    y -= TITLE_H;
+    for (const m of b.items) {
       counter += 1;
-      if (y < M + lineH) {
-        page = pdf.addPage([W, H]);
-        y = H - M;
-      }
       const p = m.predictions[0];
       const score = p ? `${p.homeScore}-${p.awayScore}` : '-:-';
-      const home = ascii(m.homeTeam);
-      const away = ascii(m.awayTeam);
-
-      // numero
-      page.drawText(`${counter}.`, { x: M, y, size: 10, font, color: muted });
-      // local (alineado a la derecha de su columna)
-      const homeMaxX = 250;
-      const homeWidth = font.widthOfTextAtSize(home, 10);
-      page.drawText(home, { x: Math.max(M + 26, homeMaxX - homeWidth), y, size: 10, font, color: ink });
-      // marcador centrado
-      page.drawText(score, { x: 265, y, size: 10, font: fontBold, color: p ? ink : muted });
-      // visitante
-      page.drawText(away, { x: 320, y, size: 10, font, color: ink });
-      y -= lineH;
+      const line = `${counter}. ${shortTeam(m.homeTeam)}  ${score}  ${shortTeam(m.awayTeam)}`;
+      page.drawText(line, { x, y, size: 9.5, font: fontN, color: p ? ink : muted });
+      y -= ROW_H;
     }
-    y -= 8;
+    colY[col] = y - BLOCK_GAP;
   }
 
-  // Pie
-  if (y < M + 20) {
-    page = pdf.addPage([W, H]);
-    y = H - M;
-  }
-  page.drawText('quinielabox.com', { x: M, y: M - 10, size: 9, font, color: muted });
+  for (const b of blocks) drawBlock(b, font, fontBold);
+
+  // Pie en la última página
+  page.drawText('quinielabox.com', { x: MARGIN, y: MARGIN - 8, size: 9, font, color: muted });
 
   const bytes = await pdf.save();
-  const safe = (s: string) => ascii(s).replace(/[^\w\s.-]/g, '').replace(/\s+/g, ' ').trim();
+  const safe = (s: string) => ascii(s).replace(/[^\w\s.@-]/g, '').replace(/\s+/g, ' ').trim();
   const filename = `Fase de grupos - ${safe(displayName)} - ${safe(dateStr)} - ${safe(user.email)}.pdf`;
 
   return { bytes, filename };
