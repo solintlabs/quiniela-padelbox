@@ -100,6 +100,11 @@ model User {
   championPick     String?
   championLockedAt DateTime?
 
+  // Enlace de acceso permanente (para gente sin email / poco tecnologica).
+  // El admin lo genera; quien tenga el link entra directo a ESTA cuenta.
+  // Revocable regenerandolo. Null = sin link activo.
+  accessToken      String?   @unique
+
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 

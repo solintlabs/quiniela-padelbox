@@ -5,7 +5,9 @@ import { requireAdmin } from '@/lib/permissions';
 import { Button } from '@/components/ui/button';
 import { DeleteUserButton } from '@/components/DeleteUserButton';
 import { EditUserButton } from '@/components/EditUserButton';
+import { AccessLinkButton } from '@/components/AccessLinkButton';
 import { impersonateUser } from '@/lib/impersonation';
+import { generateAccessLink, revokeAccessLink } from '@/lib/access-link';
 import { formatDateTime } from '@/lib/format';
 import { getPool } from '@/lib/pool';
 import { getInscriptionsStatus } from '@/lib/inscriptions';
@@ -99,6 +101,23 @@ async function updateUserProfile(id: string, name: string, phone: string, email:
   revalidatePath('/ranking');
 }
 
+async function createUser(formData: FormData) {
+  'use server';
+  await requireAdmin();
+  const email = String(formData.get('email') ?? '').trim().toLowerCase();
+  const name = String(formData.get('name') ?? '').trim().slice(0, 60) || null;
+  const phone = String(formData.get('phone') ?? '').trim().slice(0, 20) || null;
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw new Error('Email inválido');
+  }
+  const existing = await prisma.user.findUnique({ where: { email }, select: { id: true } });
+  if (existing) throw new Error('Ya existe un usuario con ese email');
+  await prisma.user.create({
+    data: { email, name, phone, emailVerified: new Date() },
+  });
+  revalidatePath('/admin/usuarios');
+}
+
 export default async function UsuariosAdmin() {
   const [users, methods, pool, rules] = await Promise.all([
     prisma.user.findMany({ orderBy: [{ hasPaid: 'asc' }, { createdAt: 'desc' }] }),
@@ -122,6 +141,51 @@ export default async function UsuariosAdmin() {
           <p className="font-display text-2xl text-accent tabular-nums">{pool.totalFormatted}</p>
         </div>
       </header>
+
+      {/* Crear usuario manualmente (para gente sin email o que no se registra sola) */}
+      <details className="rounded-xl border border-line bg-bg-elev">
+        <summary className="cursor-pointer px-4 py-3 text-sm font-semibold">
+          ➕ Crear usuario manualmente
+        </summary>
+        <form action={createUser} className="px-4 pb-4 grid sm:grid-cols-3 gap-3">
+          <div className="space-y-1">
+            <label className="text-[10px] uppercase tracking-wider text-muted">Email *</label>
+            <input
+              type="email"
+              name="email"
+              required
+              placeholder="correo@ejemplo.com"
+              className="w-full h-9 rounded-md border border-line bg-bg px-2 text-sm"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-[10px] uppercase tracking-wider text-muted">Nombre</label>
+            <input
+              type="text"
+              name="name"
+              maxLength={60}
+              placeholder="Nombre"
+              className="w-full h-9 rounded-md border border-line bg-bg px-2 text-sm"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-[10px] uppercase tracking-wider text-muted">Teléfono</label>
+            <input
+              type="tel"
+              name="phone"
+              maxLength={20}
+              placeholder="+58 ..."
+              className="w-full h-9 rounded-md border border-line bg-bg px-2 text-sm font-mono"
+            />
+          </div>
+          <div className="sm:col-span-3">
+            <Button type="submit" size="sm">Crear usuario</Button>
+            <p className="text-[11px] text-muted mt-2">
+              Tras crearlo, genera su 🔗 enlace de acceso directo desde su tarjeta y mándaselo por WhatsApp.
+            </p>
+          </div>
+        </form>
+      </details>
 
       {inscriptions.closeAt && (
         <div
@@ -204,6 +268,15 @@ export default async function UsuariosAdmin() {
                     />
                   )}
                 </div>
+                {u.role !== 'ADMIN' && (
+                  <AccessLinkButton
+                    userId={u.id}
+                    userLabel={u.name ?? u.email}
+                    currentToken={u.accessToken}
+                    generateAction={generateAccessLink}
+                    revokeAction={revokeAccessLink}
+                  />
+                )}
               </div>
 
               <div className="w-full sm:w-auto">
