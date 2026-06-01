@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db';
 import { requireAdmin } from '@/lib/permissions';
 import { Button } from '@/components/ui/button';
 import { DeleteUserButton } from '@/components/DeleteUserButton';
+import { EditUserButton } from '@/components/EditUserButton';
 import { formatDateTime } from '@/lib/format';
 import { getPool } from '@/lib/pool';
 import { getInscriptionsStatus } from '@/lib/inscriptions';
@@ -61,6 +62,21 @@ async function deleteUser(id: string) {
   if (!target) throw new Error('Usuario no encontrado');
   if (target.role === 'ADMIN') throw new Error('No se pueden eliminar admins desde aquí');
   await prisma.user.delete({ where: { id } });
+  revalidatePath('/admin/usuarios');
+  revalidatePath('/');
+  revalidatePath('/ranking');
+}
+
+async function updateUserProfile(id: string, name: string, phone: string) {
+  'use server';
+  await requireAdmin();
+  if (!id) throw new Error('id requerido');
+  const cleanName = name.trim().slice(0, 60) || null;
+  const cleanPhone = phone.trim().slice(0, 20) || null;
+  await prisma.user.update({
+    where: { id },
+    data: { name: cleanName, phone: cleanPhone },
+  });
   revalidatePath('/admin/usuarios');
   revalidatePath('/');
   revalidatePath('/ranking');
@@ -147,15 +163,21 @@ export default async function UsuariosAdmin() {
                 <p className="text-[10px] text-muted mt-1">
                   Registrado: {formatDateTime(u.createdAt)}
                 </p>
-                {u.role !== 'ADMIN' && (
-                  <div className="mt-2">
+                <div className="mt-2 flex items-center gap-4">
+                  <EditUserButton
+                    userId={u.id}
+                    currentName={u.name}
+                    currentPhone={u.phone}
+                    updateAction={updateUserProfile}
+                  />
+                  {u.role !== 'ADMIN' && (
                     <DeleteUserButton
                       userId={u.id}
                       userLabel={u.name ?? u.email}
                       deleteAction={deleteUser}
                     />
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
 
               <div className="w-full sm:w-auto">
