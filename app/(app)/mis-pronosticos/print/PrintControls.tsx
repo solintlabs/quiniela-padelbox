@@ -38,16 +38,24 @@ export function PrintControls() {
 
   return (
     <div className="print:hidden">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
         <Link href="/perfil" className="text-sm text-muted hover:text-ink whitespace-nowrap">
           ← Perfil
         </Link>
-        <button
-          onClick={handlePrintOrShare}
-          className="h-10 px-4 sm:px-5 rounded-lg bg-accent text-accent-fg font-semibold text-xs sm:text-sm hover:brightness-95 whitespace-nowrap"
-        >
-          🖨 Imprimir / Guardar PDF
-        </button>
+        <div className="flex items-center gap-2">
+          <a
+            href="/api/cuadro/pdf"
+            className="h-10 px-4 sm:px-5 rounded-lg bg-accent text-accent-fg font-semibold text-xs sm:text-sm hover:brightness-95 whitespace-nowrap inline-flex items-center"
+          >
+            📥 Descargar PDF
+          </a>
+          <button
+            onClick={handlePrintOrShare}
+            className="h-10 px-3 rounded-lg border border-line text-muted hover:text-ink text-xs sm:text-sm whitespace-nowrap"
+          >
+            🖨 Imprimir
+          </button>
+        </div>
       </div>
       {hint && (
         <p className="text-[11px] text-muted mt-3 max-w-md ml-auto text-right">{hint}</p>

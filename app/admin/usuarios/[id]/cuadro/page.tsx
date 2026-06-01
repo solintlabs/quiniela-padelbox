@@ -81,7 +81,15 @@ export default async function AdminUserCuadro({
             {user.championPick && <> · campeón: {user.championPick}</>}
           </p>
         </div>
-        <PdfExportButton />
+        <div className="flex items-center gap-2">
+          <a
+            href={`/api/cuadro/pdf?userId=${user.id}`}
+            className="h-10 px-4 rounded-lg bg-accent text-accent-fg font-semibold text-sm hover:brightness-95 inline-flex items-center"
+          >
+            📥 Descargar PDF
+          </a>
+          <PdfExportButton />
+        </div>
       </div>
 
       {/* Cabecera para impresion */}
