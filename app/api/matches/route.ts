@@ -21,8 +21,8 @@ export async function GET(req: Request) {
   });
 
   // Distribución agregada (% local/empate/visitante) por match. No expone
-  // marcadores individuales ni numero total. Min 3 predicciones para mostrarse.
-  const MIN_PREDS_FOR_DIST = 3;
+  // marcadores individuales ni numero total. Se muestra desde la 1a prediccion.
+  const MIN_PREDS_FOR_DIST = 1;
   const allPreds = await prisma.prediction.findMany({
     where: { matchId: { in: matches.map((m) => m.id) } },
     select: { matchId: true, homeScore: true, awayScore: true },

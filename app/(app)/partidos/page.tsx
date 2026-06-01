@@ -53,9 +53,9 @@ export default async function PartidosPage({
 
   // Distribución agregada de TODAS las predicciones por match (tendencia
   // gana-local / empate / gana-visitante). No exponemos marcadores
-  // individuales ni el numero total — solo porcentajes. Requiere min 3
-  // predicciones para mostrarse (evita revelar votos individuales).
-  const MIN_PREDS_FOR_DIST = 3;
+  // individuales ni el numero total — solo porcentajes. Se muestra desde
+  // la primera prediccion para que la barra se sienta "viva".
+  const MIN_PREDS_FOR_DIST = 1;
   const allPreds = await prisma.prediction.findMany({
     where: { matchId: { in: matches.map((m) => m.id) } },
     select: { matchId: true, homeScore: true, awayScore: true },
