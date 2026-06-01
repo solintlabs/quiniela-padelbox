@@ -7,7 +7,6 @@ interface Step {
   step: string;
   h: string;
   p: string;
-  spot: { top: number; left: number; w: number; h: number };
 }
 
 const STEPS: Step[] = [
@@ -16,35 +15,30 @@ const STEPS: Step[] = [
     step: 'Paso 1 · Entrar',
     h: 'Entra en segundos',
     p: 'Pones tu email y te llega un código de 6 dígitos. Sin contraseñas que recordar.',
-    spot: { top: 52, left: 8, w: 84, h: 9 },
   },
   {
     img: '/demo/dashboard.jpg',
     step: 'Paso 2 · Tu inicio',
-    h: 'El podio y tu quiniela',
-    p: 'Ves quién va ganando y accedes a rellenar tu quiniela y predecir el siguiente partido.',
-    spot: { top: 56, left: 5, w: 90, h: 11 },
+    h: 'El podio y el menú de abajo',
+    p: 'Tu pantalla principal: el podio, tu posición y, abajo, el menú para moverte entre Inicio, Partidos, Ranking y Perfil.',
   },
   {
     img: '/demo/predecir.jpg',
     step: 'Paso 3 · Predecir',
     h: 'Rellena tu quiniela',
-    p: 'En cada partido toca − y + para poner tu marcador (ej. 2-1) y guarda. Lo cambias hasta 15 min antes del inicio.',
-    spot: { top: 41, left: 4, w: 92, h: 9 },
+    p: 'En cada partido toca − y + para poner tu marcador (ej. 2-1) y guarda. Aquí arriba también eliges tu campeón. Cambias todo hasta 15 min antes.',
   },
   {
     img: '/demo/ranking.jpg',
     step: 'Paso 4 · Compite',
     h: 'Sube en el ranking',
     p: '+3 puntos si aciertas el marcador exacto, +1 si aciertas el ganador. ¡Escala posiciones!',
-    spot: { top: 53, left: 4, w: 92, h: 7 },
   },
   {
     img: '/demo/perfil.jpg',
     step: 'Paso 5 · Tu progreso',
-    h: 'Tus puntos siempre a la vista',
-    p: 'Consulta tus puntos, cuántos pronósticos llevas y tus aciertos exactos en tu perfil.',
-    spot: { top: 22, left: 4, w: 92, h: 9 },
+    h: 'Tus puntos y tu PDF',
+    p: 'Consulta tus puntos y aciertos. Desde aquí descargas tu quiniela en PDF para compartirla por WhatsApp.',
   },
 ];
 
@@ -162,17 +156,6 @@ function DemoModal({ onClose }: { onClose: () => void }) {
                 }
               />
             ))}
-            {/* spotlight */}
-            <div
-              className="absolute border-2 border-accent rounded-xl transition-all duration-500 pointer-events-none"
-              style={{
-                top: `${s.spot.top}%`,
-                left: `${s.spot.left}%`,
-                width: `${s.spot.w}%`,
-                height: `${s.spot.h}%`,
-                boxShadow: '0 0 0 9999px rgba(0,0,0,0.45), 0 0 16px rgba(182,255,60,0.5)',
-              }}
-            />
           </div>
         </div>
 
