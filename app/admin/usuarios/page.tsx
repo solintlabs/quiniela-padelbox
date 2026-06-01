@@ -104,14 +104,25 @@ async function updateUserProfile(id: string, name: string, phone: string, email:
 async function createUser(formData: FormData) {
   'use server';
   await requireAdmin();
-  const email = String(formData.get('email') ?? '').trim().toLowerCase();
+  const rawEmail = String(formData.get('email') ?? '').trim().toLowerCase();
   const name = String(formData.get('name') ?? '').trim().slice(0, 60) || null;
   const phone = String(formData.get('phone') ?? '').trim().slice(0, 20) || null;
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    throw new Error('Email inválido');
+
+  let email: string;
+  if (rawEmail) {
+    // Email real: validar formato + no duplicado.
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rawEmail)) throw new Error('Email inválido');
+    const existing = await prisma.user.findUnique({ where: { email: rawEmail }, select: { id: true } });
+    if (existing) throw new Error('Ya existe un usuario con ese email');
+    email = rawEmail;
+  } else {
+    // Sin email: usuario "solo-enlace". Generamos un email sintetico interno
+    // (nunca recibe correo). El usuario entrara unicamente por su enlace de
+    // acceso. Si mas adelante tiene email, el admin lo edita en su tarjeta.
+    if (!name) throw new Error('Pon al menos un nombre si no hay email');
+    email = `link-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}@noemail.quinielabox.com`;
   }
-  const existing = await prisma.user.findUnique({ where: { email }, select: { id: true } });
-  if (existing) throw new Error('Ya existe un usuario con ese email');
+
   await prisma.user.create({
     data: { email, name, phone, emailVerified: new Date() },
   });
@@ -149,22 +160,21 @@ export default async function UsuariosAdmin() {
         </summary>
         <form action={createUser} className="px-4 pb-4 grid sm:grid-cols-3 gap-3">
           <div className="space-y-1">
-            <label className="text-[10px] uppercase tracking-wider text-muted">Email *</label>
-            <input
-              type="email"
-              name="email"
-              required
-              placeholder="correo@ejemplo.com"
-              className="w-full h-9 rounded-md border border-line bg-bg px-2 text-sm"
-            />
-          </div>
-          <div className="space-y-1">
             <label className="text-[10px] uppercase tracking-wider text-muted">Nombre</label>
             <input
               type="text"
               name="name"
               maxLength={60}
-              placeholder="Nombre"
+              placeholder="Nombre (obligatorio si no hay email)"
+              className="w-full h-9 rounded-md border border-line bg-bg px-2 text-sm"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-[10px] uppercase tracking-wider text-muted">Email (opcional)</label>
+            <input
+              type="email"
+              name="email"
+              placeholder="correo@ejemplo.com"
               className="w-full h-9 rounded-md border border-line bg-bg px-2 text-sm"
             />
           </div>
@@ -181,7 +191,7 @@ export default async function UsuariosAdmin() {
           <div className="sm:col-span-3">
             <Button type="submit" size="sm">Crear usuario</Button>
             <p className="text-[11px] text-muted mt-2">
-              Tras crearlo, genera su 🔗 enlace de acceso directo desde su tarjeta y mándaselo por WhatsApp.
+              Sin email también vale (entrará solo por enlace). Tras crearlo, genera su 🔗 enlace de acceso desde su tarjeta y mándaselo por WhatsApp.
             </p>
           </div>
         </form>
@@ -226,7 +236,11 @@ export default async function UsuariosAdmin() {
                   {u.name ?? <span className="text-muted">Sin nombre</span>}
                   {u.role === 'ADMIN' && <span className="ml-2 text-xs text-accent">· Admin</span>}
                 </p>
-                <p className="text-xs text-muted mt-0.5">{u.email}</p>
+                <p className="text-xs text-muted mt-0.5">
+                  {u.email.endsWith('@noemail.quinielabox.com')
+                    ? '(sin email · solo enlace)'
+                    : u.email}
+                </p>
                 {u.phone && (
                   <p className="text-xs mt-0.5">
                     <a href={`tel:${u.phone}`} className="text-accent hover:underline">📞 {u.phone}</a>
@@ -245,6 +259,12 @@ export default async function UsuariosAdmin() {
                   Registrado: {formatDateTime(u.createdAt)}
                 </p>
                 <div className="mt-2 flex items-center gap-4 flex-wrap">
+                  <Link
+                    href={`/admin/usuarios/${u.id}/cuadro`}
+                    className="text-[11px] text-accent hover:underline"
+                  >
+                    📄 Ver / descargar PDF
+                  </Link>
                   <EditUserButton
                     userId={u.id}
                     currentName={u.name}

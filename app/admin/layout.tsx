@@ -13,7 +13,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <>
       <Nav isAdmin userEmail={user.email ?? undefined} />
       <main className="max-w-6xl mx-auto px-6 py-8">
-        <div className="mb-8 rounded-xl border border-accent/40 bg-accent/5 px-4 py-3 text-sm flex items-center justify-between">
+        <div className="no-print mb-8 rounded-xl border border-accent/40 bg-accent/5 px-4 py-3 text-sm flex items-center justify-between">
           <span><strong>Modo administrador.</strong> Cambios aquí afectan a todos los participantes.</span>
           <nav className="flex gap-1 text-xs flex-wrap">
             <Link href="/admin" className="px-3 py-1 rounded hover:bg-bg-elev">Resumen</Link>
