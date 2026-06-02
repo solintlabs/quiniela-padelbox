@@ -28,6 +28,15 @@ function shortTeam(s: string): string {
   return t.slice(0, 11) + '.';
 }
 
+/**
+ * Detecta equipos "placeholder" de eliminatorias antes de que se defina el
+ * bracket (ej. "Group A 2nd", "Round of 32", "Third Place", "Winner..."). No
+ * queremos esos en el PDF hasta que haya selecciones reales.
+ */
+function isPlaceholderTeam(s: string): boolean {
+  return /group\s|round of|third place|\bwinner\b|\brunner\b|\bwin\b|\bplace\b|\b\d(st|nd|rd|th)\b/i.test(s);
+}
+
 export interface CuadroPdfResult {
   bytes: Uint8Array;
   filename: string;
@@ -64,7 +73,13 @@ export async function buildCuadroPdf(userId: string): Promise<CuadroPdfResult | 
     if (gm.length > 0) blocks.push({ title: `Grupo ${g}`, items: gm });
   }
   for (const stage of KNOCKOUT_STAGES) {
-    const sm = knockout.filter((m) => m.stage === stage);
+    // Solo incluimos eliminatorias con equipos reales (bracket ya definido).
+    const sm = knockout.filter(
+      (m) =>
+        m.stage === stage &&
+        !isPlaceholderTeam(m.homeTeam) &&
+        !isPlaceholderTeam(m.awayTeam),
+    );
     if (sm.length > 0) blocks.push({ title: STAGE_LABEL[stage] ?? stage, items: sm });
   }
 

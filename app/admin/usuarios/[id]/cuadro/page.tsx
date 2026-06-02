@@ -44,21 +44,28 @@ export default async function AdminUserCuadro({
     },
   });
 
+  // Equipos placeholder de eliminatorias (bracket sin definir): no mostrarlos.
+  const isPlaceholder = (s: string) =>
+    /group\s|round of|third place|\bwinner\b|\brunner\b|\bwin\b|\bplace\b|\b\d(st|nd|rd|th)\b/i.test(s);
+
   type M = (typeof matches)[number];
   const sections: Array<{ title: string; items: M[] }> = [];
   for (const g of MUNDIAL_GROUPS) {
     const gm = matches.filter((m) => m.group === g);
     if (gm.length > 0) sections.push({ title: `Grupo ${g}`, items: gm });
   }
+  const realKnockout = knockout.filter(
+    (m) => !isPlaceholder(m.homeTeam) && !isPlaceholder(m.awayTeam),
+  );
   for (const stage of KNOCKOUT_STAGES) {
-    const sm = knockout.filter((m) => m.stage === stage);
+    const sm = realKnockout.filter((m) => m.stage === stage);
     if (sm.length > 0) sections.push({ title: STAGE_LABEL[stage] ?? stage, items: sm });
   }
 
-  const totalMatches = matches.length + knockout.length;
+  const totalMatches = matches.length + realKnockout.length;
   const predicted =
     matches.filter((m) => m.predictions[0]).length +
-    knockout.filter((m) => m.predictions[0]).length;
+    realKnockout.filter((m) => m.predictions[0]).length;
 
   let counter = 0;
   const label = user.name ?? user.email;
