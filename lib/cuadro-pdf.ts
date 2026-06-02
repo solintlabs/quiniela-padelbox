@@ -102,8 +102,8 @@ export async function buildCuadroPdf(userId: string): Promise<CuadroPdfResult | 
 
   const displayName = ascii(user.name ?? user.email.split('@')[0]);
   const now = new Date();
-  const dateStr = now.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
-  const timeStr = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+  const dateStr = now.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'America/Caracas' });
+  const timeStr = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Caracas' });
 
   let page: PDFPage = pdf.addPage([W, H]);
 

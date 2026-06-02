@@ -1,13 +1,21 @@
+// La quiniela es de PADELBOX (Venezuela). Postgres guarda UTC; aquí
+// formateamos SIEMPRE en hora de Caracas (GMT-4) para que las horas de los
+// partidos coincidan con la zona del usuario, independientemente de que el
+// servidor (Vercel) corra en UTC.
+const TIME_ZONE = 'America/Caracas';
+
 const DATE_FMT = new Intl.DateTimeFormat('es-ES', {
   weekday: 'short',
   day: '2-digit',
   month: 'short',
+  timeZone: TIME_ZONE,
 });
 
 const TIME_FMT = new Intl.DateTimeFormat('es-ES', {
   hour: '2-digit',
   minute: '2-digit',
   hour12: false,
+  timeZone: TIME_ZONE,
 });
 
 const DATETIME_FMT = new Intl.DateTimeFormat('es-ES', {
@@ -17,6 +25,7 @@ const DATETIME_FMT = new Intl.DateTimeFormat('es-ES', {
   hour: '2-digit',
   minute: '2-digit',
   hour12: false,
+  timeZone: TIME_ZONE,
 });
 
 export const formatDate = (d: Date | string) => DATE_FMT.format(new Date(d));

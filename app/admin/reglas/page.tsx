@@ -10,6 +10,24 @@ export const dynamic = 'force-dynamic';
 
 const FIFA_2026_TEAMS = Object.values(FIFA_2026_GROUPS).flat().sort();
 
+// Venezuela (Caracas) es fijo GMT-4, sin horario de verano.
+const CARACAS_OFFSET = '-04:00';
+
+/** Interpreta un valor de <input datetime-local> como hora de Caracas → Date UTC. */
+function parseCaracas(s: string): Date | null {
+  if (!s) return null;
+  const withSeconds = s.length === 16 ? `${s}:00` : s;
+  const d = new Date(`${withSeconds}${CARACAS_OFFSET}`);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+/** Convierte una Date (UTC) a string YYYY-MM-DDTHH:mm en hora de Caracas (para defaultValue). */
+function toCaracasInput(d: Date | null | undefined): string {
+  if (!d) return '';
+  const shifted = new Date(new Date(d).getTime() - 4 * 60 * 60 * 1000);
+  return shifted.toISOString().slice(0, 16);
+}
+
 async function updateRules(formData: FormData) {
   'use server';
   await requireAdmin();
@@ -32,8 +50,8 @@ async function updateRules(formData: FormData) {
       pointsWinner,
       pointsChampion,
       lockOffsetMin,
-      tournamentStartAt: tournamentStartAt ? new Date(tournamentStartAt) : null,
-      inscriptionsCloseAt: inscriptionsCloseAt ? new Date(inscriptionsCloseAt) : null,
+      tournamentStartAt: parseCaracas(tournamentStartAt),
+      inscriptionsCloseAt: parseCaracas(inscriptionsCloseAt),
       championWinner,
       rankingHidden,
       rankingHiddenText,
@@ -44,8 +62,8 @@ async function updateRules(formData: FormData) {
       pointsWinner,
       pointsChampion,
       lockOffsetMin,
-      tournamentStartAt: tournamentStartAt ? new Date(tournamentStartAt) : null,
-      inscriptionsCloseAt: inscriptionsCloseAt ? new Date(inscriptionsCloseAt) : null,
+      tournamentStartAt: parseCaracas(tournamentStartAt),
+      inscriptionsCloseAt: parseCaracas(inscriptionsCloseAt),
       championWinner,
       rankingHidden,
       rankingHiddenText,
@@ -82,11 +100,11 @@ export default async function ReglasAdmin() {
         <hr className="border-line my-4" />
 
         <div className="space-y-1">
-          <label className="text-xs uppercase tracking-[0.18em] text-muted">Fecha y hora del primer partido (cierra pick de campeón)</label>
+          <label className="text-xs uppercase tracking-[0.18em] text-muted">Fecha y hora del primer partido (hora de Caracas · cierra pick de campeón)</label>
           <Input
             type="datetime-local"
             name="tournamentStartAt"
-            defaultValue={rules?.tournamentStartAt ? new Date(rules.tournamentStartAt).toISOString().slice(0, 16) : ''}
+            defaultValue={toCaracasInput(rules?.tournamentStartAt)}
           />
         </div>
 
@@ -101,7 +119,7 @@ export default async function ReglasAdmin() {
           <Input
             type="datetime-local"
             name="inscriptionsCloseAt"
-            defaultValue={rules?.inscriptionsCloseAt ? new Date(rules.inscriptionsCloseAt).toISOString().slice(0, 16) : ''}
+            defaultValue={toCaracasInput(rules?.inscriptionsCloseAt)}
           />
         </div>
 
