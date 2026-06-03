@@ -227,6 +227,7 @@ export default async function LoginPage({
           {/* Quick actions */}
           <div className="flex justify-around mt-4 pt-3 border-t border-zinc-800 text-[11px] text-zinc-400">
             <Link href="/public/reglas" className="flex items-center gap-1 hover:text-ink">📖 Reglas</Link>
+            <a href="/api/cuadro/blank" className="flex items-center gap-1 hover:text-ink">📄 Hoja</a>
             <Link href="/public/inscripcion" className="flex items-center gap-1 hover:text-ink">💳 Inscripción</Link>
             <a
               href="https://wa.me/17864027294?text=Quiero%20inscribirme%20en%20la%20Quiniela%20PADELBOX"

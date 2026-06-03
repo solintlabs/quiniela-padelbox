@@ -235,6 +235,13 @@ export default async function PartidosAdmin() {
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
+          <a
+            href="/api/cuadro/blank"
+            className="inline-flex items-center h-10 px-4 rounded-lg border border-line hover:bg-bg-elev text-sm"
+            title="Plantilla en blanco para rellenar a mano"
+          >
+            📄 Hoja en blanco
+          </a>
           <form action={syncMatches}>
             <Button disabled={syncPaused} title={syncPaused ? 'Sync pausado — reactivalo abajo' : ''}>
               Sincronizar ESPN

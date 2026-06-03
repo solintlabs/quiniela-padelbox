@@ -176,3 +176,108 @@ export async function buildCuadroPdf(userId: string): Promise<CuadroPdfResult | 
 
   return { bytes, filename };
 }
+
+/**
+ * Plantilla EN BLANCO de la fase de grupos para rellenar a mano.
+ * Mismos partidos que el cuadro, con casillas vacías "__ - __" y líneas
+ * para escribir nombre/teléfono arriba. No depende de ningún usuario.
+ */
+export async function buildBlankCuadroPdf(): Promise<CuadroPdfResult> {
+  const matches = await prisma.match.findMany({
+    where: { excludeFromScoring: false, group: { in: MUNDIAL_GROUPS } },
+    orderBy: { kickoff: 'asc' },
+    select: { id: true, group: true, homeTeam: true, awayTeam: true },
+  });
+
+  type M = (typeof matches)[number];
+  const blocks: Array<{ title: string; items: M[] }> = [];
+  for (const g of MUNDIAL_GROUPS) {
+    const gm = matches.filter((m) => m.group === g);
+    if (gm.length > 0) blocks.push({ title: `Grupo ${g}`, items: gm });
+  }
+
+  const pdf = await PDFDocument.create();
+  const font = await pdf.embedFont(StandardFonts.Helvetica);
+  const fontBold = await pdf.embedFont(StandardFonts.HelveticaBold);
+
+  const W = 595, H = 842, MARGIN = 40;
+  const accent = rgb(0.36, 0.64, 0.12);
+  const ink = rgb(0.12, 0.12, 0.12);
+  const muted = rgb(0.45, 0.45, 0.45);
+  const lineGrey = rgb(0.8, 0.8, 0.8);
+
+  const COL_GAP = 26;
+  const COL_W = (W - MARGIN * 2 - COL_GAP) / 2;
+  const COL_X = [MARGIN, MARGIN + COL_W + COL_GAP];
+  const ROW_H = 15;
+  const TITLE_H = 17;
+  const BLOCK_GAP = 12;
+
+  let page: PDFPage = pdf.addPage([W, H]);
+
+  function drawHeader(p: PDFPage): number {
+    let yy = H - MARGIN;
+    p.drawText('QUINIELA PADELBOX x DELISH - MUNDIAL 2026', { x: MARGIN, y: yy, size: 9, font: fontBold, color: accent });
+    yy -= 22;
+    p.drawText('Plantilla para rellenar a mano', { x: MARGIN, y: yy, size: 19, font: fontBold, color: ink });
+    yy -= 20;
+    // Líneas para Nombre / Teléfono
+    p.drawText('Nombre:', { x: MARGIN, y: yy, size: 10, font, color: muted });
+    p.drawLine({ start: { x: MARGIN + 48, y: yy - 2 }, end: { x: 280, y: yy - 2 }, thickness: 0.8, color: lineGrey });
+    p.drawText('Telefono:', { x: 300, y: yy, size: 10, font, color: muted });
+    p.drawLine({ start: { x: 352, y: yy - 2 }, end: { x: W - MARGIN, y: yy - 2 }, thickness: 0.8, color: lineGrey });
+    yy -= 18;
+    p.drawText('Campeon del Mundial:', { x: MARGIN, y: yy, size: 10, font, color: muted });
+    p.drawLine({ start: { x: MARGIN + 116, y: yy - 2 }, end: { x: 280, y: yy - 2 }, thickness: 0.8, color: lineGrey });
+    p.drawText('(+25 pts si aciertas)', { x: 300, y: yy, size: 9, font, color: muted });
+    yy -= 12;
+    p.drawLine({ start: { x: MARGIN, y: yy }, end: { x: W - MARGIN, y: yy }, thickness: 1, color: lineGrey });
+    yy -= 18;
+    return yy;
+  }
+
+  const startY = drawHeader(page);
+  const bottomY = MARGIN + 14;
+  const colY = [startY, startY];
+  let counter = 0;
+
+  const blockHeight = (b: { items: M[] }) => TITLE_H + b.items.length * ROW_H + BLOCK_GAP;
+
+  function drawBlock(b: { title: string; items: M[] }): void {
+    let col = colY[0] >= colY[1] ? 0 : 1;
+    const h = blockHeight(b);
+    if (colY[col] - h < bottomY && colY[1 - col] - h < bottomY) {
+      page = pdf.addPage([W, H]);
+      const sy = drawHeader(page);
+      colY[0] = sy;
+      colY[1] = sy;
+      col = 0;
+    } else if (colY[col] - h < bottomY) {
+      col = 1 - col;
+    }
+    const x = COL_X[col];
+    let y = colY[col];
+    page.drawText(b.title.toUpperCase(), { x, y, size: 11, font: fontBold, color: accent });
+    y -= TITLE_H;
+    for (const m of b.items) {
+      counter += 1;
+      // "1. Mexico  __ - __  S.Africa"
+      page.drawText(`${counter}. ${shortTeam(m.homeTeam)}`, { x, y, size: 9.5, font, color: ink });
+      // casillas vacías centradas en la columna
+      const boxX = x + COL_W - 96;
+      page.drawText('__ - __', { x: boxX, y, size: 9.5, font, color: muted });
+      page.drawText(shortTeam(m.awayTeam), { x: boxX + 44, y, size: 9.5, font, color: ink });
+      y -= ROW_H;
+    }
+    colY[col] = y - BLOCK_GAP;
+  }
+
+  for (const b of blocks) drawBlock(b);
+
+  page.drawText('Entregalo o registralo en quinielabox.com - 3 pts marcador exacto, 1 pt ganador', {
+    x: MARGIN, y: MARGIN - 8, size: 8.5, font, color: muted,
+  });
+
+  const bytes = await pdf.save();
+  return { bytes, filename: 'Quiniela Mundial 2026 - Plantilla en blanco.pdf' };
+}
