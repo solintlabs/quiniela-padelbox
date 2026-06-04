@@ -4,6 +4,10 @@ import { prisma } from '@/lib/db';
 import { requirePaidApi } from '@/lib/permissions';
 import { rateLimit, tooManyRequests } from '@/lib/ratelimit';
 
+// Guardar muchos pronósticos puede tardar (varias escrituras + cold start de
+// Neon). Subimos el límite para evitar timeouts ("failed to fetch").
+export const maxDuration = 45;
+
 const ItemSchema = z.object({
   matchId: z.string().min(1),
   homeScore: z.number().int().min(0).max(20),
@@ -53,8 +57,8 @@ export async function POST(req: Request) {
   });
   const matchById = new Map(matches.map((m) => [m.id, m]));
 
-  let saved = 0;
   const skipped: Array<{ matchId: string; reason: string }> = [];
+  const valid: Array<{ matchId: string; homeScore: number; awayScore: number }> = [];
 
   for (const p of parsed.data.predictions) {
     const m = matchById.get(p.matchId);
@@ -67,18 +71,22 @@ export async function POST(req: Request) {
       skipped.push({ matchId: p.matchId, reason: 'cerrado' });
       continue;
     }
-    await prisma.prediction.upsert({
-      where: { userId_matchId: { userId: user.id, matchId: p.matchId } },
-      update: { homeScore: p.homeScore, awayScore: p.awayScore },
-      create: {
-        userId: user.id,
-        matchId: p.matchId,
-        homeScore: p.homeScore,
-        awayScore: p.awayScore,
-      },
-    });
-    saved++;
+    valid.push({ matchId: p.matchId, homeScore: p.homeScore, awayScore: p.awayScore });
   }
 
-  return NextResponse.json({ saved, skipped });
+  // Ejecutar todos los upserts en UNA transacción (mucho más rápido que el
+  // bucle secuencial anterior, que con 72 partidos podía tardar > 10s).
+  if (valid.length > 0) {
+    await prisma.$transaction(
+      valid.map((p) =>
+        prisma.prediction.upsert({
+          where: { userId_matchId: { userId: user.id, matchId: p.matchId } },
+          update: { homeScore: p.homeScore, awayScore: p.awayScore },
+          create: { userId: user.id, matchId: p.matchId, homeScore: p.homeScore, awayScore: p.awayScore },
+        }),
+      ),
+    );
+  }
+
+  return NextResponse.json({ saved: valid.length, skipped });
 }

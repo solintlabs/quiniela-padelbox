@@ -4,6 +4,8 @@ import { prisma } from '@/lib/db';
 import { requirePaidApi } from '@/lib/permissions';
 import { rateLimit, tooManyRequests } from '@/lib/ratelimit';
 
+export const maxDuration = 20;
+
 const Schema = z.object({
   matchId: z.string().min(1),
   homeScore: z.number().int().min(0).max(20),

@@ -49,6 +49,8 @@ export function PartidosClient({ hasPaid, sections }: Props) {
   const [saving, setSaving] = useState<Set<string>>(new Set());
   const [errors, setErrors] = useState<Map<string, string>>(new Map());
   const [bulkSaving, startBulkSave] = useTransition();
+  // Mensaje de éxito temporal tras guardar (toast verde arriba).
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
   // Secciones (Grupo A, B…) plegadas por el usuario. Set de titles.
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   // Matches que el usuario ha tocado (para permitir guardar 0-0 explicito).
@@ -113,6 +115,32 @@ export function PartidosClient({ hasPaid, sections }: Props) {
     });
   }
 
+  function flashSuccess(msg: string) {
+    setSuccessMsg(msg);
+    setTimeout(() => setSuccessMsg(null), 2800);
+  }
+
+  /** fetch con timeout para que no se quede "guardando" para siempre. */
+  async function postJson(url: string, body: unknown, timeoutMs = 25000): Promise<Response> {
+    const controller = new AbortController();
+    const t = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      return await fetch(url, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+    } catch (e) {
+      if (e instanceof DOMException && e.name === 'AbortError') {
+        throw new Error('Tardó demasiado. Revisa tu conexión e inténtalo de nuevo.');
+      }
+      throw new Error('Sin conexión. Inténtalo de nuevo.');
+    } finally {
+      clearTimeout(t);
+    }
+  }
+
   async function saveOne(id: string) {
     const v = getValue(id);
     setSaving((s) => new Set(s).add(id));
@@ -122,11 +150,7 @@ export function PartidosClient({ hasPaid, sections }: Props) {
       return n;
     });
     try {
-      const res = await fetch('/api/predictions', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ matchId: id, homeScore: v.home, awayScore: v.away }),
-      });
+      const res = await postJson('/api/predictions', { matchId: id, homeScore: v.home, awayScore: v.away });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.message ?? body.error ?? 'No se pudo guardar');
@@ -141,6 +165,7 @@ export function PartidosClient({ hasPaid, sections }: Props) {
         n.delete(id);
         return n;
       });
+      flashSuccess('✓ Pronóstico guardado');
       router.refresh();
     } catch (e) {
       setErrors((errs) => {
@@ -166,15 +191,12 @@ export function PartidosClient({ hasPaid, sections }: Props) {
     });
     startBulkSave(async () => {
       try {
-        const res = await fetch('/api/predictions/batch', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ predictions: payload }),
-        });
+        const res = await postJson('/api/predictions/batch', { predictions: payload }, 40000);
         if (!res.ok) {
           const body = await res.json().catch(() => ({}));
           throw new Error(body.message ?? body.error ?? 'No se pudo guardar');
         }
+        const data = (await res.json().catch(() => ({}))) as { saved?: number; skipped?: unknown[] };
         // Limpia dirty: actualiza initial para todos
         const newlySaved = new Set<string>();
         for (const id of dirtyIds) {
@@ -193,6 +215,8 @@ export function PartidosClient({ hasPaid, sections }: Props) {
           return n;
         });
         setErrors(new Map());
+        const n = data.saved ?? dirtyIds.length;
+        flashSuccess(`✓ ${n} pronóstico${n !== 1 ? 's' : ''} guardado${n !== 1 ? 's' : ''}`);
         router.refresh();
       } catch (e) {
         const msg = e instanceof Error ? e.message : 'Error';
@@ -232,6 +256,13 @@ export function PartidosClient({ hasPaid, sections }: Props) {
 
   return (
     <>
+      {/* Toast de éxito tras guardar */}
+      {successMsg && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-lg bg-success text-white text-sm font-semibold shadow-lg flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
+          {successMsg}
+        </div>
+      )}
+
       {/* Barra flotante "Guardar todo" cuando hay cambios */}
       {hasPaid && dirtyCount > 0 && (
         <div className="sticky top-14 z-30 -mx-4 sm:-mx-6 px-4 sm:px-6 py-3 backdrop-blur bg-bg/90 border-b border-warning/40 space-y-2">
