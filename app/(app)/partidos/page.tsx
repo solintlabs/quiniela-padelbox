@@ -41,7 +41,16 @@ export default async function PartidosPage({
     where:
       effectiveTab === 'liga'
         ? { group: 'LIGA', excludeFromScoring: false }
-        : { group: { in: MUNDIAL_GROUPS }, excludeFromScoring: false },
+        : {
+            // Mundial: fase de grupos (A-L) + eliminatorias (group=null pero
+            // stage en KO). Las eliminatorias con equipos placeholder se
+            // filtran abajo hasta que ESPN defina el bracket real.
+            excludeFromScoring: false,
+            OR: [
+              { group: { in: MUNDIAL_GROUPS } },
+              { stage: { in: [...KNOCKOUT_STAGES] } },
+            ],
+          },
     orderBy: { kickoff: 'asc' },
     include: {
       predictions: {
@@ -50,6 +59,11 @@ export default async function PartidosPage({
       },
     },
   });
+
+  // Equipos placeholder de eliminatorias (bracket sin definir): "Group A 2nd",
+  // "Round of 32", "Third Place"... No mostrarlos hasta que haya equipos reales.
+  const isPlaceholder = (s: string) =>
+    /group\s|round of|third place|\bwinner\b|\brunner\b|\bwin\b|\bplace\b|\b\d(st|nd|rd|th)\b/i.test(s);
 
   // Distribución agregada de TODAS las predicciones por match (tendencia
   // gana-local / empate / gana-visitante). No exponemos marcadores
@@ -118,9 +132,15 @@ export default async function PartidosPage({
         });
       }
     }
-    // Eliminatorias (cuando existan)
+    // Eliminatorias: solo cuando ESPN ya definió los cruces (equipos reales).
+    // Mientras sean placeholders ("Round of 32"...) no se muestran.
     for (const stage of KNOCKOUT_STAGES) {
-      const stageMatches = matches.filter((m) => m.stage === stage);
+      const stageMatches = matches.filter(
+        (m) =>
+          m.stage === stage &&
+          !isPlaceholder(m.homeTeam) &&
+          !isPlaceholder(m.awayTeam),
+      );
       if (stageMatches.length > 0) {
         sections.push({
           title: STAGE_LABEL[stage] ?? stage,
