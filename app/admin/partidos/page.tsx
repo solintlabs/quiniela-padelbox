@@ -58,6 +58,8 @@ async function updateScore(formData: FormData) {
   const homeScore = parseInt(String(formData.get('homeScore') ?? ''), 10);
   const awayScore = parseInt(String(formData.get('awayScore') ?? ''), 10);
   const status = String(formData.get('status') ?? 'FINISHED') as typeof STATUSES[number];
+  // Marcar como resultado manual (90 min): el sync de ESPN no lo sobrescribirá.
+  const manualResult = formData.get('manualResult') === 'on';
   if (!id || !Number.isFinite(homeScore) || !Number.isFinite(awayScore)) return;
 
   const rules = await prisma.rules.findUnique({ where: { id: 1 } });
@@ -70,6 +72,7 @@ async function updateScore(formData: FormData) {
       homeScore,
       awayScore,
       status,
+      manualResult,
       ...(status === 'FINISHED' ? { scoredAt: new Date() } : {}),
     },
   });
@@ -415,6 +418,14 @@ export default async function PartidosAdmin() {
                 <option value="POSTPONED">Aplazado</option>
                 <option value="CANCELLED">Cancelado</option>
               </select>
+
+              {/* Resultado manual (90 min) — el sync de ESPN no lo sobrescribe.
+                  Útil en eliminatorias con prórroga/penales. */}
+              <label className="flex items-center gap-1.5 text-[11px] text-muted" title="No dejar que ESPN sobrescriba este resultado (para 90 min en eliminatorias)">
+                <input type="checkbox" name="manualResult" defaultChecked={m.manualResult} className="h-3.5 w-3.5" />
+                Manual (90&apos;)
+                {m.manualResult && <span className="text-warning">🔒</span>}
+              </label>
 
               <Button type="submit" size="sm">Guardar</Button>
             </form>

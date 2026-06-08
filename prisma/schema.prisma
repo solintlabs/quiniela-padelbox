@@ -228,6 +228,11 @@ model Match {
   // del Mundial sin perder los partidos como historico.
   excludeFromScoring Boolean @default(false)
 
+  // Si true: el sync con ESPN NO sobrescribe marcador/estado de este match.
+  // Usado en eliminatorias para fijar el resultado de 90 min a mano (ESPN
+  // reporta el resultado final con prorroga). El admin lo activa al editar.
+  manualResult       Boolean @default(false)
+
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 

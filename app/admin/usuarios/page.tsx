@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { DeleteUserButton } from '@/components/DeleteUserButton';
 import { EditUserButton } from '@/components/EditUserButton';
 import { AccessLinkButton } from '@/components/AccessLinkButton';
+import { EditPaymentButton } from '@/components/EditPaymentButton';
 import { impersonateUser } from '@/lib/impersonation';
 import { generateAccessLink, revokeAccessLink } from '@/lib/access-link';
 import { formatDateTime } from '@/lib/format';
@@ -68,6 +69,21 @@ async function deleteUser(id: string) {
   revalidatePath('/admin/usuarios');
   revalidatePath('/');
   revalidatePath('/ranking');
+}
+
+async function updatePaymentInfo(id: string, method: string, amount: string, note: string) {
+  'use server';
+  await requireAdmin();
+  if (!id) throw new Error('id requerido');
+  await prisma.user.update({
+    where: { id },
+    data: {
+      paidMethod: method.trim() || null,
+      paidAmount: amount.trim() || null,
+      paidNote: note.trim().slice(0, 300) || null,
+    },
+  });
+  revalidatePath('/admin/usuarios');
 }
 
 async function updateUserProfile(id: string, name: string, phone: string, email: string) {
@@ -137,6 +153,7 @@ export default async function UsuariosAdmin() {
     prisma.rules.findUnique({ where: { id: 1 }, select: { inscriptionsCloseAt: true } }),
   ]);
   const inscriptions = getInscriptionsStatus(rules?.inscriptionsCloseAt ?? null);
+  const unpaidWithPhone = users.filter((u) => !u.hasPaid && u.phone && u.phone.trim()).length;
 
   return (
     <div className="space-y-6">
@@ -144,7 +161,8 @@ export default async function UsuariosAdmin() {
         <div>
           <h1 className="font-display text-3xl">Usuarios</h1>
           <p className="text-sm text-muted mt-1">
-            {users.length} en total · {pool.paidCount} pagado{pool.paidCount !== 1 && 's'}.
+            {users.length} en total · {pool.paidCount} pagado{pool.paidCount !== 1 && 's'} ·{' '}
+            <span className="text-warning">{unpaidWithPhone} sin pagar con teléfono</span>
           </p>
         </div>
         <div className="rounded-xl border border-accent/30 bg-accent/5 px-4 py-2 text-right">
@@ -152,6 +170,31 @@ export default async function UsuariosAdmin() {
           <p className="font-display text-2xl text-accent tabular-nums">{pool.totalFormatted}</p>
         </div>
       </header>
+
+      {/* Descargar contactos para captar a los que no han pagado */}
+      <div className="rounded-xl border border-warning/30 bg-warning/5 p-4 flex items-center justify-between gap-3 flex-wrap">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold">📇 Contactar a los no pagados</p>
+          <p className="text-xs text-muted mt-0.5">
+            Descarga sus contactos en un archivo y ábrelo en el teléfono para importarlos
+            todos de golpe (aparecen con prefijo &quot;QB&quot;). O escríbeles directo por WhatsApp en cada tarjeta.
+          </p>
+        </div>
+        <div className="flex gap-2 shrink-0">
+          <a
+            href="/api/admin/contactos?filter=unpaid"
+            className="inline-flex items-center h-9 px-3 rounded-md bg-warning text-ink text-xs font-semibold hover:brightness-95"
+          >
+            📥 Contactos sin pagar
+          </a>
+          <a
+            href="/api/admin/contactos?filter=all"
+            className="inline-flex items-center h-9 px-3 rounded-md border border-line text-xs hover:bg-bg-elev"
+          >
+            Todos
+          </a>
+        </div>
+      </div>
 
       {/* Crear usuario manualmente (para gente sin email o que no se registra sola) */}
       <details className="rounded-xl border border-line bg-bg-elev">
@@ -307,6 +350,13 @@ export default async function UsuariosAdmin() {
                     {u.paidAmount && <p className="text-xs text-muted">Monto: <span className="text-ink">{u.paidAmount}</span></p>}
                     {u.paidNote && <p className="text-xs text-muted">Nota: <span className="text-ink">{u.paidNote}</span></p>}
                     {u.paidAt && <p className="text-[10px] text-muted mt-1">{formatDateTime(u.paidAt)}</p>}
+                    <EditPaymentButton
+                      userId={u.id}
+                      currentMethod={u.paidMethod}
+                      currentAmount={u.paidAmount}
+                      currentNote={u.paidNote}
+                      updateAction={updatePaymentInfo}
+                    />
                     <form action={markUnpaid} className="mt-2">
                       <input type="hidden" name="id" value={u.id} />
                       <button type="submit" className="text-xs text-danger hover:underline">

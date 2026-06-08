@@ -24,7 +24,25 @@ export async function syncMatchesFromApi() {
       where: { externalId: data.externalId },
     });
     if (existing) {
-      await prisma.match.update({ where: { id: existing.id }, data });
+      if (existing.manualResult) {
+        // Resultado fijado a mano (90 min en eliminatorias): NO tocar
+        // marcador/estado. Solo refrescamos equipos/horario/banderas por si
+        // ESPN definió el cruce real (sin pisar el resultado del admin).
+        await prisma.match.update({
+          where: { id: existing.id },
+          data: {
+            stage: data.stage,
+            group: data.group,
+            kickoff: data.kickoff,
+            homeTeam: data.homeTeam,
+            awayTeam: data.awayTeam,
+            homeFlag: data.homeFlag,
+            awayFlag: data.awayFlag,
+          },
+        });
+      } else {
+        await prisma.match.update({ where: { id: existing.id }, data });
+      }
       updated++;
     } else {
       await prisma.match.create({ data });
