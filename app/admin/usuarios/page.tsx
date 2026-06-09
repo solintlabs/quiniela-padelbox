@@ -193,28 +193,36 @@ export default async function UsuariosAdmin({
       </header>
 
       {/* Descargar contactos para captar a los que no han pagado */}
-      <div className="rounded-xl border border-warning/30 bg-warning/5 p-4 flex items-center justify-between gap-3 flex-wrap">
-        <div className="min-w-0">
-          <p className="text-sm font-semibold">📇 Contactar a los no pagados</p>
-          <p className="text-xs text-muted mt-0.5">
-            Descarga sus contactos en un archivo y ábrelo en el teléfono para importarlos
-            todos de golpe (aparecen con prefijo &quot;QB&quot;). O escríbeles directo por WhatsApp en cada tarjeta.
-          </p>
+      <div className="rounded-xl border border-warning/30 bg-warning/5 p-4 space-y-2">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold">📇 Contactar a los no pagados</p>
+            <p className="text-xs text-muted mt-0.5">
+              <strong className="text-ink">{unpaidWithPhone}</strong> sin pagar con teléfono se incluyen en el archivo
+              (los {unpaidCount - unpaidWithPhone} sin número no pueden ir).
+            </p>
+          </div>
+          <div className="flex gap-2 shrink-0">
+            <a
+              href="/api/admin/contactos?filter=unpaid"
+              className="inline-flex items-center h-9 px-3 rounded-md bg-warning text-ink text-xs font-semibold hover:brightness-95"
+            >
+              📥 Contactos sin pagar
+            </a>
+            <a
+              href="/api/admin/contactos?filter=all"
+              className="inline-flex items-center h-9 px-3 rounded-md border border-line text-xs hover:bg-bg-elev"
+            >
+              Todos
+            </a>
+          </div>
         </div>
-        <div className="flex gap-2 shrink-0">
-          <a
-            href="/api/admin/contactos?filter=unpaid"
-            className="inline-flex items-center h-9 px-3 rounded-md bg-warning text-ink text-xs font-semibold hover:brightness-95"
-          >
-            📥 Contactos sin pagar
-          </a>
-          <a
-            href="/api/admin/contactos?filter=all"
-            className="inline-flex items-center h-9 px-3 rounded-md border border-line text-xs hover:bg-bg-elev"
-          >
-            Todos
-          </a>
-        </div>
+        <p className="text-[11px] text-muted border-t border-warning/20 pt-2">
+          📱 <strong className="text-ink">Para importar TODOS en iPhone:</strong> descarga el archivo, abre la
+          app <strong className="text-ink">Archivos</strong> → Descargas → toca el .vcf → arriba pulsa{' '}
+          <strong className="text-ink">&quot;Añadir todos los contactos&quot;</strong>. (Si lo abres desde Safari directo,
+          a veces solo muestra el primero — por eso ábrelo desde Archivos.)
+        </p>
       </div>
 
       {/* Filtro por estado de pago + buscador */}

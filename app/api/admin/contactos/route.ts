@@ -57,11 +57,12 @@ export async function GET(req: Request) {
       [
         'BEGIN:VCARD',
         'VERSION:3.0',
+        'PRODID:-//QuinielaBOX//Contactos//ES',
         // N: Apellido;Nombre;Segundo;Prefijo;Sufijo (5 campos = 4 ';')
         `N:;${fn};;;`,
         `FN:${fn}`,
-        `TEL;TYPE=CELL:${tel}`,
-        `EMAIL:${vesc(u.email)}`,
+        `TEL;TYPE=CELL,VOICE:${tel}`,
+        `EMAIL;TYPE=INTERNET:${vesc(u.email)}`,
         `NOTE:${note}`,
         'END:VCARD',
       ].join('\r\n'),
