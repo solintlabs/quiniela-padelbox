@@ -145,15 +145,36 @@ async function createUser(formData: FormData) {
   revalidatePath('/admin/usuarios');
 }
 
-export default async function UsuariosAdmin() {
-  const [users, methods, pool, rules] = await Promise.all([
+export default async function UsuariosAdmin({
+  searchParams,
+}: {
+  searchParams: Promise<{ filtro?: string; q?: string }>;
+}) {
+  const sp = await searchParams;
+  const filtro = sp.filtro === 'pagados' ? 'pagados' : sp.filtro === 'nopagados' ? 'nopagados' : 'todos';
+  const query = (sp.q ?? '').trim().toLowerCase();
+
+  const [allUsers, methods, pool, rules] = await Promise.all([
     prisma.user.findMany({ orderBy: [{ hasPaid: 'asc' }, { createdAt: 'desc' }] }),
     prisma.paymentMethod.findMany({ where: { enabled: true }, orderBy: { sortOrder: 'asc' } }),
     getPool(),
     prisma.rules.findUnique({ where: { id: 1 }, select: { inscriptionsCloseAt: true } }),
   ]);
   const inscriptions = getInscriptionsStatus(rules?.inscriptionsCloseAt ?? null);
-  const unpaidWithPhone = users.filter((u) => !u.hasPaid && u.phone && u.phone.trim()).length;
+  const unpaidWithPhone = allUsers.filter((u) => !u.hasPaid && u.phone && u.phone.trim()).length;
+  const paidCount = allUsers.filter((u) => u.hasPaid).length;
+  const unpaidCount = allUsers.length - paidCount;
+
+  // Filtro de estado + búsqueda por nombre/email/teléfono
+  const users = allUsers.filter((u) => {
+    if (filtro === 'pagados' && !u.hasPaid) return false;
+    if (filtro === 'nopagados' && u.hasPaid) return false;
+    if (query) {
+      const hay = `${u.name ?? ''} ${u.email} ${u.phone ?? ''}`.toLowerCase();
+      if (!hay.includes(query)) return false;
+    }
+    return true;
+  });
 
   return (
     <div className="space-y-6">
@@ -195,6 +216,38 @@ export default async function UsuariosAdmin() {
           </a>
         </div>
       </div>
+
+      {/* Filtro por estado de pago + buscador */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <nav className="flex gap-1 rounded-lg border border-line bg-bg-elev p-1 text-sm">
+          <FiltroTab filtro="todos" actual={filtro} q={query} label={`Todos (${allUsers.length})`} />
+          <FiltroTab filtro="pagados" actual={filtro} q={query} label={`Pagados (${paidCount})`} />
+          <FiltroTab filtro="nopagados" actual={filtro} q={query} label={`Sin pagar (${unpaidCount})`} />
+        </nav>
+        <form method="get" className="flex items-center gap-2 flex-1 min-w-[200px]">
+          {filtro !== 'todos' && <input type="hidden" name="filtro" value={filtro} />}
+          <input
+            type="search"
+            name="q"
+            defaultValue={query}
+            placeholder="Buscar por nombre, email o teléfono…"
+            className="flex-1 h-9 rounded-md border border-line bg-bg-elev px-3 text-sm"
+          />
+          <button type="submit" className="h-9 px-3 rounded-md border border-line text-sm hover:bg-bg-elev">
+            Buscar
+          </button>
+        </form>
+      </div>
+
+      {(filtro !== 'todos' || query) && (
+        <p className="text-xs text-muted -mt-3">
+          Mostrando <span className="text-ink font-semibold">{users.length}</span> usuario{users.length !== 1 && 's'}
+          {filtro === 'pagados' && ' pagados'}
+          {filtro === 'nopagados' && ' sin pagar'}
+          {query && ` que coinciden con "${query}"`}.{' '}
+          <Link href="/admin/usuarios" className="text-accent underline">Ver todos</Link>
+        </p>
+      )}
 
       {/* Crear usuario manualmente (para gente sin email o que no se registra sola) */}
       <details className="rounded-xl border border-line bg-bg-elev">
@@ -412,9 +465,40 @@ export default async function UsuariosAdmin() {
           </article>
         ))}
         {users.length === 0 && (
-          <p className="text-sm text-muted text-center py-10">Aún no hay usuarios registrados.</p>
+          <p className="text-sm text-muted text-center py-10">
+            No hay usuarios que coincidan con el filtro.
+          </p>
         )}
       </div>
     </div>
+  );
+}
+
+function FiltroTab({
+  filtro,
+  actual,
+  q,
+  label,
+}: {
+  filtro: 'todos' | 'pagados' | 'nopagados';
+  actual: string;
+  q: string;
+  label: string;
+}) {
+  const params = new URLSearchParams();
+  if (filtro !== 'todos') params.set('filtro', filtro);
+  if (q) params.set('q', q);
+  const href = `/admin/usuarios${params.toString() ? `?${params.toString()}` : ''}`;
+  const active = actual === filtro;
+  return (
+    <Link
+      href={href}
+      className={
+        'px-3 py-1.5 rounded-md transition-colors ' +
+        (active ? 'bg-accent text-accent-fg font-semibold' : 'text-muted hover:text-ink')
+      }
+    >
+      {label}
+    </Link>
   );
 }
