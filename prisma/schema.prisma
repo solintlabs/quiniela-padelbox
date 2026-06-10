@@ -298,6 +298,10 @@ model Rules {
   // Texto que se muestra en /ranking cuando rankingHidden=true. Si null,
   // usa el copy default. Editable desde /admin/reglas.
   rankingHiddenText String?
+  // Si true: al cerrar cada partido, los usuarios pagados que NO hayan
+  // pronosticado reciben un 0-0 automático (red de seguridad para que nadie
+  // se quede sin marcador). El admin lo activa en /admin/reglas.
+  autofillZeroOnLock Boolean  @default(false)
   updatedAt         DateTime  @updatedAt
 }
 

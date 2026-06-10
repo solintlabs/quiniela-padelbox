@@ -34,6 +34,8 @@ interface Props {
   onChange: (matchId: string, home: number, away: number) => void;
   /** true si hay cambios pendientes vs el initial guardado. */
   dirty: boolean;
+  /** true si se guardó en este cliente (aunque match.initial aún no refrescó). */
+  savedLocally?: boolean;
   saving: boolean;
   error: string | null;
   /** Trigger guardar SOLO este partido. */
@@ -57,6 +59,7 @@ export function InlinePredictionRow({
   awayValue,
   onChange,
   dirty,
+  savedLocally,
   saving,
   error,
   onSave,
@@ -65,7 +68,8 @@ export function InlinePredictionRow({
   const isLockedByTime = kickoffDate.getTime() - 15 * 60_000 <= Date.now();
   const isLocked = !!match.lockedAt || match.status !== 'SCHEDULED' || isLockedByTime;
   const isFinished = match.status === 'FINISHED';
-  const hasInitial = !!match.initial;
+  // "Guardado" si ya tenía predicción del server O se guardó ahora en cliente.
+  const hasInitial = !!match.initial || !!savedLocally;
   const stageLabel =
     match.group === 'LIGA'
       ? 'La Liga'

@@ -244,6 +244,39 @@ export function PartidosClient({ hasPaid, sections }: Props) {
   }, [sections, values, touched, savedNew]);
   const dirtyCount = dirtyMatches.length;
 
+  // ¿Tiene predicción guardada? (del server o guardada en este cliente)
+  function isSaved(m: InlineMatch): boolean {
+    return !!m.initial || savedNew.has(m.id);
+  }
+  // ¿Se puede aún predecir? (no cerrado por hora / estado)
+  function isEditable(m: InlineMatch): boolean {
+    if (m.status !== 'SCHEDULED') return false;
+    if (m.lockedAt) return false;
+    return new Date(m.kickoff).getTime() - 15 * 60_000 > Date.now();
+  }
+
+  // Partidos que aún puedes predecir pero NO has guardado (te faltan por llenar).
+  const pendingMatches = useMemo(() => {
+    const all: Array<{ id: string; home: string; away: string; section: string }> = [];
+    for (const sec of sections) {
+      for (const m of sec.items) {
+        if (isEditable(m) && !isSaved(m)) {
+          all.push({ id: m.id, home: m.homeTeam, away: m.awayTeam, section: sec.title });
+        }
+      }
+    }
+    return all;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sections, savedNew]);
+
+  // Total editable y guardados (para el "X/Y" global).
+  const editableTotal = useMemo(
+    () => sections.reduce((acc, sec) => acc + sec.items.filter(isEditable).length, 0),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [sections],
+  );
+  const savedTotal = editableTotal - pendingMatches.length;
+
   function scrollToMatch(id: string) {
     const el = document.getElementById(`match-${id}`);
     if (el) {
@@ -252,6 +285,40 @@ export function PartidosClient({ hasPaid, sections }: Props) {
       el.classList.add('ring-2', 'ring-warning', 'ring-offset-2', 'ring-offset-bg');
       setTimeout(() => el.classList.remove('ring-2', 'ring-warning', 'ring-offset-2', 'ring-offset-bg'), 1800);
     }
+  }
+
+  /** Guarda TODOS los partidos pendientes con su valor actual (normalmente 0-0). */
+  function saveAllPending() {
+    const ids = pendingMatches.map((p) => p.id);
+    if (ids.length === 0) return;
+    const payload = ids.map((id) => {
+      const v = getValue(id);
+      return { matchId: id, homeScore: v.home, awayScore: v.away };
+    });
+    startBulkSave(async () => {
+      try {
+        const res = await postJson('/api/predictions/batch', { predictions: payload }, 40000);
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body.message ?? body.error ?? 'No se pudo guardar');
+        }
+        const data = (await res.json().catch(() => ({}))) as { saved?: number };
+        for (const id of ids) {
+          const v = getValue(id);
+          initial.set(id, { home: v.home, away: v.away });
+        }
+        setSavedNew((s) => {
+          const n = new Set(s);
+          ids.forEach((id) => n.add(id));
+          return n;
+        });
+        const n = data.saved ?? ids.length;
+        flashSuccess(`✓ ${n} partido${n !== 1 ? 's' : ''} guardado${n !== 1 ? 's' : ''} (0-0)`);
+        router.refresh();
+      } catch (e) {
+        flashSuccess(`✗ ${e instanceof Error ? e.message : 'Error al guardar'}`);
+      }
+    });
   }
 
   return (
@@ -298,6 +365,49 @@ export function PartidosClient({ hasPaid, sections }: Props) {
               </span>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Faltan por pronosticar: muestra cuántos y cuáles (solo si no hay cambios sin guardar pendientes) */}
+      {hasPaid && pendingMatches.length > 0 && dirtyCount === 0 && (
+        <div className="rounded-xl border border-warning/40 bg-warning/5 p-3 sm:p-4 space-y-2">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <p className="text-sm">
+              <span className="text-warning font-semibold">⚠ Te faltan {pendingMatches.length} partido{pendingMatches.length !== 1 && 's'} por pronosticar</span>{' '}
+              <span className="text-muted tabular-nums">({savedTotal}/{editableTotal} guardados)</span>
+            </p>
+            <button
+              type="button"
+              onClick={saveAllPending}
+              disabled={bulkSaving}
+              className="h-8 px-3 rounded-md bg-warning text-ink text-xs font-semibold disabled:opacity-60 shrink-0"
+            >
+              {bulkSaving ? 'Guardando…' : `Guardar los ${pendingMatches.length} como están (0-0)`}
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {pendingMatches.slice(0, 12).map((pm) => (
+              <button
+                key={pm.id}
+                type="button"
+                onClick={() => scrollToMatch(pm.id)}
+                className="text-[11px] px-2 py-1 rounded-md border border-warning/40 bg-warning/10 text-ink hover:bg-warning/20"
+                title={`${pm.section} · ir a pronosticar`}
+              >
+                {pm.home} vs {pm.away} ↗
+              </button>
+            ))}
+            {pendingMatches.length > 12 && (
+              <span className="text-[11px] text-muted self-center">+ {pendingMatches.length - 12} más</span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Todo pronosticado */}
+      {hasPaid && editableTotal > 0 && pendingMatches.length === 0 && dirtyCount === 0 && (
+        <div className="rounded-xl border border-success/40 bg-success/5 p-3 text-sm text-success">
+          ✓ ¡Has pronosticado todos los partidos abiertos! ({savedTotal}/{editableTotal})
         </div>
       )}
 
@@ -370,6 +480,7 @@ export function PartidosClient({ hasPaid, sections }: Props) {
                       awayValue={v.away}
                       onChange={onChange}
                       dirty={isDirty(m.id)}
+                      savedLocally={savedNew.has(m.id)}
                       saving={saving.has(m.id) || bulkSaving}
                       error={errors.get(m.id) ?? null}
                       onSave={saveOne}

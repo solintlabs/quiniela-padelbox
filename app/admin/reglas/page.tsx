@@ -42,6 +42,7 @@ async function updateRules(formData: FormData) {
     ? championWinnerRaw : null;
   const rankingHidden = formData.get('rankingHidden') === 'on';
   const rankingHiddenText = String(formData.get('rankingHiddenText') ?? '').trim() || null;
+  const autofillZeroOnLock = formData.get('autofillZeroOnLock') === 'on';
 
   await prisma.rules.upsert({
     where: { id: 1 },
@@ -55,6 +56,7 @@ async function updateRules(formData: FormData) {
       championWinner,
       rankingHidden,
       rankingHiddenText,
+      autofillZeroOnLock,
     },
     create: {
       id: 1,
@@ -67,6 +69,7 @@ async function updateRules(formData: FormData) {
       championWinner,
       rankingHidden,
       rankingHiddenText,
+      autofillZeroOnLock,
     },
   });
   revalidatePath('/admin/reglas');
@@ -157,6 +160,29 @@ export default async function ReglasAdmin() {
               className="w-full bg-bg border border-line rounded-lg px-3 py-2 text-sm text-ink resize-y"
             />
           </div>
+        </div>
+
+        <hr className="border-line my-4" />
+
+        <div className="space-y-2">
+          <label className="text-xs uppercase tracking-[0.18em] text-muted">
+            Red de seguridad: auto-rellenar 0-0
+          </label>
+          <p className="text-xs text-muted">
+            Si lo activas, al cerrar cada partido (15 min antes del kickoff) los usuarios
+            pagados que NO hayan pronosticado reciben un <strong className="text-ink">0-0 automático</strong>.
+            Así nadie se queda sin marcador. ⚠️ Aplica a TODOS los pagados sin predicción, incluidos
+            los que nunca entraron.
+          </p>
+          <label className="flex items-start gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              name="autofillZeroOnLock"
+              defaultChecked={rules?.autofillZeroOnLock ?? false}
+              className="mt-0.5 h-4 w-4 rounded border-line"
+            />
+            <span className="text-sm">Auto-rellenar 0-0 a los pagados sin pronóstico al cerrar cada partido</span>
+          </label>
         </div>
 
         <hr className="border-line my-4" />

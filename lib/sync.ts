@@ -193,7 +193,7 @@ export async function lockAndScore() {
       data: { lockedAt: new Date() },
     });
 
-    // Push: avisa a usuarios pagados SIN prediccion de los partidos que se cerraron.
+    const autofill = rules?.autofillZeroOnLock ?? false;
     for (const m of toLock) {
       const usersNoPred = await prisma.user.findMany({
         where: {
@@ -202,7 +202,17 @@ export async function lockAndScore() {
         },
         select: { id: true },
       });
-      if (usersNoPred.length > 0) {
+      if (usersNoPred.length === 0) continue;
+
+      if (autofill) {
+        // Red de seguridad: crear 0-0 para los pagados sin predicción.
+        await prisma.prediction.createMany({
+          data: usersNoPred.map((u) => ({ userId: u.id, matchId: m.id, homeScore: 0, awayScore: 0 })),
+          skipDuplicates: true,
+        });
+        // (No mandamos push de "no llegaste" porque ahora tienen 0-0.)
+      } else {
+        // Push: avisa a los que no llegaron a predecir.
         await sendPushToUsers(usersNoPred.map((u) => u.id), () => ({
           title: '⏰ Partido cerrado',
           body: `${m.homeTeam} vs ${m.awayTeam} — no llegaste a predecir esta vez.`,
