@@ -76,7 +76,7 @@ export function MoreSheet({ isAdmin, userEmail, signOutAction }: MoreSheetProps)
               <SheetItem href="/ranking" emoji="🏆" label="Ranking" onClick={() => setOpen(false)} />
               <SheetItem href="/cuadro" emoji="🎯" label="Mi Cuadro" onClick={() => setOpen(false)} />
               <SheetItem href="/reglas" emoji="📖" label="Reglas" onClick={() => setOpen(false)} />
-              <SheetItem href="/mis-pronosticos" emoji="📋" label="Mis pronósticos" onClick={() => setOpen(false)} />
+              <SheetItem href="/partidos" emoji="📋" label="Mis pronósticos" onClick={() => setOpen(false)} />
               <SheetItem href="/soporte" emoji="💬" label="Soporte" onClick={() => setOpen(false)} />
               {isAdmin && (
                 <SheetItem href="/admin" emoji="⚙️" label="Admin" accent onClick={() => setOpen(false)} />

@@ -20,6 +20,15 @@ const SCALE = 2;
 
 const MONTO_PRESETS = ['$5', '$10', '$15', '$20', '$25', '$50'];
 
+/** Presets de premios en producto, según la marca elegida. */
+function productPresets(name?: string): string[] {
+  const n = (name ?? '').toLowerCase();
+  if (n.includes('delish')) return ['1 COMBO DELISH', '1 HAMBURGUESA', '2 COMBOS DELISH'];
+  if (n.includes('padel') || n.includes('solint') || !name)
+    return ['1 TURNO DE PÁDEL', '1 HORA DE CANCHA', '1 CLASE DE PÁDEL'];
+  return ['1 PRODUCTO', '1 COMBO', '2X1'];
+}
+
 interface Theme {
   bg: string;
   accent: string;
@@ -78,8 +87,10 @@ export function GiftCardStudio({ sponsors }: Props) {
   const [titulo, setTitulo] = useState('PREMIO SEMANAL');
   const [detalle, setDetalle] = useState('Semana 1 · Mundial 2026');
   const [ganador, setGanador] = useState('');
+  const [emailLocal, setEmailLocal] = useState('');
   const [theme, setTheme] = useState<Theme>(() => brandTheme(sponsors[0]?.name));
   const [codigo, setCodigo] = useState<string | null>(null);
+  const [emailedTo, setEmailedTo] = useState<string | null>(null);
   const [emitting, setEmitting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
 
@@ -96,6 +107,7 @@ export function GiftCardStudio({ sponsors }: Props) {
   // tarjeta visible — se invalida para forzar una nueva emisión.
   useEffect(() => {
     setCodigo(null);
+    setEmailedTo(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [monto, titulo, detalle, ganador, sponsorId]);
 
@@ -193,18 +205,44 @@ export function GiftCardStudio({ sponsors }: Props) {
         ctx.textAlign = 'left';
       }
 
-      // Monto gigante centrado (se encoge si es texto largo)
+      // Premio centrado: monto ($25) o producto ("1 COMBO DELISH").
+      // Si el texto es largo se parte en dos líneas balanceadas.
       ctx.fillStyle = theme.accent;
       ctx.textAlign = 'center';
-      let fontSize = 180;
-      do {
-        ctx.font = `${fontSize}px ${display}`;
-        if (ctx.measureText(monto).width <= W - 220) break;
-        fontSize -= 10;
-      } while (fontSize > 40);
-      ctx.fillText(monto, W / 2, H / 2 - fontSize / 2 - 36);
+      const premio = monto.trim() || '—';
+      const maxTextW = W - 220;
+      const fit = (t: string, start: number): number => {
+        let fs = start;
+        for (; fs > 30; fs -= 6) {
+          ctx.font = `${fs}px ${display}`;
+          if (ctx.measureText(t).width <= maxTextW) break;
+        }
+        return fs;
+      };
+      const singleFs = fit(premio, 180);
+      if (singleFs >= 80 || !premio.includes(' ')) {
+        ctx.font = `${singleFs}px ${display}`;
+        ctx.fillText(premio, W / 2, H / 2 - singleFs / 2 - 36);
+      } else {
+        const words = premio.split(/\s+/);
+        let best: [string, string] = [words[0], words.slice(1).join(' ')];
+        let bestDiff = Infinity;
+        for (let i = 1; i < words.length; i++) {
+          const a = words.slice(0, i).join(' ');
+          const b = words.slice(i).join(' ');
+          const d = Math.abs(a.length - b.length);
+          if (d < bestDiff) {
+            bestDiff = d;
+            best = [a, b];
+          }
+        }
+        const fs = Math.min(fit(best[0], 96), fit(best[1], 96), 88);
+        ctx.font = `${fs}px ${display}`;
+        ctx.fillText(best[0], W / 2, H / 2 - fs - 44);
+        ctx.fillText(best[1], W / 2, H / 2 - 36);
+      }
 
-      // Detalle bajo el monto
+      // Detalle bajo el premio
       ctx.fillStyle = hexToRgba(theme.ink, 0.85);
       ctx.font = `600 26px ${body}`;
       ctx.fillText(detalle, W / 2, H / 2 + 70);
@@ -303,14 +341,17 @@ export function GiftCardStudio({ sponsors }: Props) {
           detalle,
           sponsorName: sponsor?.name ?? 'PADELBOX',
           winnerName: ganador.trim() || undefined,
+          sendTo: emailLocal.trim() || undefined,
         }),
       });
       if (!res.ok) {
         const b = (await res.json().catch(() => ({}))) as { error?: string };
         throw new Error(b.error ?? 'No se pudo emitir la gift card');
       }
-      const data = (await res.json()) as { code: string };
+      const data = (await res.json()) as { code: string; emailed?: boolean; emailError?: string | null };
       setCodigo(data.code);
+      setEmailedTo(data.emailed ? emailLocal.trim() : null);
+      if (data.emailError) setExportError(`Emitida, pero el email falló: ${data.emailError}`);
       await draw(data.code);
       downloadPng(data.code);
     } catch (e) {
@@ -358,30 +399,23 @@ export function GiftCardStudio({ sponsors }: Props) {
         </div>
 
         <div className="space-y-1">
-          <label className="text-[10px] uppercase tracking-wider text-muted">Monto / premio</label>
+          <label className="text-[10px] uppercase tracking-wider text-muted">Monto o producto</label>
           <div className="flex flex-wrap gap-1.5 mb-1.5">
             {MONTO_PRESETS.map((p) => (
-              <button
-                key={p}
-                type="button"
-                onClick={() => setMonto(p)}
-                className={
-                  'px-2.5 py-1 rounded-md border text-xs tabular-nums ' +
-                  (monto === p
-                    ? 'border-accent bg-accent/15 text-accent font-semibold'
-                    : 'border-line text-muted hover:text-ink')
-                }
-              >
-                {p}
-              </button>
+              <PresetChip key={p} label={p} active={monto === p} onPick={() => setMonto(p)} />
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-1.5 mb-1.5">
+            {productPresets(sponsor?.name).map((p) => (
+              <PresetChip key={p} label={p} active={monto === p} onPick={() => setMonto(p)} />
             ))}
           </div>
           <input
             type="text"
             value={monto}
             onChange={(e) => setMonto(e.target.value)}
-            maxLength={28}
-            placeholder="$25 · o texto: COMBO DELISH"
+            maxLength={40}
+            placeholder="$25 · o producto: 1 COMBO DELISH, 1 TURNO DE PÁDEL…"
             className="w-full h-10 rounded-md border border-line bg-bg px-3 text-sm"
           />
         </div>
@@ -421,6 +455,22 @@ export function GiftCardStudio({ sponsors }: Props) {
           />
         </div>
 
+        <div className="space-y-1">
+          <label className="text-[10px] uppercase tracking-wider text-muted">Email del local (opcional)</label>
+          <input
+            type="email"
+            value={emailLocal}
+            onChange={(e) => setEmailLocal(e.target.value)}
+            maxLength={120}
+            placeholder="local@ejemplo.com — recibe datos + código"
+            className="w-full h-10 rounded-md border border-line bg-bg px-3 text-sm"
+          />
+          <p className="text-[11px] text-muted">
+            Al emitir, el local recibe un correo con el premio, el código y el enlace de
+            verificación — así sabe qué canjear sin depender de la imagen.
+          </p>
+        </div>
+
         <button
           type="button"
           onClick={emitAndDownload}
@@ -432,6 +482,7 @@ export function GiftCardStudio({ sponsors }: Props) {
         {codigo && (
           <p className="text-xs text-success">
             ✓ Emitida con código <span className="font-mono">{codigo}</span> — registrada abajo.
+            {emailedTo && <> · 📧 Enviada a {emailedTo}</>}
           </p>
         )}
         {exportError && <p className="text-xs text-danger">{exportError}</p>}
@@ -453,6 +504,23 @@ export function GiftCardStudio({ sponsors }: Props) {
         />
       </div>
     </div>
+  );
+}
+
+function PresetChip({ label, active, onPick }: { label: string; active: boolean; onPick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onPick}
+      className={
+        'px-2.5 py-1 rounded-md border text-xs tabular-nums ' +
+        (active
+          ? 'border-accent bg-accent/15 text-accent font-semibold'
+          : 'border-line text-muted hover:text-ink')
+      }
+    >
+      {label}
+    </button>
   );
 }
 
