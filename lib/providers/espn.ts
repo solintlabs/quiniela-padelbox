@@ -76,7 +76,7 @@ interface EspnEvent {
   date: string;
   name: string;
   season: { year: number; slug?: string };
-  status: { type: { name: string } };
+  status: { type: { name: string; state?: string } };
   competitions: Array<{
     id: string;
     competitors: EspnCompetitor[];
@@ -168,7 +168,7 @@ function toNormalized(e: EspnEvent): NormalizedFixture | null {
   // goles en vivo y el scoring podia perder un ciclo si ESPN reportaba
   // FINISHED y score en llamadas distintas). En SCHEDULED queda null para
   // no ensenar un 0-0 falso antes del kickoff.
-  const status = mapStatus(e.status.type.name);
+  const status = mapStatus(e.status.type.name, e.status.type.state);
   const hasScore = status === 'LIVE' || status === 'FINISHED';
   const homeScore = hasScore ? parseScore(home.score) : null;
   const awayScore = hasScore ? parseScore(away.score) : null;
@@ -223,7 +223,7 @@ function isFinishedStatus(name: string): boolean {
   );
 }
 
-function mapStatus(name: string): MatchStatus {
+function mapStatus(name: string, state?: string): MatchStatus {
   if (isFinishedStatus(name)) return 'FINISHED';
   switch (name) {
     case 'STATUS_SCHEDULED':
@@ -231,15 +231,28 @@ function mapStatus(name: string): MatchStatus {
     case 'STATUS_IN_PROGRESS':
     case 'STATUS_HALFTIME':
     case 'STATUS_END_PERIOD':
+    // Fútbol en ESPN usa estos durante el juego (¡no STATUS_IN_PROGRESS!).
+    // Sin ellos, el partido caía al default SCHEDULED y no había marcador
+    // en vivo (pasó con el México-Sudáfrica inaugural).
+    case 'STATUS_FIRST_HALF':
+    case 'STATUS_SECOND_HALF':
+    case 'STATUS_BEGINNING_OF_PERIOD':
+    case 'STATUS_EXTRA_TIME':
+    case 'STATUS_OVERTIME':
+    case 'STATUS_PENALTIES':
+    case 'STATUS_SHOOTOUT':
       return 'LIVE';
     case 'STATUS_POSTPONED':
       return 'POSTPONED';
     case 'STATUS_CANCELED':
     case 'STATUS_FORFEIT':
       return 'CANCELLED';
-    default:
-      return 'SCHEDULED';
   }
+  // Status desconocido: decide por state (pre/in/post), mucho más fiable
+  // que asumir SCHEDULED.
+  if (state === 'in') return 'LIVE';
+  if (state === 'post') return 'FINISHED';
+  return 'SCHEDULED';
 }
 
 function mapStage(slug: string | undefined, notes: Array<{ headline: string }> | undefined): Stage {
