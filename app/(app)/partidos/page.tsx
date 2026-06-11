@@ -225,7 +225,8 @@ export default async function PartidosPage({
         )}
         <p className="text-xs text-muted mt-2">
           💡 Modifica los marcadores y pulsa <strong>Guardar</strong> en cada fila o{' '}
-          <strong>Guardar todo</strong> arriba para enviar varios a la vez.
+          <strong>Guardar todo</strong> arriba para enviar varios a la vez.{' '}
+          <strong>Guardar todo</strong> también guarda los partidos que dejes en 0-0.
         </p>
       </header>
 

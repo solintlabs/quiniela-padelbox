@@ -225,12 +225,13 @@ export function PartidosClient({ hasPaid, views }: Props) {
   }
 
   function saveAll() {
-    // Solo partidos aún editables: los que se bloquearon con cambios sin
-    // guardar no se envían (el server los rechazaría igualmente).
-    const dirtyIds = [...values.keys()].filter((id) => {
-      const m = allMatches.get(id);
-      return !!m && isEditable(m) && isDirty(id);
-    });
+    // Guarda TODO lo editable tal y como se ve: lo modificado (dirty) Y los
+    // partidos sin pronóstico guardado aunque no se hayan tocado (su 0-0
+    // visible cuenta como pronóstico — antes se quedaban fuera y la gente
+    // creía que su 0-0 estaba guardado). Los bloqueados no se envían.
+    const dirtyIds = [...allMatches.values()]
+      .filter((m) => isEditable(m) && (isDirty(m.id) || !isSaved(m)))
+      .map((m) => m.id);
     if (dirtyIds.length === 0) return;
     // Snapshot AHORA: si el user toca un stepper mientras el batch está en
     // vuelo, el baseline se actualiza con lo enviado, no con lo nuevo.
@@ -318,6 +319,16 @@ export function PartidosClient({ hasPaid, views }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sections, savedNew]);
 
+  // Lo que enviaría "Guardar todo": modificados + sin pronóstico (0-0 visible).
+  const toSaveCount = useMemo(() => {
+    let n = 0;
+    for (const m of allMatches.values()) {
+      if (isEditable(m) && (isDirty(m.id) || !isSaved(m))) n += 1;
+    }
+    return n;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allMatches, values, touched, savedNew]);
+
   // Total editable y guardados (para el "X/Y" global).
   const editableTotal = useMemo(
     () => sections.reduce((acc, sec) => acc + sec.items.filter(isEditable).length, 0),
@@ -385,6 +396,11 @@ export function PartidosClient({ hasPaid, views }: Props) {
             <p className="text-sm text-warning">
               ● <span className="font-semibold tabular-nums">{dirtyCount}</span>{' '}
               pronóstico{dirtyCount !== 1 && 's'} sin guardar
+              {toSaveCount > dirtyCount && (
+                <span className="text-muted">
+                  {' '}· los {toSaveCount - dirtyCount} en 0-0 se guardan también
+                </span>
+              )}
             </p>
             <button
               type="button"
@@ -392,7 +408,7 @@ export function PartidosClient({ hasPaid, views }: Props) {
               disabled={bulkSaving}
               className="h-10 px-5 rounded-lg bg-accent text-accent-fg font-display text-sm disabled:opacity-60"
             >
-              {bulkSaving ? 'Guardando…' : `Guardar todo (${dirtyCount}) →`}
+              {bulkSaving ? 'Guardando…' : `Guardar todo (${toSaveCount}) →`}
             </button>
           </div>
           <div className="flex flex-wrap gap-1.5">
