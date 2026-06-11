@@ -280,7 +280,7 @@ export default async function PartidosPage({
         </section>
       )}
 
-      <div className="screen-only">
+      <div className="screen-only space-y-4 sm:space-y-5">
         <PartidosClient hasPaid={hasPaid} views={views} />
 
         {matches.length === 0 && (

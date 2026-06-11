@@ -459,47 +459,49 @@ export function PartidosClient({ hasPaid, views }: Props) {
         </div>
       )}
 
-      {/* Selector de vista: cómo organizar los partidos (solo Mundial) */}
-      {views.length > 1 && (
-        <div className="flex items-center gap-2 flex-wrap no-print">
-          <span className="text-[11px] text-muted">Ver:</span>
-          <div className="inline-flex rounded-lg border border-line p-0.5 bg-bg-elev">
-            {views.map((v) => (
+      {/* Barra de herramientas: selector de vista + plegar/desplegar */}
+      {(views.length > 1 || sections.some((s) => s.items.length > 0)) && (
+        <div className="flex items-center justify-between gap-x-4 gap-y-3 flex-wrap no-print py-1">
+          {views.length > 1 && (
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] text-muted">Ver:</span>
+              <div className="inline-flex rounded-lg border border-line p-0.5 bg-bg-elev">
+                {views.map((v) => (
+                  <button
+                    key={v.key}
+                    type="button"
+                    onClick={() => changeView(v.key)}
+                    className={
+                      'px-3 py-1.5 text-xs rounded-md transition-colors ' +
+                      (viewKey === v.key
+                        ? 'bg-accent text-accent-fg font-semibold'
+                        : 'text-muted hover:text-ink')
+                    }
+                  >
+                    {v.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          {sections.some((s) => s.items.length > 0) && (
+            <div className="flex gap-1.5 ml-auto">
               <button
-                key={v.key}
                 type="button"
-                onClick={() => changeView(v.key)}
-                className={
-                  'px-3 py-1.5 text-xs rounded-md transition-colors ' +
-                  (viewKey === v.key
-                    ? 'bg-accent text-accent-fg font-semibold'
-                    : 'text-muted hover:text-ink')
-                }
+                onClick={() => setCollapsed(new Set(sections.map((s) => s.title)))}
+                className="text-[11px] px-2.5 py-1.5 rounded-md border border-line text-muted hover:text-ink hover:bg-bg-elev"
               >
-                {v.label}
+                ⊟ Plegar todos
               </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Botones colapsar/expandir todo - solo si hay grupos (secciones colapsables) */}
-      {sections.some((s) => s.items.length > 0) && (
-        <div className="flex gap-1.5 -mb-2 no-print">
-          <button
-            type="button"
-            onClick={() => setCollapsed(new Set(sections.map((s) => s.title)))}
-            className="text-[11px] px-2.5 py-1 rounded-md border border-line text-muted hover:text-ink hover:bg-bg-elev"
-          >
-            ⊟ Plegar todos
-          </button>
-          <button
-            type="button"
-            onClick={() => setCollapsed(new Set())}
-            className="text-[11px] px-2.5 py-1 rounded-md border border-line text-muted hover:text-ink hover:bg-bg-elev"
-          >
-            ⊞ Desplegar todos
-          </button>
+              <button
+                type="button"
+                onClick={() => setCollapsed(new Set())}
+                className="text-[11px] px-2.5 py-1.5 rounded-md border border-line text-muted hover:text-ink hover:bg-bg-elev"
+              >
+                ⊞ Desplegar todos
+              </button>
+            </div>
+          )}
         </div>
       )}
 
