@@ -307,6 +307,26 @@ model Rules {
   updatedAt         DateTime  @updatedAt
 }
 
+// Gift cards emitidas como premios (verificables por los locales).
+// El admin las emite desde /admin/giftcards; el local escanea el QR o entra
+// a /gift/[code] para comprobar que es real y no está canjeada.
+// status: "ACTIVE" | "REDEEMED" | "VOID" (string simple, sin enum).
+model GiftCard {
+  id          String    @id @default(cuid())
+  code        String    @unique   // "QB-XXXX-XXXX" — impreso en la tarjeta
+  monto       String
+  titulo      String?
+  detalle     String?
+  sponsorName String?
+  winnerName  String?
+  status      String    @default("ACTIVE")
+  redeemedAt  DateTime?
+  redeemNote  String?
+  createdAt   DateTime  @default(now())
+
+  @@index([status, createdAt])
+}
+
 // Patrocinadores del bote — opcional. Se muestran en login y dashboard.
 model Sponsor {
   id        String   @id @default(cuid())

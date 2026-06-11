@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import QRCode from 'qrcode';
 
 interface SponsorOpt {
   id: string;
@@ -18,6 +19,34 @@ const H = 640;
 const SCALE = 2;
 
 const MONTO_PRESETS = ['$5', '$10', '$15', '$20', '$25', '$50'];
+
+interface Theme {
+  bg: string;
+  accent: string;
+  ink: string;
+}
+
+/** Paleta de cada marca. Si no está mapeada, tema PADELBOX (dark + lima). */
+function brandTheme(name?: string): Theme {
+  const n = (name ?? '').toLowerCase();
+  if (n.includes('delish')) return { bg: '#FFFFFF', accent: '#F14826', ink: '#171717' };
+  return { bg: '#0A0A0A', accent: '#B6FF3C', ink: '#FAFAFA' };
+}
+
+function hexToRgba(hex: string, alpha: number): string {
+  const h = hex.replace('#', '');
+  const v = h.length === 3 ? h.split('').map((c) => c + c).join('') : h.padEnd(6, '0');
+  const n = Number.parseInt(v.slice(0, 6), 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${alpha})`;
+}
+
+/** Luminancia 0..1 — para decidir logo blanco/negro según el fondo. */
+function luminance(hex: string): number {
+  const h = hex.replace('#', '');
+  const v = h.length === 3 ? h.split('').map((c) => c + c).join('') : h.padEnd(6, '0');
+  const n = Number.parseInt(v.slice(0, 6), 16);
+  return (0.2126 * ((n >> 16) & 255) + 0.7152 * ((n >> 8) & 255) + 0.0722 * (n & 255)) / 255;
+}
 
 function loadImage(src: string): Promise<HTMLImageElement | null> {
   return new Promise((resolve) => {
@@ -49,132 +78,195 @@ export function GiftCardStudio({ sponsors }: Props) {
   const [titulo, setTitulo] = useState('PREMIO SEMANAL');
   const [detalle, setDetalle] = useState('Semana 1 · Mundial 2026');
   const [ganador, setGanador] = useState('');
+  const [theme, setTheme] = useState<Theme>(() => brandTheme(sponsors[0]?.name));
+  const [codigo, setCodigo] = useState<string | null>(null);
+  const [emitting, setEmitting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
 
   const sponsor = sponsors.find((s) => s.id === sponsorId) ?? null;
 
-  const draw = useCallback(async () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+  // Al cambiar de sponsor, aplica los colores de su marca.
+  function selectSponsor(id: string) {
+    setSponsorId(id);
+    const s = sponsors.find((x) => x.id === id) ?? null;
+    setTheme(brandTheme(s?.name));
+  }
 
-    await document.fonts.ready;
-    const display = probeFont('font-display', 'Archivo Black, sans-serif');
-    const body = probeFont('font-sans', 'Inter, sans-serif');
+  // Si cambia cualquier dato, el código emitido deja de corresponder a la
+  // tarjeta visible — se invalida para forzar una nueva emisión.
+  useEffect(() => {
+    setCodigo(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [monto, titulo, detalle, ganador, sponsorId]);
 
-    const [logoImg, brandImg] = await Promise.all([
-      sponsor?.logoUrl ? loadImage(sponsor.logoUrl) : Promise.resolve(null),
-      loadImage('/logos/completo-blanco.png'),
-    ]);
+  const draw = useCallback(
+    async (codeOverride?: string | null) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      const code = codeOverride !== undefined ? codeOverride : codigo;
 
-    ctx.save();
-    ctx.scale(SCALE, SCALE);
+      await document.fonts.ready;
+      const display = probeFont('font-display', 'Archivo Black, sans-serif');
+      const body = probeFont('font-sans', 'Inter, sans-serif');
 
-    // Fondo
-    ctx.fillStyle = '#0A0A0A';
-    ctx.fillRect(0, 0, W, H);
+      const lightBg = luminance(theme.bg) > 0.55;
+      const brandSrc = lightBg ? '/logos/completo-negro.png' : '/logos/completo-blanco.png';
 
-    // Glow decorativo de acento (dos radiales suaves)
-    const glow1 = ctx.createRadialGradient(W - 120, 80, 0, W - 120, 80, 420);
-    glow1.addColorStop(0, 'rgba(182,255,60,0.16)');
-    glow1.addColorStop(1, 'rgba(182,255,60,0)');
-    ctx.fillStyle = glow1;
-    ctx.fillRect(0, 0, W, H);
-    const glow2 = ctx.createRadialGradient(80, H - 60, 0, 80, H - 60, 380);
-    glow2.addColorStop(0, 'rgba(182,255,60,0.08)');
-    glow2.addColorStop(1, 'rgba(182,255,60,0)');
-    ctx.fillStyle = glow2;
-    ctx.fillRect(0, 0, W, H);
+      let qrImg: HTMLImageElement | null = null;
+      if (code) {
+        try {
+          const qrUrl = await QRCode.toDataURL(`https://quinielabox.com/gift/${code}`, {
+            margin: 0,
+            width: 256,
+            color: { dark: '#0A0A0A', light: '#FFFFFF' },
+          });
+          qrImg = await loadImage(qrUrl);
+        } catch {
+          // sin QR — el código impreso sigue sirviendo
+        }
+      }
 
-    // Marco redondeado tipo ticket
-    const m = 28;
-    ctx.strokeStyle = 'rgba(182,255,60,0.55)';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.roundRect(m, m, W - m * 2, H - m * 2, 28);
-    ctx.stroke();
-    // Línea punteada interior
-    ctx.strokeStyle = 'rgba(250,250,250,0.18)';
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([8, 8]);
-    ctx.beginPath();
-    ctx.roundRect(m + 14, m + 14, W - (m + 14) * 2, H - (m + 14) * 2, 18);
-    ctx.stroke();
-    ctx.setLineDash([]);
+      const [logoImg, brandImg] = await Promise.all([
+        sponsor?.logoUrl ? loadImage(sponsor.logoUrl) : Promise.resolve(null),
+        loadImage(brandSrc),
+      ]);
 
-    // Eyebrow
-    ctx.fillStyle = '#B6FF3C';
-    ctx.font = `28px ${display}`;
-    ctx.textBaseline = 'top';
-    ctx.fillText('🎁 GIFT CARD', 80, 78);
+      ctx.save();
+      ctx.scale(SCALE, SCALE);
 
-    // Título (PREMIO SEMANAL)
-    ctx.fillStyle = '#FAFAFA';
-    ctx.font = `600 22px ${body}`;
-    ctx.fillText(titulo.toUpperCase(), 82, 124);
+      // Fondo
+      ctx.fillStyle = theme.bg;
+      ctx.fillRect(0, 0, W, H);
 
-    // Logo del sponsor arriba a la derecha (max 88 de alto, 280 de ancho)
-    if (logoImg) {
-      const maxH = 88;
-      const maxW = 280;
-      const r = Math.min(maxW / logoImg.width, maxH / logoImg.height);
-      const lw = logoImg.width * r;
-      const lh = logoImg.height * r;
-      ctx.drawImage(logoImg, W - 80 - lw, 72, lw, lh);
-    } else if (sponsor) {
-      ctx.fillStyle = '#FAFAFA';
-      ctx.font = `34px ${display}`;
-      ctx.textAlign = 'right';
-      ctx.fillText(sponsor.name.toUpperCase(), W - 80, 84);
+      // Glow decorativo con el acento de la marca
+      const glow1 = ctx.createRadialGradient(W - 120, 80, 0, W - 120, 80, 420);
+      glow1.addColorStop(0, hexToRgba(theme.accent, lightBg ? 0.12 : 0.16));
+      glow1.addColorStop(1, hexToRgba(theme.accent, 0));
+      ctx.fillStyle = glow1;
+      ctx.fillRect(0, 0, W, H);
+      const glow2 = ctx.createRadialGradient(80, H - 60, 0, 80, H - 60, 380);
+      glow2.addColorStop(0, hexToRgba(theme.accent, lightBg ? 0.07 : 0.08));
+      glow2.addColorStop(1, hexToRgba(theme.accent, 0));
+      ctx.fillStyle = glow2;
+      ctx.fillRect(0, 0, W, H);
+
+      // Marco redondeado tipo ticket
+      const m = 28;
+      ctx.strokeStyle = hexToRgba(theme.accent, 0.6);
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.roundRect(m, m, W - m * 2, H - m * 2, 28);
+      ctx.stroke();
+      ctx.strokeStyle = hexToRgba(theme.ink, 0.18);
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([8, 8]);
+      ctx.beginPath();
+      ctx.roundRect(m + 14, m + 14, W - (m + 14) * 2, H - (m + 14) * 2, 18);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Eyebrow + título
+      ctx.fillStyle = theme.accent;
+      ctx.font = `28px ${display}`;
+      ctx.textBaseline = 'top';
+      ctx.fillText('🎁 GIFT CARD', 80, 78);
+      ctx.fillStyle = theme.ink;
+      ctx.font = `600 22px ${body}`;
+      ctx.fillText(titulo.toUpperCase(), 82, 124);
+
+      // Logo arriba a la derecha: sponsor si hay; si no, PADELBOX.
+      const topLogo = logoImg ?? brandImg;
+      if (topLogo) {
+        const maxH = 88;
+        const maxW = 280;
+        const r = Math.min(maxW / topLogo.width, maxH / topLogo.height);
+        const lw = topLogo.width * r;
+        const lh = topLogo.height * r;
+        ctx.drawImage(topLogo, W - 80 - lw, 72, lw, lh);
+      } else if (sponsor) {
+        ctx.fillStyle = theme.ink;
+        ctx.font = `34px ${display}`;
+        ctx.textAlign = 'right';
+        ctx.fillText(sponsor.name.toUpperCase(), W - 80, 84);
+        ctx.textAlign = 'left';
+      }
+
+      // Monto gigante centrado (se encoge si es texto largo)
+      ctx.fillStyle = theme.accent;
+      ctx.textAlign = 'center';
+      let fontSize = 180;
+      do {
+        ctx.font = `${fontSize}px ${display}`;
+        if (ctx.measureText(monto).width <= W - 220) break;
+        fontSize -= 10;
+      } while (fontSize > 40);
+      ctx.fillText(monto, W / 2, H / 2 - fontSize / 2 - 36);
+
+      // Detalle bajo el monto
+      ctx.fillStyle = hexToRgba(theme.ink, 0.85);
+      ctx.font = `600 26px ${body}`;
+      ctx.fillText(detalle, W / 2, H / 2 + 70);
+
+      // Ganador
+      if (ganador.trim()) {
+        ctx.fillStyle = theme.ink;
+        ctx.font = `40px ${display}`;
+        ctx.fillText(`🏆 ${ganador.trim()}`, W / 2, H / 2 + 112);
+      }
       ctx.textAlign = 'left';
-    }
 
-    // Monto gigante centrado (se encoge si es texto largo)
-    ctx.fillStyle = '#B6FF3C';
-    ctx.textAlign = 'center';
-    let fontSize = 190;
-    do {
-      ctx.font = `${fontSize}px ${display}`;
-      if (ctx.measureText(monto).width <= W - 200) break;
-      fontSize -= 10;
-    } while (fontSize > 40);
-    ctx.fillText(monto, W / 2, H / 2 - fontSize / 2 - 16);
+      // ---- Zona inferior: marca, código de canje y QR ----
 
-    // Detalle bajo el monto
-    ctx.fillStyle = 'rgba(250,250,250,0.85)';
-    ctx.font = `600 26px ${body}`;
-    ctx.fillText(detalle, W / 2, H / 2 + 96);
+      // Marca abajo a la izquierda (si el sponsor ocupa arriba a la derecha)
+      if (logoImg && brandImg) {
+        const bh = 32;
+        const bw = (brandImg.width / brandImg.height) * bh;
+        ctx.drawImage(brandImg, 80, H - 96, bw, bh);
+      } else {
+        ctx.fillStyle = hexToRgba(theme.ink, 0.7);
+        ctx.font = `18px ${display}`;
+        ctx.fillText('QUINIELA PADELBOX', 80, H - 88);
+      }
 
-    // Ganador
-    if (ganador.trim()) {
-      ctx.fillStyle = '#FAFAFA';
-      ctx.font = `42px ${display}`;
-      ctx.fillText(`🏆 ${ganador.trim()}`, W / 2, H / 2 + 142);
-    }
-    ctx.textAlign = 'left';
+      // Código de canje centrado
+      ctx.textAlign = 'center';
+      ctx.fillStyle = hexToRgba(theme.ink, 0.55);
+      ctx.font = `600 14px ${body}`;
+      ctx.fillText('CÓDIGO DE CANJE', W / 2, H - 132);
+      ctx.fillStyle = theme.ink;
+      ctx.font = `30px ${display}`;
+      ctx.fillText(code ?? 'QB-····-····', W / 2, H - 112);
+      ctx.fillStyle = hexToRgba(theme.ink, 0.55);
+      ctx.font = `16px ${body}`;
+      ctx.fillText('Verifícala en quinielabox.com/gift', W / 2, H - 72);
+      ctx.textAlign = 'left';
 
-    // Footer: marca + dominio
-    if (brandImg) {
-      const bh = 34;
-      const bw = (brandImg.width / brandImg.height) * bh;
-      ctx.drawImage(brandImg, 80, H - 78 - bh / 2, bw, bh);
-    }
-    ctx.fillStyle = 'rgba(250,250,250,0.6)';
-    ctx.font = `20px ${body}`;
-    ctx.textAlign = 'right';
-    ctx.fillText('quinielabox.com', W - 80, H - 84);
-    ctx.textAlign = 'left';
+      // QR abajo a la derecha (caja blanca para que escanee en cualquier fondo)
+      if (qrImg) {
+        const box = 120;
+        const pad = 9;
+        const qx = W - 72 - box;
+        const qy = H - 64 - box;
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath();
+        ctx.roundRect(qx, qy, box, box, 10);
+        ctx.fill();
+        ctx.drawImage(qrImg, qx + pad, qy + pad, box - pad * 2, box - pad * 2);
+      }
 
-    ctx.restore();
-  }, [sponsor, monto, titulo, detalle, ganador]);
+      ctx.restore();
+    },
+    [sponsor, monto, titulo, detalle, ganador, theme, codigo],
+  );
 
   useEffect(() => {
     setExportError(null);
     draw();
   }, [draw]);
 
-  function download() {
+  function downloadPng(code?: string | null) {
     const canvas = canvasRef.current;
     if (!canvas) return;
     try {
@@ -186,14 +278,45 @@ export function GiftCardStudio({ sponsors }: Props) {
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
         const safe = (s: string) => s.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase();
-        a.download = `giftcard-${safe(sponsor?.name ?? 'padelbox')}-${safe(monto) || 'premio'}.png`;
+        a.download = `giftcard-${code ? safe(code) : safe(sponsor?.name ?? 'padelbox')}.png`;
         a.click();
         URL.revokeObjectURL(a.href);
       }, 'image/png');
     } catch {
       setExportError(
-        'El logo del sponsor está alojado en otro dominio sin CORS y el navegador bloquea la descarga. Sube el logo a /public o usa la opción sin logo.',
+        'El logo del sponsor está alojado en otro dominio sin CORS y el navegador bloquea la descarga. Sube el logo a /public.',
       );
+    }
+  }
+
+  /** Emite (registra en DB, obtiene código único) y descarga el PNG final. */
+  async function emitAndDownload() {
+    setExportError(null);
+    setEmitting(true);
+    try {
+      const res = await fetch('/api/admin/giftcards', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          monto,
+          titulo,
+          detalle,
+          sponsorName: sponsor?.name ?? 'PADELBOX',
+          winnerName: ganador.trim() || undefined,
+        }),
+      });
+      if (!res.ok) {
+        const b = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(b.error ?? 'No se pudo emitir la gift card');
+      }
+      const data = (await res.json()) as { code: string };
+      setCodigo(data.code);
+      await draw(data.code);
+      downloadPng(data.code);
+    } catch (e) {
+      setExportError(e instanceof Error ? e.message : 'Error al emitir');
+    } finally {
+      setEmitting(false);
     }
   }
 
@@ -205,7 +328,7 @@ export function GiftCardStudio({ sponsors }: Props) {
           <label className="text-[10px] uppercase tracking-wider text-muted">Patrocinador</label>
           <select
             value={sponsorId}
-            onChange={(e) => setSponsorId(e.target.value)}
+            onChange={(e) => selectSponsor(e.target.value)}
             className="w-full h-10 rounded-md border border-line bg-bg px-2 text-sm"
           >
             {sponsors.map((s) => (
@@ -216,6 +339,22 @@ export function GiftCardStudio({ sponsors }: Props) {
             ))}
             <option value="">— Sin patrocinador (solo PADELBOX) —</option>
           </select>
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-[10px] uppercase tracking-wider text-muted">Colores de la marca</label>
+          <div className="flex items-center gap-3 flex-wrap">
+            <ColorInput label="Fondo" value={theme.bg} onChange={(v) => setTheme((t) => ({ ...t, bg: v }))} />
+            <ColorInput label="Acento" value={theme.accent} onChange={(v) => setTheme((t) => ({ ...t, accent: v }))} />
+            <ColorInput label="Texto" value={theme.ink} onChange={(v) => setTheme((t) => ({ ...t, ink: v }))} />
+            <button
+              type="button"
+              onClick={() => setTheme(brandTheme(sponsor?.name))}
+              className="text-[11px] text-muted hover:text-ink underline"
+            >
+              Restaurar
+            </button>
+          </div>
         </div>
 
         <div className="space-y-1">
@@ -284,14 +423,22 @@ export function GiftCardStudio({ sponsors }: Props) {
 
         <button
           type="button"
-          onClick={download}
-          className="w-full h-11 rounded-lg bg-accent text-accent-fg font-display text-sm hover:brightness-95"
+          onClick={emitAndDownload}
+          disabled={emitting}
+          className="w-full h-11 rounded-lg bg-accent text-accent-fg font-display text-sm hover:brightness-95 disabled:opacity-60"
         >
-          ⬇ Descargar PNG
+          {emitting ? 'Emitiendo…' : '🎟 Emitir y descargar PNG'}
         </button>
+        {codigo && (
+          <p className="text-xs text-success">
+            ✓ Emitida con código <span className="font-mono">{codigo}</span> — registrada abajo.
+          </p>
+        )}
         {exportError && <p className="text-xs text-danger">{exportError}</p>}
         <p className="text-[11px] text-muted">
-          Se exporta a {W * SCALE}×{H * SCALE}px — nítida para WhatsApp e Instagram.
+          Al emitir, la tarjeta queda registrada con un código único y un QR que apunta a{' '}
+          <span className="text-ink">quinielabox.com/gift/CÓDIGO</span> — el local lo escanea y
+          ve si es válida o ya fue canjeada. Exporta a {W * SCALE}×{H * SCALE}px.
         </p>
       </div>
 
@@ -306,5 +453,27 @@ export function GiftCardStudio({ sponsors }: Props) {
         />
       </div>
     </div>
+  );
+}
+
+function ColorInput({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <label className="flex items-center gap-1.5 cursor-pointer">
+      <input
+        type="color"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="h-7 w-9 rounded border border-line bg-bg cursor-pointer"
+      />
+      <span className="text-[11px] text-muted">{label}</span>
+    </label>
   );
 }
