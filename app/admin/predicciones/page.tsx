@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { prisma } from '@/lib/db';
 import { requireAdmin } from '@/lib/permissions';
 import { formatDateTime } from '@/lib/format';
+import { LiveSearch } from '@/components/LiveSearch';
 
 export const metadata = { title: 'Predicciones · Admin' };
 export const dynamic = 'force-dynamic';
@@ -95,6 +96,8 @@ export default async function PrediccionesAdmin({
       {predictions.length === 0 ? (
         <p className="text-sm text-muted text-center py-10">Sin predicciones que mostrar.</p>
       ) : (
+        <>
+        <LiveSearch scopeId="tabla-predicciones" placeholder="Buscar por usuario o partido…" />
         <div className="rounded-xl border border-line bg-bg-elev overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-bg text-left text-[11px] uppercase tracking-wider text-muted">
@@ -107,13 +110,17 @@ export default async function PrediccionesAdmin({
                 <th className="px-3 py-2 text-right">Pts</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody id="tabla-predicciones">
               {predictions.map((p) => {
                 const m = p.match;
                 const realDone =
                   m.status === 'FINISHED' && m.homeScore !== null && m.awayScore !== null;
                 return (
-                  <tr key={p.id} className="border-t border-line">
+                  <tr
+                    key={p.id}
+                    data-search={`${p.user.name ?? ''} ${p.user.email} ${m.homeTeam} ${m.awayTeam} ${m.group ?? ''}`}
+                    className="border-t border-line"
+                  >
                     <td className="px-3 py-2 text-xs text-muted whitespace-nowrap">
                       {formatDateTime(p.updatedAt)}
                     </td>
@@ -160,6 +167,7 @@ export default async function PrediccionesAdmin({
             </tbody>
           </table>
         </div>
+        </>
       )}
     </div>
   );
@@ -211,6 +219,8 @@ async function ByUserView() {
         </nav>
       </header>
 
+      <LiveSearch scopeId="tabla-por-usuario" placeholder="Buscar usuario…" />
+
       <div className="rounded-xl border border-line bg-bg-elev overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-bg text-left text-[11px] uppercase tracking-wider text-muted">
@@ -223,9 +233,9 @@ async function ByUserView() {
               <th className="px-3 py-2"></th>
             </tr>
           </thead>
-          <tbody>
+          <tbody id="tabla-por-usuario">
             {rows.map((r) => (
-              <tr key={r.id} className="border-t border-line">
+              <tr key={r.id} data-search={r.label} className="border-t border-line">
                 <td className="px-3 py-2">{r.label}</td>
                 <td className="px-3 py-2 text-right tabular-nums">{r.activePreds}</td>
                 <td className="px-3 py-2 text-right tabular-nums">{r.played}</td>
@@ -270,6 +280,8 @@ async function ByMatchView() {
         </nav>
       </header>
 
+      <LiveSearch scopeId="tabla-por-partido" placeholder="Buscar partido o grupo…" />
+
       <div className="rounded-xl border border-line bg-bg-elev overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-bg text-left text-[11px] uppercase tracking-wider text-muted">
@@ -282,9 +294,13 @@ async function ByMatchView() {
               <th className="px-3 py-2"></th>
             </tr>
           </thead>
-          <tbody>
+          <tbody id="tabla-por-partido">
             {matches.map((m) => (
-              <tr key={m.id} className="border-t border-line">
+              <tr
+                key={m.id}
+                data-search={`${m.homeTeam} ${m.awayTeam} ${m.group ?? ''}`}
+                className="border-t border-line"
+              >
                 <td className="px-3 py-2">{m.homeTeam} vs {m.awayTeam}</td>
                 <td className="px-3 py-2 text-xs text-muted">{m.group ?? '—'}</td>
                 <td className="px-3 py-2 text-xs text-muted whitespace-nowrap">

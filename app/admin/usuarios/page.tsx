@@ -12,6 +12,7 @@ import { generateAccessLink, revokeAccessLink } from '@/lib/access-link';
 import { formatDateTime } from '@/lib/format';
 import { getPool } from '@/lib/pool';
 import { getInscriptionsStatus } from '@/lib/inscriptions';
+import { LiveSearch } from '@/components/LiveSearch';
 
 export const dynamic = 'force-dynamic';
 
@@ -148,11 +149,10 @@ async function createUser(formData: FormData) {
 export default async function UsuariosAdmin({
   searchParams,
 }: {
-  searchParams: Promise<{ filtro?: string; q?: string }>;
+  searchParams: Promise<{ filtro?: string }>;
 }) {
   const sp = await searchParams;
   const filtro = sp.filtro === 'pagados' ? 'pagados' : sp.filtro === 'nopagados' ? 'nopagados' : 'todos';
-  const query = (sp.q ?? '').trim().toLowerCase();
 
   const [allUsers, methods, pool, rules] = await Promise.all([
     prisma.user.findMany({ orderBy: [{ hasPaid: 'asc' }, { createdAt: 'desc' }] }),
@@ -165,14 +165,10 @@ export default async function UsuariosAdmin({
   const paidCount = allUsers.filter((u) => u.hasPaid).length;
   const unpaidCount = allUsers.length - paidCount;
 
-  // Filtro de estado + búsqueda por nombre/email/teléfono
+  // Filtro de estado (la búsqueda por texto es interactiva, client-side)
   const users = allUsers.filter((u) => {
     if (filtro === 'pagados' && !u.hasPaid) return false;
     if (filtro === 'nopagados' && u.hasPaid) return false;
-    if (query) {
-      const hay = `${u.name ?? ''} ${u.email} ${u.phone ?? ''}`.toLowerCase();
-      if (!hay.includes(query)) return false;
-    }
     return true;
   });
 
@@ -225,34 +221,25 @@ export default async function UsuariosAdmin({
         </p>
       </div>
 
-      {/* Filtro por estado de pago + buscador */}
+      {/* Filtro por estado de pago + buscador interactivo */}
       <div className="flex items-center gap-2 flex-wrap">
         <nav className="flex gap-1 rounded-lg border border-line bg-bg-elev p-1 text-sm">
-          <FiltroTab filtro="todos" actual={filtro} q={query} label={`Todos (${allUsers.length})`} />
-          <FiltroTab filtro="pagados" actual={filtro} q={query} label={`Pagados (${paidCount})`} />
-          <FiltroTab filtro="nopagados" actual={filtro} q={query} label={`Sin pagar (${unpaidCount})`} />
+          <FiltroTab filtro="todos" actual={filtro} label={`Todos (${allUsers.length})`} />
+          <FiltroTab filtro="pagados" actual={filtro} label={`Pagados (${paidCount})`} />
+          <FiltroTab filtro="nopagados" actual={filtro} label={`Sin pagar (${unpaidCount})`} />
         </nav>
-        <form method="get" className="flex items-center gap-2 flex-1 min-w-[200px]">
-          {filtro !== 'todos' && <input type="hidden" name="filtro" value={filtro} />}
-          <input
-            type="search"
-            name="q"
-            defaultValue={query}
-            placeholder="Buscar por nombre, email o teléfono…"
-            className="flex-1 h-9 rounded-md border border-line bg-bg-elev px-3 text-sm"
-          />
-          <button type="submit" className="h-9 px-3 rounded-md border border-line text-sm hover:bg-bg-elev">
-            Buscar
-          </button>
-        </form>
+        <LiveSearch
+          scopeId="lista-usuarios"
+          placeholder="Buscar por nombre, email o teléfono…"
+          className="flex-1 min-w-[200px]"
+        />
       </div>
 
-      {(filtro !== 'todos' || query) && (
+      {filtro !== 'todos' && (
         <p className="text-xs text-muted -mt-3">
           Mostrando <span className="text-ink font-semibold">{users.length}</span> usuario{users.length !== 1 && 's'}
           {filtro === 'pagados' && ' pagados'}
-          {filtro === 'nopagados' && ' sin pagar'}
-          {query && ` que coinciden con "${query}"`}.{' '}
+          {filtro === 'nopagados' && ' sin pagar'}.{' '}
           <Link href="/admin/usuarios" className="text-accent underline">Ver todos</Link>
         </p>
       )}
@@ -325,10 +312,11 @@ export default async function UsuariosAdmin({
         </div>
       )}
 
-      <div className="space-y-2">
+      <div className="space-y-2" id="lista-usuarios">
         {users.map((u) => (
           <article
             key={u.id}
+            data-search={`${u.name ?? ''} ${u.email} ${u.phone ?? ''}`}
             className={
               'rounded-xl border bg-bg-elev p-4 ' +
               (u.hasPaid ? 'border-success/30' : 'border-line')
@@ -485,18 +473,13 @@ export default async function UsuariosAdmin({
 function FiltroTab({
   filtro,
   actual,
-  q,
   label,
 }: {
   filtro: 'todos' | 'pagados' | 'nopagados';
   actual: string;
-  q: string;
   label: string;
 }) {
-  const params = new URLSearchParams();
-  if (filtro !== 'todos') params.set('filtro', filtro);
-  if (q) params.set('q', q);
-  const href = `/admin/usuarios${params.toString() ? `?${params.toString()}` : ''}`;
+  const href = filtro === 'todos' ? '/admin/usuarios' : `/admin/usuarios?filtro=${filtro}`;
   const active = actual === filtro;
   return (
     <Link

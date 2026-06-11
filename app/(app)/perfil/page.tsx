@@ -23,15 +23,18 @@ async function updateChampion(formData: FormData) {
   const validTeams = new Set(FIFA_2026_TEAMS.map((t) => t.team));
   const finalPick = pick && validTeams.has(pick) ? pick : null;
 
-  // Atomic: solo actualiza si NO esta congelado todavia
-  const result = await prisma.user.updateMany({
-    where: { id: user.id, championLockedAt: null },
-    data: { championPick: finalPick },
+  // La fuente de verdad del cierre es tournamentStartAt, NO el flag por user:
+  // championLockedAt pudo quedar puesto por error (p.ej. la fecha de arranque
+  // estuvo mal configurada un dia antes). Si el torneo no ha empezado, se
+  // puede cambiar y de paso limpiamos el lock obsoleto.
+  const rules = await prisma.rules.findUnique({ where: { id: 1 } });
+  const locked = !!rules?.tournamentStartAt && rules.tournamentStartAt.getTime() <= Date.now();
+  if (locked) return;
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { championPick: finalPick, championLockedAt: null },
   });
-  if (result.count === 0) {
-    // Esta congelado o no existe el user — no se hace nada
-    return;
-  }
   revalidatePath('/perfil');
   revalidatePath('/partidos');
   revalidatePath('/cuadro');

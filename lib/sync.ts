@@ -241,6 +241,18 @@ export async function lockAndScore() {
       where: { championLockedAt: null, championPick: { not: null } },
       data: { championLockedAt: new Date() },
     });
+  } else {
+    // Auto-unlock defensivo: el torneo NO ha empezado pero hay picks
+    // congelados — pasó cuando tournamentStartAt estuvo mal puesto un día
+    // antes y el cron congeló a todos. Los liberamos para que puedan cambiar
+    // su campeón hasta el arranque real.
+    const unlockedPicks = await prisma.user.updateMany({
+      where: { championLockedAt: { not: null } },
+      data: { championLockedAt: null },
+    });
+    if (unlockedPicks.count > 0) {
+      console.warn(`[lock-and-score] auto-unlock libero ${unlockedPicks.count} pick(s) de campeon congelado(s) antes de tiempo`);
+    }
   }
 
   // 3. Scoring — excluye matches marcados como excludeFromScoring (Liga

@@ -37,12 +37,13 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: 'Datos inválidos' }, { status: 400 });
   }
 
-  // Si el pick ya está congelado, no permitir cambios.
-  const cur = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: { championLockedAt: true },
-  });
-  if (cur?.championLockedAt) {
+  // La fuente de verdad del cierre es tournamentStartAt, NO el flag por user:
+  // championLockedAt pudo quedar puesto por error si la fecha de arranque
+  // estuvo mal configurada. Si el torneo no empezó, se puede cambiar y de
+  // paso limpiamos el lock obsoleto.
+  const rules = await prisma.rules.findUnique({ where: { id: 1 } });
+  const locked = !!rules?.tournamentStartAt && rules.tournamentStartAt.getTime() <= Date.now();
+  if (locked) {
     return NextResponse.json(
       { error: 'Tu pick de campeón ya está congelado al inicio del torneo' },
       { status: 403 },
@@ -51,7 +52,7 @@ export async function PATCH(req: Request) {
 
   const me = await prisma.user.update({
     where: { id: user.id },
-    data: { championPick: parsed.data.championPick },
+    data: { championPick: parsed.data.championPick, championLockedAt: null },
     select: {
       id: true, email: true, name: true, role: true,
       hasPaid: true, championPick: true, championLockedAt: true,
