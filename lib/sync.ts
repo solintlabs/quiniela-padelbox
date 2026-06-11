@@ -24,7 +24,20 @@ export async function syncMatchesFromApi() {
       where: { externalId: data.externalId },
     });
     if (existing) {
-      if (existing.manualResult) {
+      if (existing.status === 'FINISHED' && existing.scoredAt && data.status !== 'FINISHED') {
+        // Ya terminado Y puntuado: si ESPN devuelve un status raro transitorio
+        // (mapStatus default = SCHEDULED), NO degradar el match ni borrar su
+        // marcador. Solo refrescamos metadata inofensiva.
+        await prisma.match.update({
+          where: { id: existing.id },
+          data: {
+            stage: data.stage,
+            group: data.group,
+            homeFlag: data.homeFlag,
+            awayFlag: data.awayFlag,
+          },
+        });
+      } else if (existing.manualResult) {
         // Resultado fijado a mano (90 min en eliminatorias): NO tocar
         // marcador/estado. Solo refrescamos equipos/horario/banderas por si
         // ESPN definió el cruce real (sin pisar el resultado del admin).

@@ -159,9 +159,14 @@ function toNormalized(e: EspnEvent): NormalizedFixture | null {
   const away = comp.competitors.find((c) => c.homeAway === 'away') ?? comp.competitors[1];
   if (!home || !away) return null;
 
-  const finished = isFinishedStatus(e.status.type.name);
-  const homeScore = finished ? parseScore(home.score) : null;
-  const awayScore = finished ? parseScore(away.score) : null;
+  // Marcador en LIVE y FINISHED (antes solo FINISHED → la app no mostraba
+  // goles en vivo y el scoring podia perder un ciclo si ESPN reportaba
+  // FINISHED y score en llamadas distintas). En SCHEDULED queda null para
+  // no ensenar un 0-0 falso antes del kickoff.
+  const status = mapStatus(e.status.type.name);
+  const hasScore = status === 'LIVE' || status === 'FINISHED';
+  const homeScore = hasScore ? parseScore(home.score) : null;
+  const awayScore = hasScore ? parseScore(away.score) : null;
 
   // En ligas regulares (La Liga, Premier...) no hay fase, siempre GROUP con grupo "LIGA".
   const isWorldCup = e.__league === 'fifa.world';
@@ -183,7 +188,7 @@ function toNormalized(e: EspnEvent): NormalizedFixture | null {
     awayFlag: away.team.flag ?? away.team.logo ?? null,
     homeScore,
     awayScore,
-    status: mapStatus(e.status.type.name),
+    status,
   };
 }
 

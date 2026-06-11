@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { InlinePredictionRow, type InlineMatch } from './InlinePredictionRow';
 
@@ -10,9 +10,15 @@ interface SectionDef {
   dim?: boolean;
 }
 
+interface ViewDef {
+  key: string;
+  label: string;
+  sections: SectionDef[];
+}
+
 interface Props {
   hasPaid: boolean;
-  sections: SectionDef[];
+  views: ViewDef[];
 }
 
 interface PendingState {
@@ -25,14 +31,40 @@ interface PendingState {
  * es controlada. Cambios se acumulan localmente; el user pulsa "Guardar"
  * en cada fila o "Guardar todo (N)" arriba para enviar en batch.
  */
-export function PartidosClient({ hasPaid, sections }: Props) {
+export function PartidosClient({ hasPaid, views }: Props) {
   const router = useRouter();
 
+  // Vista activa: cómo se organizan los partidos (grupo / jornada / fecha).
+  // Se recuerda en localStorage para próximas visitas.
+  const [viewKey, setViewKey] = useState<string>(views[0].key);
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('partidos-vista');
+      if (saved && views.some((v) => v.key === saved)) setViewKey(saved);
+    } catch {
+      // localStorage no disponible: se queda la vista por defecto
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  function changeView(key: string) {
+    setViewKey(key);
+    try {
+      localStorage.setItem('partidos-vista', key);
+    } catch {
+      // sin persistencia, no pasa nada
+    }
+  }
+  const sections = useMemo(
+    () => (views.find((v) => v.key === viewKey) ?? views[0]).sections,
+    [views, viewKey],
+  );
+
   // Estado inicial: lo que ya esta guardado en DB para cada match.
-  // Se usa tambien como "baseline" para calcular dirty.
+  // Se usa tambien como "baseline" para calcular dirty. Todas las vistas
+  // contienen los mismos matches, asi que basta con la primera.
   const initial = useMemo(() => {
     const map = new Map<string, PendingState>();
-    for (const sec of sections) {
+    for (const sec of views[0].sections) {
       for (const m of sec.items) {
         if (m.initial) {
           map.set(m.id, { home: m.initial.homeScore, away: m.initial.awayScore });
@@ -42,7 +74,7 @@ export function PartidosClient({ hasPaid, sections }: Props) {
       }
     }
     return map;
-  }, [sections]);
+  }, [views]);
 
   // Estado actual (lo que ve y modifica el user).
   const [values, setValues] = useState<Map<string, PendingState>>(() => new Map(initial));
@@ -69,12 +101,22 @@ export function PartidosClient({ hasPaid, sections }: Props) {
     });
   }
 
+  // Todos los matches por id, independiente de la vista activa (todas las
+  // vistas contienen los mismos partidos; usamos la primera como canonica).
+  const allMatches = useMemo(() => {
+    const map = new Map<string, InlineMatch>();
+    for (const sec of views[0].sections) {
+      for (const m of sec.items) map.set(m.id, m);
+    }
+    return map;
+  }, [views]);
+
   function getValue(id: string): PendingState {
     return values.get(id) ?? initial.get(id) ?? { home: 0, away: 0 };
   }
 
   function hasSavedPrediction(id: string): boolean {
-    return sections.some((s) => s.items.find((m) => m.id === id && m.initial));
+    return !!allMatches.get(id)?.initial;
   }
 
   function isDirty(id: string): boolean {
@@ -183,8 +225,15 @@ export function PartidosClient({ hasPaid, sections }: Props) {
   }
 
   function saveAll() {
-    const dirtyIds = [...values.keys()].filter((id) => isDirty(id));
+    // Solo partidos aún editables: los que se bloquearon con cambios sin
+    // guardar no se envían (el server los rechazaría igualmente).
+    const dirtyIds = [...values.keys()].filter((id) => {
+      const m = allMatches.get(id);
+      return !!m && isEditable(m) && isDirty(id);
+    });
     if (dirtyIds.length === 0) return;
+    // Snapshot AHORA: si el user toca un stepper mientras el batch está en
+    // vuelo, el baseline se actualiza con lo enviado, no con lo nuevo.
     const payload = dirtyIds.map((id) => {
       const v = getValue(id);
       return { matchId: id, homeScore: v.home, awayScore: v.away };
@@ -197,12 +246,11 @@ export function PartidosClient({ hasPaid, sections }: Props) {
           throw new Error(body.message ?? body.error ?? 'No se pudo guardar');
         }
         const data = (await res.json().catch(() => ({}))) as { saved?: number; skipped?: unknown[] };
-        // Limpia dirty: actualiza initial para todos
+        // Limpia dirty: actualiza initial con lo realmente enviado
         const newlySaved = new Set<string>();
-        for (const id of dirtyIds) {
-          const v = getValue(id);
-          initial.set(id, { home: v.home, away: v.away });
-          if (!hasSavedPrediction(id)) newlySaved.add(id);
+        for (const p of payload) {
+          initial.set(p.matchId, { home: p.homeScore, away: p.awayScore });
+          if (!hasSavedPrediction(p.matchId)) newlySaved.add(p.matchId);
         }
         setSavedNew((s) => {
           const n = new Set(s);
@@ -229,12 +277,13 @@ export function PartidosClient({ hasPaid, sections }: Props) {
     });
   }
 
-  // Lista de matches dirty con sus team names, para la barra superior.
+  // Lista de matches dirty (y aún editables) con sus team names, para la
+  // barra superior. Los que se bloquearon con cambios pendientes no cuentan.
   const dirtyMatches = useMemo(() => {
     const all: Array<{ id: string; home: string; away: string; section: string }> = [];
     for (const sec of sections) {
       for (const m of sec.items) {
-        if (isDirty(m.id)) {
+        if (isEditable(m) && isDirty(m.id)) {
           all.push({ id: m.id, home: m.homeTeam, away: m.awayTeam, section: sec.title });
         }
       }
@@ -303,9 +352,8 @@ export function PartidosClient({ hasPaid, sections }: Props) {
           throw new Error(body.message ?? body.error ?? 'No se pudo guardar');
         }
         const data = (await res.json().catch(() => ({}))) as { saved?: number };
-        for (const id of ids) {
-          const v = getValue(id);
-          initial.set(id, { home: v.home, away: v.away });
+        for (const p of payload) {
+          initial.set(p.matchId, { home: p.homeScore, away: p.awayScore });
         }
         setSavedNew((s) => {
           const n = new Set(s);
@@ -411,6 +459,30 @@ export function PartidosClient({ hasPaid, sections }: Props) {
         </div>
       )}
 
+      {/* Selector de vista: cómo organizar los partidos (solo Mundial) */}
+      {views.length > 1 && (
+        <div className="flex items-center gap-2 flex-wrap no-print">
+          <span className="text-[11px] text-muted">Ver:</span>
+          <div className="inline-flex rounded-lg border border-line p-0.5 bg-bg-elev">
+            {views.map((v) => (
+              <button
+                key={v.key}
+                type="button"
+                onClick={() => changeView(v.key)}
+                className={
+                  'px-3 py-1.5 text-xs rounded-md transition-colors ' +
+                  (viewKey === v.key
+                    ? 'bg-accent text-accent-fg font-semibold'
+                    : 'text-muted hover:text-ink')
+                }
+              >
+                {v.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Botones colapsar/expandir todo - solo si hay grupos (secciones colapsables) */}
       {sections.some((s) => s.items.length > 0) && (
         <div className="flex gap-1.5 -mb-2 no-print">
@@ -447,7 +519,7 @@ export function PartidosClient({ hasPaid, sections }: Props) {
               type="button"
               onClick={() => toggleCollapsed(sec.title)}
               className="w-full flex flex-row items-center justify-between gap-3 mb-3 py-1.5 text-left group"
-              aria-expanded={isCollapsed ? false : true}
+              aria-expanded={!isCollapsed}
             >
               <div className="flex flex-row items-center gap-2 min-w-0">
                 <span

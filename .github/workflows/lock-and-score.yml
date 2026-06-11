@@ -1,7 +1,13 @@
 # GitHub Actions — workaround para Vercel Hobby (cron diario único).
-# Llama cada 10 minutos a /api/cron/sync-matches (descarga ESPN)
-# y luego a /api/cron/lock-and-score (cierra + puntúa).
-# Gratis e ilimitado para repos privados de orgs (2000 min/mes incluidos).
+# Llama a /api/cron/sync-matches (descarga ESPN) y luego a
+# /api/cron/lock-and-score (cierra + puntúa).
+#
+# DISEÑO ANTI-THROTTLING: GitHub retrasa/descarta eventos schedule en cuentas
+# free (observado: runs cada ~4h en vez de cada 10 min). Por eso cada run NO
+# hace un solo ping: hace un BUCLE de pings cada 5 min durante ~55 min. Así,
+# con que GitHub dispare UN evento por hora, la cobertura es casi continua.
+# El grupo de concurrencia cancela el run anterior cuando arranca uno nuevo
+# (no se apilan). El repo es público → minutos de Actions ilimitados.
 #
 # ACTIVACIÓN:
 # 1. En el repo de GitHub → Settings → Secrets and variables → Actions → New repository secret.
@@ -23,13 +29,22 @@
 name: sync-and-score
 on:
   schedule:
-    - cron: '*/10 * * * *'  # cada 10 min (GitHub puede retrasar ~10-30min en horas pico)
+    # Cada 10 min nominal. GitHub descartará la mayoría, pero cada evento que
+    # SÍ dispare cubre ~55 min con el bucle interno. Minuto 4 (no :00) porque
+    # los minutos redondos son los más descartados.
+    - cron: '4,14,24,34,44,54 * * * *'
   workflow_dispatch: {}     # permite ejecutarlo manual desde la UI
+  push:
+    branches: [main]        # cada deploy también arranca una hora de cobertura
+
+concurrency:
+  group: sync-and-score
+  cancel-in-progress: true  # un run nuevo sustituye al viejo, no se apilan
 
 jobs:
   ping:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 58
     steps:
       - name: Verificar secrets
         run: |
@@ -38,28 +53,27 @@ jobs:
             exit 1
           fi
 
-      - name: Sync matches desde ESPN
-        continue-on-error: true   # si ESPN falla, sigue al lock-and-score
+      - name: Bucle sync + lock-and-score (cada 5 min durante ~55 min)
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
-          echo "→ POST ${{ secrets.APP_URL }}/api/cron/sync-matches"
-          # -f (fail) eliminado: el endpoint devuelve 200 con ok:false al fallar,
-          # asi distinguimos "endpoint roto" de "ESPN momentaneamente lento".
-          curl -sS -X POST \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-            "${{ secrets.APP_URL }}/api/cron/sync-matches" \
-            -o /tmp/sync.json \
-            -w "HTTP %{http_code}\n"
-          cat /tmp/sync.json
-          echo
+          for i in $(seq 1 11); do
+            echo "═══ Ping $i/11 · $(date -u +%H:%M:%SZ) ═══"
 
-      - name: Lock & score
-        continue-on-error: true
-        run: |
-          echo "→ POST ${{ secrets.APP_URL }}/api/cron/lock-and-score"
-          curl -sS -X POST \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-            "${{ secrets.APP_URL }}/api/cron/lock-and-score" \
-            -o /tmp/lock.json \
-            -w "HTTP %{http_code}\n"
-          cat /tmp/lock.json
-          echo
+            echo "→ POST $APP_URL/api/cron/sync-matches"
+            # -f (fail) omitido: el endpoint devuelve 200 con ok:false al fallar,
+            # asi distinguimos "endpoint roto" de "ESPN momentaneamente lento".
+            curl -sS --max-time 60 -X POST \
+              -H "Authorization: Bearer $CRON_SECRET" \
+              "$APP_URL/api/cron/sync-matches" \
+              -w "\nHTTP %{http_code}\n" || true
+
+            echo "→ POST $APP_URL/api/cron/lock-and-score"
+            curl -sS --max-time 60 -X POST \
+              -H "Authorization: Bearer $CRON_SECRET" \
+              "$APP_URL/api/cron/lock-and-score" \
+              -w "\nHTTP %{http_code}\n" || true
+
+            if [ "$i" -lt 11 ]; then sleep 300; fi
+          done

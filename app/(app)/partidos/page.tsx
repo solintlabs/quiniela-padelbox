@@ -118,47 +118,92 @@ export default async function PartidosPage({
     };
   }
 
-  // Construir secciones segun la tab
-  let sections: Array<{ title: string; items: InlineMatch[]; dim?: boolean }> = [];
+  // Construir vistas de secciones segun la tab. En Mundial el usuario elige
+  // cómo ver los partidos: por grupo, por jornada o por fecha (cronológico).
+  type SectionDef = { title: string; items: InlineMatch[]; dim?: boolean };
+  let views: Array<{ key: string; label: string; sections: SectionDef[] }> = [];
 
   if (effectiveTab === 'mundial') {
-    // Mundial: secciones por grupo A-L, luego rondas eliminatorias.
-    for (const g of MUNDIAL_GROUPS) {
-      const groupMatches = matches.filter((m) => m.group === g);
-      if (groupMatches.length > 0) {
-        sections.push({
-          title: `Grupo ${g}`,
-          items: groupMatches.map(toInline),
-        });
-      }
-    }
+    const groupStage = matches.filter((m) => m.group && MUNDIAL_GROUPS.includes(m.group));
     // Eliminatorias: solo cuando ESPN ya definió los cruces (equipos reales).
     // Mientras sean placeholders ("Round of 32"...) no se muestran.
-    for (const stage of KNOCKOUT_STAGES) {
-      const stageMatches = matches.filter(
-        (m) =>
-          m.stage === stage &&
-          !isPlaceholder(m.homeTeam) &&
-          !isPlaceholder(m.awayTeam),
-      );
-      if (stageMatches.length > 0) {
-        sections.push({
-          title: STAGE_LABEL[stage] ?? stage,
-          items: stageMatches.map(toInline),
-        });
-      }
+    const knockout = matches.filter(
+      (m) =>
+        (KNOCKOUT_STAGES as readonly string[]).includes(m.stage) &&
+        !isPlaceholder(m.homeTeam) &&
+        !isPlaceholder(m.awayTeam),
+    );
+    const knockoutSections: SectionDef[] = KNOCKOUT_STAGES.map((stage) => ({
+      title: STAGE_LABEL[stage] ?? stage,
+      items: knockout.filter((m) => m.stage === stage).map(toInline),
+    })).filter((s) => s.items.length > 0);
+
+    // Por grupo: A-L + rondas eliminatorias.
+    const porGrupo: SectionDef[] = MUNDIAL_GROUPS.map((g) => ({
+      title: `Grupo ${g}`,
+      items: groupStage.filter((m) => m.group === g).map(toInline),
+    })).filter((s) => s.items.length > 0);
+
+    // Por jornada: dentro de cada grupo, sus partidos ordenados por kickoff
+    // se reparten de 2 en 2 → Jornada 1 / 2 / 3.
+    const byJornada = new Map<number, typeof matches>();
+    for (const g of MUNDIAL_GROUPS) {
+      const gm = groupStage.filter((m) => m.group === g); // ya vienen por kickoff asc
+      gm.forEach((m, i) => {
+        const j = Math.min(3, Math.floor(i / 2) + 1);
+        const arr = byJornada.get(j) ?? [];
+        arr.push(m);
+        byJornada.set(j, arr);
+      });
     }
+    const porJornada: SectionDef[] = [...byJornada.keys()].sort((a, b) => a - b).map((j) => ({
+      title: `Jornada ${j}`,
+      items: byJornada
+        .get(j)!
+        .slice()
+        .sort((a, b) => a.kickoff.getTime() - b.kickoff.getTime())
+        .map(toInline),
+    }));
+
+    // Por fecha: cronológico, una sección por día (hora de Caracas).
+    const dayFmt = new Intl.DateTimeFormat('es-ES', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      timeZone: 'America/Caracas',
+    });
+    const porFecha: SectionDef[] = [];
+    const chrono = [...groupStage, ...knockout].sort((a, b) => a.kickoff.getTime() - b.kickoff.getTime());
+    for (const m of chrono) {
+      const raw = dayFmt.format(m.kickoff);
+      const title = raw.charAt(0).toUpperCase() + raw.slice(1);
+      const last = porFecha[porFecha.length - 1];
+      if (last && last.title === title) last.items.push(toInline(m));
+      else porFecha.push({ title, items: [toInline(m)] });
+    }
+
+    views = [
+      { key: 'grupo', label: 'Por grupo', sections: [...porGrupo, ...knockoutSections] },
+      { key: 'jornada', label: 'Por jornada', sections: [...porJornada, ...knockoutSections] },
+      { key: 'fecha', label: 'Por fecha', sections: porFecha },
+    ];
   } else {
-    // La Liga: agrupacion clasica por estado.
+    // La Liga: agrupacion clasica por estado (sin selector de vista).
     const upcoming = matches.filter((m) => m.status === 'SCHEDULED' && !m.lockedAt).map(toInline);
     const locked = matches
       .filter((m) => m.status !== 'FINISHED' && (m.status !== 'SCHEDULED' || m.lockedAt))
       .map(toInline);
     const finished = matches.filter((m) => m.status === 'FINISHED').map(toInline);
-    sections = [
-      { title: 'Próximos · puedes predecir', items: upcoming },
-      { title: 'En juego o cerrados', items: locked, dim: true },
-      { title: 'Finalizados', items: finished },
+    views = [
+      {
+        key: 'estado',
+        label: 'Por estado',
+        sections: [
+          { title: 'Próximos · puedes predecir', items: upcoming },
+          { title: 'En juego o cerrados', items: locked, dim: true },
+          { title: 'Finalizados', items: finished },
+        ],
+      },
     ];
   }
 
@@ -236,7 +281,7 @@ export default async function PartidosPage({
       )}
 
       <div className="screen-only">
-        <PartidosClient hasPaid={hasPaid} sections={sections} />
+        <PartidosClient hasPaid={hasPaid} views={views} />
 
         {matches.length === 0 && (
           <p className="text-sm text-muted text-center py-10">
@@ -248,7 +293,7 @@ export default async function PartidosPage({
       {/* Vista compacta solo para impresion / PDF: 1 linea por partido */}
       <PrintCompactView
         title={effectiveTab === 'mundial' ? 'Mi quiniela · Mundial 2026' : 'Mi quiniela · La Liga'}
-        sections={sections}
+        sections={views[0].sections}
       />
     </div>
   );
