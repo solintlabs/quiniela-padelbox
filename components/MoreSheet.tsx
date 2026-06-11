@@ -73,7 +73,7 @@ export function MoreSheet({ isAdmin, userEmail, signOutAction }: MoreSheetProps)
             </div>
 
             <div className="grid grid-cols-3 gap-2 px-4 pb-4">
-              <SheetItem href="/ranking" emoji="🏆" label="Ranking" onClick={() => setOpen(false)} />
+              <SheetItem href="/inscripcion" emoji="🎟️" label="Inscripción" onClick={() => setOpen(false)} />
               <SheetItem href="/cuadro" emoji="🎯" label="Mi Cuadro" onClick={() => setOpen(false)} />
               <SheetItem href="/reglas" emoji="📖" label="Reglas" onClick={() => setOpen(false)} />
               <SheetItem href="/partidos" emoji="📋" label="Mis pronósticos" onClick={() => setOpen(false)} />
