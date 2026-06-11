@@ -218,6 +218,8 @@ model Match {
   awayFlag      String?
   homeScore     Int?
   awayScore     Int?
+  // Estadio y ciudad ("Estadio Azteca · Mexico City"). Lo trae ESPN en cada sync.
+  venue         String?
   status        MatchStatus @default(SCHEDULED)
   lockedAt      DateTime?   // momento real de cierre
   scoredAt      DateTime?   // momento real de cálculo de puntos

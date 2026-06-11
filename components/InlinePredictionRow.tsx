@@ -16,6 +16,8 @@ export interface InlineMatch {
   awayFlag: string | null;
   homeScore: number | null;
   awayScore: number | null;
+  /** "Estadio Azteca · Mexico City" — dónde se juega (null si no se sabe). */
+  venue?: string | null;
   status: string;
   lockedAt: string | Date | null;
   initial?: { homeScore: number; awayScore: number; points: number | null } | null;
@@ -94,8 +96,15 @@ export function InlinePredictionRow({
         href={`/partidos/${match.id}`}
         className="flex items-center justify-between text-xs text-muted mb-3 hover:text-ink transition-colors"
       >
-        <span className="truncate">
-          {stageLabel} · {formatDateTime(match.kickoff)}
+        <span className="min-w-0">
+          <span className="block truncate">
+            {stageLabel} · {formatDateTime(match.kickoff)}
+          </span>
+          {match.venue && (
+            <span className="block truncate text-[10px] text-muted/80 mt-0.5">
+              📍 {match.venue}
+            </span>
+          )}
         </span>
         <div className="flex items-center gap-2 shrink-0">
           {isFinished ? (

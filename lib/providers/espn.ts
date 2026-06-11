@@ -54,6 +54,8 @@ export interface NormalizedFixture {
   awayFlag: string | null;
   homeScore: number | null;
   awayScore: number | null;
+  /** "Estadio Azteca · Mexico City" (null si ESPN no lo trae) */
+  venue: string | null;
   status: MatchStatus;
 }
 
@@ -78,7 +80,10 @@ interface EspnEvent {
   competitions: Array<{
     id: string;
     competitors: EspnCompetitor[];
-    venue?: { fullName: string };
+    venue?: {
+      fullName?: string;
+      address?: { city?: string; state?: string; country?: string };
+    };
     notes?: Array<{ headline: string }>;
   }>;
   // Custom: lo añadimos en fetchCompetition para saber de qué liga viene
@@ -177,6 +182,15 @@ function toNormalized(e: EspnEvent): NormalizedFixture | null {
       ? 'LIGA'
       : (e.__league ?? null);
 
+  // Estadio + ciudad: "Estadio Azteca · Mexico City". Cualquier parte puede faltar.
+  const venueName = comp.venue?.fullName?.trim() || null;
+  const venueCity = comp.venue?.address?.city?.trim() || null;
+  const venue = venueName
+    ? venueCity && !venueName.toLowerCase().includes(venueCity.toLowerCase())
+      ? `${venueName} · ${venueCity}`
+      : venueName
+    : venueCity;
+
   return {
     externalId,
     stage,
@@ -188,6 +202,7 @@ function toNormalized(e: EspnEvent): NormalizedFixture | null {
     awayFlag: away.team.flag ?? away.team.logo ?? null,
     homeScore,
     awayScore,
+    venue,
     status,
   };
 }

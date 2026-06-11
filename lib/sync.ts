@@ -35,6 +35,7 @@ export async function syncMatchesFromApi() {
             group: data.group,
             homeFlag: data.homeFlag,
             awayFlag: data.awayFlag,
+            venue: data.venue,
           },
         });
       } else if (existing.manualResult) {
@@ -51,6 +52,7 @@ export async function syncMatchesFromApi() {
             awayTeam: data.awayTeam,
             homeFlag: data.homeFlag,
             awayFlag: data.awayFlag,
+            venue: data.venue,
           },
         });
       } else {
@@ -78,6 +80,7 @@ function toDbShape(fx: NormalizedFixture) {
     awayFlag: fx.awayFlag,
     homeScore: fx.homeScore,
     awayScore: fx.awayScore,
+    venue: fx.venue,
     status: fx.status,
   };
 }

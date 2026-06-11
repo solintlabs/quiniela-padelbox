@@ -105,6 +105,7 @@ export default async function PartidosPage({
       awayFlag: m.awayFlag,
       homeScore: m.homeScore,
       awayScore: m.awayScore,
+      venue: m.venue,
       status: m.status,
       lockedAt: m.lockedAt ? m.lockedAt.toISOString() : null,
       distribution,
