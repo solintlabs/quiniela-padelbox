@@ -22,11 +22,19 @@ export async function GET(req: Request) {
 
   // Distribución agregada (% local/empate/visitante) por match. No expone
   // marcadores individuales ni numero total. Se muestra desde la 1a prediccion.
-  const MIN_PREDS_FOR_DIST = 1;
-  const allPreds = await prisma.prediction.findMany({
-    where: { matchId: { in: matches.map((m) => m.id) } },
-    select: { matchId: true, homeScore: true, awayScore: true },
+  // El admin puede desactivarla globalmente desde /admin/reglas.
+  const rules = await prisma.rules.findUnique({
+    where: { id: 1 },
+    select: { showDistribution: true },
   });
+  const showDistribution = rules?.showDistribution ?? true;
+  const MIN_PREDS_FOR_DIST = 1;
+  const allPreds = showDistribution
+    ? await prisma.prediction.findMany({
+        where: { matchId: { in: matches.map((m) => m.id) } },
+        select: { matchId: true, homeScore: true, awayScore: true },
+      })
+    : [];
   const distByMatch = new Map<string, { h: number; d: number; a: number; total: number }>();
   for (const p of allPreds) {
     const cur = distByMatch.get(p.matchId) ?? { h: 0, d: 0, a: 0, total: 0 };

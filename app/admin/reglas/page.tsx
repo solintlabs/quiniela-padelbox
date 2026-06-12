@@ -43,6 +43,7 @@ async function updateRules(formData: FormData) {
   const rankingHidden = formData.get('rankingHidden') === 'on';
   const rankingHiddenText = String(formData.get('rankingHiddenText') ?? '').trim() || null;
   const autofillZeroOnLock = formData.get('autofillZeroOnLock') === 'on';
+  const showDistribution = formData.get('showDistribution') === 'on';
 
   await prisma.rules.upsert({
     where: { id: 1 },
@@ -57,6 +58,7 @@ async function updateRules(formData: FormData) {
       rankingHidden,
       rankingHiddenText,
       autofillZeroOnLock,
+      showDistribution,
     },
     create: {
       id: 1,
@@ -70,10 +72,12 @@ async function updateRules(formData: FormData) {
       rankingHidden,
       rankingHiddenText,
       autofillZeroOnLock,
+      showDistribution,
     },
   });
   revalidatePath('/admin/reglas');
   revalidatePath('/admin/usuarios');
+  revalidatePath('/partidos');
   revalidatePath('/reglas');
   revalidatePath('/inscripcion');
   revalidatePath('/login');
@@ -182,6 +186,28 @@ export default async function ReglasAdmin() {
               className="mt-0.5 h-4 w-4 rounded border-line"
             />
             <span className="text-sm">Auto-rellenar 0-0 a los pagados sin pronóstico al cerrar cada partido</span>
+          </label>
+        </div>
+
+        <hr className="border-line my-4" />
+
+        <div className="space-y-2">
+          <label className="text-[10px] uppercase tracking-[0.18em] text-muted">
+            Porcentajes de predicciones (&quot;Cómo predicen&quot;)
+          </label>
+          <p className="text-xs text-muted">
+            La barra con el % agregado gana-local / empate / gana-visitante que aparece en
+            cada partido (web y app). Desactívala si no quieres que la gente se influencie
+            por cómo predicen los demás. Nunca muestra marcadores individuales.
+          </p>
+          <label className="flex items-start gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              name="showDistribution"
+              defaultChecked={rules?.showDistribution ?? true}
+              className="mt-0.5 h-4 w-4 rounded border-line"
+            />
+            <span className="text-sm">Mostrar porcentajes de predicciones en los partidos</span>
           </label>
         </div>
 

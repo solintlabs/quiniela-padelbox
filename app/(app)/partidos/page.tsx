@@ -25,14 +25,16 @@ export default async function PartidosPage({
   const hasPaid = session!.user.hasPaid;
   const tab: Tab = searchParams.tab === 'liga' ? 'liga' : 'mundial';
 
-  const [mundialCount, ligaCount, me] = await Promise.all([
+  const [mundialCount, ligaCount, me, rules] = await Promise.all([
     prisma.match.count({ where: { group: { in: MUNDIAL_GROUPS }, excludeFromScoring: false } }),
     prisma.match.count({ where: { group: 'LIGA', excludeFromScoring: false } }),
     prisma.user.findUnique({
       where: { id: userId },
       select: { championPick: true, championLockedAt: true },
     }),
+    prisma.rules.findUnique({ where: { id: 1 }, select: { showDistribution: true } }),
   ]);
+  const showDistribution = rules?.showDistribution ?? true;
 
   // Si la tab pedida (Liga) ya no tiene matches activos, caemos a Mundial
   const effectiveTab: Tab = tab === 'liga' && ligaCount === 0 ? 'mundial' : tab;
@@ -70,10 +72,12 @@ export default async function PartidosPage({
   // individuales ni el numero total — solo porcentajes. Se muestra desde
   // la primera prediccion para que la barra se sienta "viva".
   const MIN_PREDS_FOR_DIST = 1;
-  const allPreds = await prisma.prediction.findMany({
-    where: { matchId: { in: matches.map((m) => m.id) } },
-    select: { matchId: true, homeScore: true, awayScore: true },
-  });
+  const allPreds = showDistribution
+    ? await prisma.prediction.findMany({
+        where: { matchId: { in: matches.map((m) => m.id) } },
+        select: { matchId: true, homeScore: true, awayScore: true },
+      })
+    : [];
   const distByMatch = new Map<string, { h: number; d: number; a: number; total: number }>();
   for (const p of allPreds) {
     const cur = distByMatch.get(p.matchId) ?? { h: 0, d: 0, a: 0, total: 0 };

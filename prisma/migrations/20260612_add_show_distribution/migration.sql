@@ -1,0 +1,1 @@
+ALTER TABLE "Rules" ADD COLUMN "showDistribution" BOOLEAN NOT NULL DEFAULT true;
