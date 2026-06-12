@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db';
 import { calcPoints } from '@/lib/scoring';
+import { computeRanking } from '@/lib/ranking';
 import { fetchWorldCupFixtures, type NormalizedFixture } from '@/lib/providers/espn';
 import { sendPushToUsers } from '@/lib/push';
 
@@ -271,6 +272,7 @@ export async function lockAndScore() {
     include: { predictions: true },
   });
   let scored = 0;
+  const toNotify: Array<{ m: (typeof toScore)[number]; pointsByUser: Record<string, number> }> = [];
   for (const m of toScore) {
     const pointsByUser: Record<string, number> = {};
     for (const p of m.predictions) {
@@ -284,20 +286,33 @@ export async function lockAndScore() {
       scored++;
     }
     await prisma.match.update({ where: { id: m.id }, data: { scoredAt: new Date() } });
+    if (Object.keys(pointsByUser).length > 0) toNotify.push({ m, pointsByUser });
+  }
 
-    // Push: notifica resultado personalizado a cada user con prediccion.
-    const userIds = Object.keys(pointsByUser);
-    if (userIds.length > 0) {
-      await sendPushToUsers(userIds, (uid) => {
+  // Push: resultado personalizado + posición en el ranking. El ranking se
+  // calcula UNA vez, ya con todos los puntos de este ciclo aplicados.
+  if (toNotify.length > 0) {
+    let posByUser = new Map<string, number>();
+    try {
+      const ranking = await computeRanking();
+      posByUser = new Map(ranking.map((r, i) => [r.userId, i + 1]));
+    } catch (e) {
+      console.error('[push] ranking para notificacion fallo:', e);
+    }
+    for (const { m, pointsByUser } of toNotify) {
+      await sendPushToUsers(Object.keys(pointsByUser), (uid) => {
         const pts = pointsByUser[uid];
         const ico = pts === 3 ? '🎯' : pts === 1 ? '👍' : '😬';
+        const pos = posByUser.get(uid);
+        const posTxt = pos ? ` Vas #${pos} en el ranking.` : '';
         return {
           title: `${ico} ${m.homeTeam} ${m.homeScore}–${m.awayScore} ${m.awayTeam}`,
-          body: pts === 3
-            ? `¡Marcador exacto! Ganaste +${pts} pts.`
-            : pts === 1
-              ? `Acertaste el ganador. +${pts} pt.`
-              : 'Esta no la sacaste. 0 pts.',
+          body:
+            (pts === 3
+              ? `¡Marcador exacto! Ganaste +${pts} pts.`
+              : pts === 1
+                ? `Acertaste el ganador. +${pts} pt.`
+                : 'Esta no la sacaste. 0 pts.') + posTxt,
           data: { type: 'match-scored', matchId: m.id, points: pts },
         };
       }).catch((e) => console.error('[push] scored notify:', e));
