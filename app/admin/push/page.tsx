@@ -38,7 +38,21 @@ async function sendBroadcast(formData: FormData) {
     }),
   );
 
-  redirect(`/admin/push?sent=${result.sent}&users=${users.length}&aud=${audiencia}`);
+  const errParam = result.errors.length ? `&err=${encodeURIComponent(result.errors.join(' · '))}` : '';
+  redirect(`/admin/push?sent=${result.sent}&users=${users.length}&aud=${audiencia}${errParam}`);
+}
+
+async function sendTest(formData: FormData) {
+  'use server';
+  const admin = await requireAdmin();
+  void formData;
+  const result = await sendPushToUsers([admin.id], () => ({
+    title: '🔔 Prueba de notificación',
+    body: 'Si ves esto, las notificaciones funcionan correctamente.',
+    data: { type: 'admin-test' },
+  }));
+  const errParam = result.errors.length ? `&err=${encodeURIComponent(result.errors.join(' · '))}` : '';
+  redirect(`/admin/push?test=${result.sent}${errParam}`);
 }
 
 /**
@@ -49,13 +63,14 @@ async function sendBroadcast(formData: FormData) {
 export default async function PushAdmin({
   searchParams,
 }: {
-  searchParams: Promise<{ sent?: string; users?: string; aud?: string; error?: string }>;
+  searchParams: Promise<{ sent?: string; users?: string; aud?: string; error?: string; test?: string; err?: string }>;
 }) {
   const sp = await searchParams;
 
-  const [conApp, pagadosConApp] = await Promise.all([
+  const [conApp, pagadosConApp, totalDevices] = await Promise.all([
     prisma.user.count({ where: { pushDevices: { some: {} } } }),
     prisma.user.count({ where: { pushDevices: { some: {} }, hasPaid: true } }),
+    prisma.pushDevice.count(),
   ]);
   const noPagadosConApp = conApp - pagadosConApp;
 
@@ -82,6 +97,42 @@ export default async function PushAdmin({
           El título y el mensaje no pueden estar vacíos.
         </div>
       )}
+      {sp.test !== undefined && (
+        <div className={`rounded-xl border p-4 text-sm ${sp.test === '0' ? 'border-warning/40 bg-warning/10' : 'border-success/40 bg-success/10'}`}>
+          {sp.test === '0'
+            ? '⚠ No se envió a ningún dispositivo (no tienes ninguno registrado — abre la app en tu móvil y acepta las notificaciones).'
+            : `✅ Prueba enviada a ${sp.test} de tus dispositivos. Si no la ves en el móvil en unos segundos, el problema es la entrega (APNs).`}
+        </div>
+      )}
+      {sp.err && (
+        <div className="rounded-xl border border-danger/40 bg-danger/10 p-4 text-sm text-danger">
+          <strong>Error de Expo:</strong> <span className="font-mono">{sp.err}</span>
+          {sp.err.includes('redential') && (
+            <p className="mt-2 text-ink">
+              Esto significa que falta la <strong>clave APNs</strong> en EAS. Corre{' '}
+              <span className="font-mono">eas credentials</span> → iOS → production → Push Notifications.
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Diagnóstico de dispositivos */}
+      <div className="rounded-xl border border-line bg-bg-elev p-4 flex items-center justify-between gap-3 flex-wrap">
+        <div className="text-sm">
+          <p>
+            Dispositivos registrados ahora mismo: <strong className="tabular-nums">{totalDevices}</strong>
+          </p>
+          {totalDevices === 0 && (
+            <p className="text-xs text-warning mt-1">
+              ⚠ No hay ninguno. Abre la app en tu iPhone y acepta las notificaciones; luego pulsa
+              «Enviar prueba» para verificar.
+            </p>
+          )}
+        </div>
+        <form action={sendTest}>
+          <Button type="submit" variant="secondary">🔔 Enviar prueba a mí</Button>
+        </form>
+      </div>
 
       {/* Alcance actual */}
       <div className="grid grid-cols-3 gap-3 text-center">
