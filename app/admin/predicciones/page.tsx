@@ -42,6 +42,9 @@ export default async function PrediccionesAdmin({
   if (view === 'by-match') {
     return <ByMatchView />;
   }
+  if (view === 'cambios') {
+    return <CambiosView />;
+  }
 
   // Modo recent o filtrado
   const predictions = await prisma.prediction.findMany({
@@ -77,6 +80,7 @@ export default async function PrediccionesAdmin({
         </div>
         <nav className="flex gap-1 text-xs flex-wrap">
           <TabLink href="/admin/predicciones" active={view === 'recent' && !sp.user && !sp.match} label="Recientes" />
+          <TabLink href="/admin/predicciones?view=cambios" active={false} label="Cambios" />
           <TabLink href="/admin/predicciones?view=by-user" active={view === 'by-user'} label="Por usuario" />
           <TabLink href="/admin/predicciones?view=by-match" active={view === 'by-match'} label="Por partido" />
         </nav>
@@ -321,6 +325,100 @@ async function ByMatchView() {
           </tbody>
         </table>
       </div>
+    </div>
+  );
+}
+
+async function CambiosView() {
+  const logs = await prisma.predictionLog.findMany({
+    orderBy: { createdAt: 'desc' },
+    take: 200,
+    include: {
+      user: { select: { id: true, name: true, email: true } },
+      match: { select: { id: true, homeTeam: true, awayTeam: true, group: true } },
+    },
+  });
+
+  return (
+    <div className="space-y-6">
+      <header className="flex items-end justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="font-display text-3xl">Cambios de predicciones</h1>
+          <p className="text-sm text-muted mt-1">
+            Historial de qué cambió cada jugador (antes → ahora). Últimos {logs.length} cambios.
+          </p>
+        </div>
+        <nav className="flex gap-1 text-xs flex-wrap">
+          <TabLink href="/admin/predicciones" active={false} label="Recientes" />
+          <TabLink href="/admin/predicciones?view=cambios" active={true} label="Cambios" />
+          <TabLink href="/admin/predicciones?view=by-user" active={false} label="Por usuario" />
+          <TabLink href="/admin/predicciones?view=by-match" active={false} label="Por partido" />
+        </nav>
+      </header>
+
+      {logs.length === 0 ? (
+        <p className="text-sm text-muted text-center py-10">
+          Aún no hay cambios registrados. Se registran a partir de ahora, cada vez que
+          alguien guarda una predicción nueva o modifica una existente.
+        </p>
+      ) : (
+        <>
+          <LiveSearch scopeId="tabla-cambios" placeholder="Buscar por usuario o partido…" />
+          <div className="rounded-xl border border-line bg-bg-elev overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-bg text-left text-[11px] uppercase tracking-wider text-muted">
+                <tr>
+                  <th className="px-3 py-2">Cuándo</th>
+                  <th className="px-3 py-2">Usuario</th>
+                  <th className="px-3 py-2">Partido</th>
+                  <th className="px-3 py-2">Cambio</th>
+                </tr>
+              </thead>
+              <tbody id="tabla-cambios">
+                {logs.map((l) => {
+                  const esNuevo = l.prevHome === null || l.prevAway === null;
+                  return (
+                    <tr
+                      key={l.id}
+                      data-search={`${l.user.name ?? ''} ${l.user.email} ${l.match.homeTeam} ${l.match.awayTeam} ${l.match.group ?? ''}`}
+                      className="border-t border-line"
+                    >
+                      <td className="px-3 py-2 text-xs text-muted whitespace-nowrap">
+                        {formatDateTime(l.createdAt)}
+                      </td>
+                      <td className="px-3 py-2">
+                        <Link href={`/admin/predicciones?user=${l.user.id}`} className="hover:text-accent">
+                          {l.user.name ?? l.user.email}
+                        </Link>
+                      </td>
+                      <td className="px-3 py-2 text-xs">
+                        <span className="text-muted">{l.match.group ?? '—'}:</span>{' '}
+                        <Link href={`/admin/predicciones?match=${l.match.id}`} className="hover:text-accent">
+                          {l.match.homeTeam} vs {l.match.awayTeam}
+                        </Link>
+                      </td>
+                      <td className="px-3 py-2 font-mono tabular-nums whitespace-nowrap">
+                        {esNuevo ? (
+                          <>
+                            <span className="text-success">{l.homeScore}–{l.awayScore}</span>
+                            <span className="ml-2 text-[10px] uppercase text-muted">nuevo</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-muted line-through">{l.prevHome}–{l.prevAway}</span>
+                            <span className="text-muted mx-1.5">→</span>
+                            <span className="text-warning font-semibold">{l.homeScore}–{l.awayScore}</span>
+                          </>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
     </div>
   );
 }

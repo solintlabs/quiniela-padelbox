@@ -146,9 +146,18 @@ export function InlinePredictionRow({
             {match.homeScore}–{match.awayScore}
           </span>
         ) : isLocked ? (
-          <span className="font-display tabular-nums text-base text-muted text-center">
-            – vs –
-          </span>
+          match.status === 'LIVE' && match.homeScore !== null && match.awayScore !== null ? (
+            <div className="flex items-center gap-2">
+              <span className="font-display tabular-nums text-xl">
+                {match.homeScore}–{match.awayScore}
+              </span>
+              <span className="text-[10px] font-bold text-success animate-pulse">● EN VIVO</span>
+            </div>
+          ) : (
+            <span className="font-display tabular-nums text-base text-muted text-center">
+              – vs –
+            </span>
+          )
         ) : canEdit ? (
           <div className="flex items-center gap-1.5">
             <Stepper
@@ -176,10 +185,12 @@ export function InlinePredictionRow({
       {/* Footer: status + accion guardar */}
       <div className="flex items-center justify-between mt-3 gap-2">
         <div className="text-[11px] flex items-center gap-2 min-w-0 flex-1">
-          {isFinished && match.initial ? (
+          {(isFinished || isLocked) && match.initial ? (
             <p className="text-muted truncate">
               Tu pronóstico: <span className="text-ink tabular-nums">{match.initial.homeScore}–{match.initial.awayScore}</span>
             </p>
+          ) : isLocked && !match.initial && canEdit ? (
+            <p className="text-muted truncate">No pronosticaste este partido</p>
           ) : !isLocked && canEdit ? (
             <>
               {saving && <span className="text-muted">Guardando…</span>}

@@ -77,15 +77,36 @@ export async function POST(req: Request) {
   // Ejecutar todos los upserts en UNA transacción (mucho más rápido que el
   // bucle secuencial anterior, que con 72 partidos podía tardar > 10s).
   if (valid.length > 0) {
-    await prisma.$transaction(
-      valid.map((p) =>
+    // Valores anteriores para el historial de cambios (solo cambios reales).
+    const existing = await prisma.prediction.findMany({
+      where: { userId: user.id, matchId: { in: valid.map((v) => v.matchId) } },
+      select: { matchId: true, homeScore: true, awayScore: true },
+    });
+    const prevByMatch = new Map(existing.map((e) => [e.matchId, e]));
+    const logs = valid
+      .filter((p) => {
+        const prev = prevByMatch.get(p.matchId);
+        return !prev || prev.homeScore !== p.homeScore || prev.awayScore !== p.awayScore;
+      })
+      .map((p) => ({
+        userId: user.id,
+        matchId: p.matchId,
+        homeScore: p.homeScore,
+        awayScore: p.awayScore,
+        prevHome: prevByMatch.get(p.matchId)?.homeScore ?? null,
+        prevAway: prevByMatch.get(p.matchId)?.awayScore ?? null,
+      }));
+
+    await prisma.$transaction([
+      ...valid.map((p) =>
         prisma.prediction.upsert({
           where: { userId_matchId: { userId: user.id, matchId: p.matchId } },
           update: { homeScore: p.homeScore, awayScore: p.awayScore },
           create: { userId: user.id, matchId: p.matchId, homeScore: p.homeScore, awayScore: p.awayScore },
         }),
       ),
-    );
+      ...(logs.length > 0 ? [prisma.predictionLog.createMany({ data: logs })] : []),
+    ]);
   }
 
   return NextResponse.json({ saved: valid.length, skipped });

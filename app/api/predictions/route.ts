@@ -43,11 +43,32 @@ export async function POST(req: Request) {
     );
   }
 
+  // Valor anterior para el historial de cambios (solo se loguea si cambió).
+  const prev = await prisma.prediction.findUnique({
+    where: { userId_matchId: { userId: user.id, matchId } },
+    select: { homeScore: true, awayScore: true },
+  });
+
   const prediction = await prisma.prediction.upsert({
     where: { userId_matchId: { userId: user.id, matchId } },
     update: { homeScore, awayScore },
     create: { userId: user.id, matchId, homeScore, awayScore },
   });
+
+  if (!prev || prev.homeScore !== homeScore || prev.awayScore !== awayScore) {
+    await prisma.predictionLog
+      .create({
+        data: {
+          userId: user.id,
+          matchId,
+          homeScore,
+          awayScore,
+          prevHome: prev?.homeScore ?? null,
+          prevAway: prev?.awayScore ?? null,
+        },
+      })
+      .catch((e) => console.error('[prediction-log]', e instanceof Error ? e.message : e));
+  }
 
   return NextResponse.json({ prediction });
 }
