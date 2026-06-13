@@ -45,8 +45,21 @@ async function sendBroadcast(formData: FormData) {
 async function sendTest(formData: FormData) {
   'use server';
   const admin = await requireAdmin();
-  void formData;
-  const result = await sendPushToUsers([admin.id], () => ({
+  // Email destino: por defecto el de la cuenta admin, pero normalmente la app
+  // está logueada con OTRA cuenta (p.ej. la personal), así que se puede
+  // escribir el email de la cuenta que tiene la app instalada.
+  const emailRaw = String(formData.get('testEmail') ?? '').trim().toLowerCase();
+  let targetId = admin.id;
+  let notFound = false;
+  if (emailRaw) {
+    const target = await prisma.user.findUnique({ where: { email: emailRaw }, select: { id: true } });
+    if (target) targetId = target.id;
+    else notFound = true;
+  }
+  if (notFound) {
+    redirect(`/admin/push?test=0&err=${encodeURIComponent('No existe ningún usuario con ese email')}`);
+  }
+  const result = await sendPushToUsers([targetId], () => ({
     title: '🔔 Prueba de notificación',
     body: 'Si ves esto, las notificaciones funcionan correctamente.',
     data: { type: 'admin-test' },
@@ -117,21 +130,35 @@ export default async function PushAdmin({
       )}
 
       {/* Diagnóstico de dispositivos */}
-      <div className="rounded-xl border border-line bg-bg-elev p-4 flex items-center justify-between gap-3 flex-wrap">
-        <div className="text-sm">
-          <p>
-            Dispositivos registrados ahora mismo: <strong className="tabular-nums">{totalDevices}</strong>
+      <div className="rounded-xl border border-line bg-bg-elev p-4 space-y-3">
+        <p className="text-sm">
+          Dispositivos registrados ahora mismo: <strong className="tabular-nums">{totalDevices}</strong>
+        </p>
+        {totalDevices === 0 && (
+          <p className="text-xs text-warning">
+            ⚠ No hay ninguno. Abre la app en tu iPhone y acepta las notificaciones; luego envía
+            una prueba para verificar.
           </p>
-          {totalDevices === 0 && (
-            <p className="text-xs text-warning mt-1">
-              ⚠ No hay ninguno. Abre la app en tu iPhone y acepta las notificaciones; luego pulsa
-              «Enviar prueba» para verificar.
-            </p>
-          )}
-        </div>
-        <form action={sendTest}>
-          <Button type="submit" variant="secondary">🔔 Enviar prueba a mí</Button>
+        )}
+        <form action={sendTest} className="flex items-end gap-2 flex-wrap">
+          <div className="flex-1 min-w-[200px] space-y-1">
+            <label className="text-[10px] uppercase tracking-wider text-muted">
+              Email de la cuenta con la app (para la prueba)
+            </label>
+            <input
+              type="email"
+              name="testEmail"
+              placeholder="tu-email-de-la-app@ejemplo.com"
+              className="w-full h-10 rounded-md border border-line bg-bg px-3 text-sm"
+            />
+          </div>
+          <Button type="submit" variant="secondary">🔔 Enviar prueba</Button>
         </form>
+        <p className="text-[11px] text-muted">
+          ⚠ La cuenta de la web (admin) suele ser distinta a la cuenta con la que tienes la app.
+          Escribe el email de la cuenta que usa la app para que la prueba llegue a ese teléfono.
+          Si lo dejas vacío, va a tu cuenta admin.
+        </p>
       </div>
 
       {/* Alcance actual */}
