@@ -4,7 +4,18 @@ import { prisma } from '@/lib/db';
 import { requireUserApi } from '@/lib/permissions';
 
 const schema = z.object({
-  expoToken: z.string().min(10).startsWith('ExpoPushToken['),
+  // Expo devuelve el token como "ExponentPushToken[xxxx]" (con "Exponent").
+  // La validacion antigua exigia "ExpoPushToken[" y rechazaba TODOS los
+  // registros con 400 -> 0 dispositivos -> ninguna notificacion llegaba.
+  // Aceptamos ambas formas por compatibilidad.
+  expoToken: z
+    .string()
+    .min(10)
+    .max(200)
+    .refine(
+      (t) => t.startsWith('ExponentPushToken[') || t.startsWith('ExpoPushToken['),
+      { message: 'Formato de token Expo inválido' },
+    ),
   platform: z.enum(['ios', 'android']),
   appVersion: z.string().max(20).optional(),
 });
