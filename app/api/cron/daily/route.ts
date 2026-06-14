@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { verifyCronSecret } from '@/lib/permissions';
 import { syncMatchesFromApi, lockAndScore } from '@/lib/sync';
+import { snapshotRanks } from '@/lib/ranking';
 import { cleanupRateLimit } from '@/lib/ratelimit';
 
 /**
@@ -29,6 +30,14 @@ export async function GET(req: Request) {
     result.lock = await lockAndScore();
   } catch (e) {
     result.errors.push(`lock: ${e instanceof Error ? e.message : String(e)}`);
+  }
+
+  // Snapshot diario de posiciones (flechas de movimiento en el ranking).
+  // Tiene guarda de 18h, asi que de las 2 pasadas diarias solo captura 1 vez.
+  try {
+    (result as Record<string, unknown>).rankSnapshot = await snapshotRanks();
+  } catch (e) {
+    result.errors.push(`rank-snapshot: ${e instanceof Error ? e.message : String(e)}`);
   }
 
   // Cleanup buckets caducados del rate limit (TTL 1h)

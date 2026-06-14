@@ -7,6 +7,9 @@ export interface RankingRow {
   played: number;
   exact: number;
   points: number;
+  // Movimiento de posicion desde el ultimo snapshot diario:
+  // > 0 subio, < 0 bajo, 0 igual, null sin snapshot previo (nuevo).
+  movement?: number | null;
 }
 
 interface RankingTableProps {
@@ -15,6 +18,28 @@ interface RankingTableProps {
 }
 
 const MEDAL = ['🥇', '🥈', '🥉'];
+
+/** Flecha de movimiento de posicion (verde sube / roja baja / gris igual). */
+function Movement({ m }: { m?: number | null }) {
+  if (m === null || m === undefined) return null;
+  if (m > 0)
+    return (
+      <span className="text-success text-[10px] font-semibold leading-none" title={`Subió ${m}`}>
+        ▲{m}
+      </span>
+    );
+  if (m < 0)
+    return (
+      <span className="text-danger text-[10px] font-semibold leading-none" title={`Bajó ${-m}`}>
+        ▼{-m}
+      </span>
+    );
+  return (
+    <span className="text-muted/50 text-[10px] leading-none" title="Sin cambios">
+      –
+    </span>
+  );
+}
 
 export function RankingTable({ rows, meId }: RankingTableProps) {
   if (rows.length === 0) {
@@ -46,8 +71,9 @@ export function RankingTable({ rows, meId }: RankingTableProps) {
               (isMe ? 'bg-accent/10' : '')
             }
           >
-            <span className="w-14 tabular-nums">
+            <span className="w-14 tabular-nums flex items-center gap-1">
               {pos <= 3 ? `${MEDAL[pos - 1]} ${pos}` : isMe ? `▶ ${pos}` : pos}
+              <Movement m={row.movement} />
             </span>
             <span className={'flex-1 truncate ' + (isMe ? 'font-semibold' : '')}>
               {row.name ?? row.email}

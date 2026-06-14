@@ -21,6 +21,7 @@ export async function computeRanking(): Promise<RankingRow[]> {
         createdAt: true,
         championPick: true,
         championLockedAt: true,
+        lastRank: true,
         predictions: {
           where: {
             points: { not: null },
@@ -40,7 +41,7 @@ export async function computeRanking(): Promise<RankingRow[]> {
   const championWinner = rules?.championWinner ?? null;
   const championBonus = rules?.pointsChampion ?? 25;
 
-  const rows: (RankingRow & { createdAt: Date })[] = users.map((u) => {
+  const rows: (RankingRow & { createdAt: Date; lastRank: number | null })[] = users.map((u) => {
     const played = u.predictions.length;
     const matchPoints = u.predictions.reduce((acc, p) => acc + (p.points ?? 0), 0);
     const exact = u.predictions.filter((p) => p.points === 3).length;
@@ -62,6 +63,7 @@ export async function computeRanking(): Promise<RankingRow[]> {
       exact,
       points,
       createdAt: u.createdAt,
+      lastRank: u.lastRank,
     };
   });
 
@@ -71,7 +73,40 @@ export async function computeRanking(): Promise<RankingRow[]> {
     return a.createdAt.getTime() - b.createdAt.getTime();
   });
 
-  return rows.map(({ createdAt: _c, ...r }) => r);
+  // movement = lastRank (snapshot) - posicion actual. >0 subio, <0 bajo.
+  return rows.map(({ createdAt: _c, lastRank, ...r }, i) => ({
+    ...r,
+    movement: lastRank == null ? null : lastRank - (i + 1),
+  }));
+}
+
+/**
+ * Captura la posicion actual de cada usuario en User.lastRank, para luego
+ * mostrar las flechas de movimiento. Idempotente con guarda temporal: solo
+ * re-snapshotea si el ultimo fue hace > 18h, asi el cron diario (que corre 2
+ * veces) captura ~1 vez al dia. Llamado desde /api/cron/daily.
+ */
+export async function snapshotRanks(): Promise<{ snapshotted: number; skipped: boolean }> {
+  const last = await prisma.user.findFirst({
+    where: { lastRankAt: { not: null } },
+    orderBy: { lastRankAt: 'desc' },
+    select: { lastRankAt: true },
+  });
+  if (last?.lastRankAt && Date.now() - last.lastRankAt.getTime() < 18 * 60 * 60 * 1000) {
+    return { snapshotted: 0, skipped: true };
+  }
+
+  const ranking = await computeRanking();
+  const now = new Date();
+  await prisma.$transaction(
+    ranking.map((r, i) =>
+      prisma.user.update({
+        where: { id: r.userId },
+        data: { lastRank: i + 1, lastRankAt: now },
+      }),
+    ),
+  );
+  return { snapshotted: ranking.length, skipped: false };
 }
 
 /**

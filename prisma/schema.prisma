@@ -105,6 +105,12 @@ model User {
   // Revocable regenerandolo. Null = sin link activo.
   accessToken      String?   @unique
 
+  // Snapshot de la posicion en el ranking para mostrar flechas de movimiento
+  // (subio/bajo X puestos). Lo captura el cron diario (~1x/dia). Null = aun
+  // sin snapshot (se muestra sin flecha, "nuevo").
+  lastRank         Int?
+  lastRankAt       DateTime?
+
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
