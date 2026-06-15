@@ -167,9 +167,55 @@ export async function lockAndScore() {
     );
     await sendPushToUsers(usersNoPred.map((u) => u.id), () => ({
       title: `⚽ ${m.homeTeam} vs ${m.awayTeam}`,
-      body: `Empieza en ${minsToKickoff} min y no has predicho. Última oportunidad.`,
+      body: `Empieza en ${minsToKickoff} min y no has predicho. ¡No te lo pierdas!`,
       data: { type: 'match-reminder', matchId: m.id },
     })).catch((e) => console.error('[push] reminder notify:', e));
+  }
+
+  // 0ter. Push "última llamada": pocos minutos ANTES de que se cierre el
+  // pronóstico. El cierre es kickoff - lockOffsetMin (15 por defecto), así que
+  // avisamos cuando faltan 2-9 min para ese cierre (≈ 17-24 min del kickoff).
+  // A pagados que aún NO han predicho. Marca lastCallSentAt para no duplicar.
+  const lockSoonStart = new Date(now + 2 * 60_000); // el cierre ocurre en >=2min
+  const lockSoonEnd = new Date(now + 9 * 60_000); // ...y en <=9min
+  const toLastCall = await prisma.match.findMany({
+    where: {
+      lastCallSentAt: null,
+      lockedAt: null,
+      status: 'SCHEDULED',
+      // kickoff - offset (= momento de cierre) cae en la ventana [+2min, +9min]
+      kickoff: {
+        gte: new Date(lockSoonStart.getTime() + offsetMs),
+        lte: new Date(lockSoonEnd.getTime() + offsetMs),
+      },
+    },
+    select: { id: true, homeTeam: true, awayTeam: true, kickoff: true },
+  });
+  for (const m of toLastCall) {
+    const claim = await prisma.match.updateMany({
+      where: { id: m.id, lastCallSentAt: null },
+      data: { lastCallSentAt: new Date() },
+    });
+    if (claim.count === 0) continue;
+
+    const usersNoPred = await prisma.user.findMany({
+      where: { hasPaid: true, predictions: { none: { matchId: m.id } } },
+      select: { id: true },
+    });
+    if (usersNoPred.length === 0) continue;
+
+    const minsToClose = Math.max(
+      1,
+      Math.round((new Date(m.kickoff).getTime() - offsetMs - now) / 60_000),
+    );
+    const autofillOn = rules?.autofillZeroOnLock ?? false;
+    await sendPushToUsers(usersNoPred.map((u) => u.id), () => ({
+      title: `⏳ Cierra en ${minsToClose} min — ${m.homeTeam} vs ${m.awayTeam}`,
+      body: autofillOn
+        ? `Aún no has pronosticado. Si no lo haces, quedará 0-0. ¡Entra y ponlo!`
+        : `Última oportunidad para enviar tu pronóstico antes del cierre.`,
+      data: { type: 'match-lastcall', matchId: m.id },
+    })).catch((e) => console.error('[push] lastcall notify:', e));
   }
 
   // 0. Sync inteligente: solo si hay partido cerca.

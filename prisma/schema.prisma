@@ -232,6 +232,8 @@ model Match {
   scoredAt      DateTime?   // momento real de cálculo de puntos
   // Marcado cuando se envió el push "recordatorio 1h antes" (evita doble envio)
   reminderSentAt DateTime?
+  // Marcado cuando se envió el push "última llamada" (pocos min antes del cierre)
+  lastCallSentAt DateTime?
   // Si true: este match NO entra en scoring (ni lockAndScore ni recomputeAll
   // ni en el ranking). Usado por admin para "Resetear puntuaciones" antes
   // del Mundial sin perder los partidos como historico.
