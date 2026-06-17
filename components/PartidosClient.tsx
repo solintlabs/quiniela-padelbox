@@ -54,9 +54,42 @@ export function PartidosClient({ hasPaid, views }: Props) {
       // sin persistencia, no pasa nada
     }
   }
-  const sections = useMemo(
+  // Ocultar partidos finalizados (preferencia recordada en localStorage).
+  const [hideFinished, setHideFinished] = useState(false);
+  useEffect(() => {
+    try {
+      if (localStorage.getItem('partidos-ocultar-finalizados') === '1') setHideFinished(true);
+    } catch {
+      // sin persistencia
+    }
+  }, []);
+  function toggleHideFinished() {
+    setHideFinished((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('partidos-ocultar-finalizados', next ? '1' : '0');
+      } catch {
+        // sin persistencia
+      }
+      return next;
+    });
+  }
+
+  const sectionsRaw = useMemo(
     () => (views.find((v) => v.key === viewKey) ?? views[0]).sections,
     [views, viewKey],
+  );
+  // Cuando se ocultan finalizados, se filtran de cada sección (y las secciones
+  // que quedan vacías no se muestran).
+  const sections = useMemo(() => {
+    if (!hideFinished) return sectionsRaw;
+    return sectionsRaw
+      .map((s) => ({ ...s, items: s.items.filter((m) => m.status !== 'FINISHED') }))
+      .filter((s) => s.items.length > 0);
+  }, [sectionsRaw, hideFinished]);
+  const finishedCount = useMemo(
+    () => sectionsRaw.reduce((acc, s) => acc + s.items.filter((m) => m.status === 'FINISHED').length, 0),
+    [sectionsRaw],
   );
 
   // Estado inicial: lo que ya esta guardado en DB para cada match.
@@ -500,24 +533,42 @@ export function PartidosClient({ hasPaid, views }: Props) {
               </div>
             </div>
           )}
-          {sections.some((s) => s.items.length > 0) && (
-            <div className="flex gap-1.5 ml-auto">
+          <div className="flex items-center gap-1.5 ml-auto flex-wrap">
+            {finishedCount > 0 && (
               <button
                 type="button"
-                onClick={() => setCollapsed(new Set(sections.map((s) => s.title)))}
-                className="text-[11px] px-2.5 py-1.5 rounded-md border border-line text-muted hover:text-ink hover:bg-bg-elev"
+                onClick={toggleHideFinished}
+                aria-pressed={hideFinished}
+                className={
+                  'text-[11px] px-2.5 py-1.5 rounded-md border inline-flex items-center gap-1.5 ' +
+                  (hideFinished
+                    ? 'border-accent bg-accent/15 text-accent font-semibold'
+                    : 'border-line text-muted hover:text-ink hover:bg-bg-elev')
+                }
               >
-                ⊟ Plegar todos
+                <span>{hideFinished ? '☑' : '☐'}</span>
+                Ocultar finalizados ({finishedCount})
               </button>
-              <button
-                type="button"
-                onClick={() => setCollapsed(new Set())}
-                className="text-[11px] px-2.5 py-1.5 rounded-md border border-line text-muted hover:text-ink hover:bg-bg-elev"
-              >
-                ⊞ Desplegar todos
-              </button>
-            </div>
-          )}
+            )}
+            {sections.some((s) => s.items.length > 0) && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setCollapsed(new Set(sections.map((s) => s.title)))}
+                  className="text-[11px] px-2.5 py-1.5 rounded-md border border-line text-muted hover:text-ink hover:bg-bg-elev"
+                >
+                  ⊟ Plegar todos
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCollapsed(new Set())}
+                  className="text-[11px] px-2.5 py-1.5 rounded-md border border-line text-muted hover:text-ink hover:bg-bg-elev"
+                >
+                  ⊞ Desplegar todos
+                </button>
+              </>
+            )}
+          </div>
         </div>
       )}
 
