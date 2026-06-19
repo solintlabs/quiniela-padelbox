@@ -29,10 +29,11 @@
 name: sync-and-score
 on:
   schedule:
-    # Cada 10 min nominal. GitHub descartará la mayoría, pero cada evento que
-    # SÍ dispare cubre ~55 min con el bucle interno. Minuto 4 (no :00) porque
-    # los minutos redondos son los más descartados.
-    - cron: '4,14,24,34,44,54 * * * *'
+    # Solo BACKSTOP: la cadena auto-perpetuante (re-dispatch al final de cada
+    # run) es el motor real. El schedule solo re-arranca la cadena si un run
+    # muere. Cada 30 min basta y NO interrumpe tanto las pausas largas de las
+    # horas muertas (el bucle adaptativo duerme hasta 25 min cuando idle).
+    - cron: '7,37 * * * *'
   workflow_dispatch: {}     # permite ejecutarlo manual desde la UI
   push:
     branches: [main]        # cada deploy también arranca una hora de cobertura
@@ -56,29 +57,45 @@ jobs:
             exit 1
           fi
 
-      - name: Bucle sync + lock-and-score (cada 5 min durante ~55 min)
+      - name: Bucle adaptativo sync + lock-and-score (~45 min, luego re-dispatch)
         env:
           APP_URL: ${{ secrets.APP_URL }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
-          for i in $(seq 1 11); do
-            echo "═══ Ping $i/11 · $(date -u +%H:%M:%SZ) ═══"
+          # Corre ~45 min y luego se re-dispatcha (cadena continua). El
+          # intervalo es ADAPTATIVO: 5 min cuando hay partido cerca/en vivo,
+          # 25 min en horas muertas. Asi Neon se SUSPENDE en los huecos y no
+          # gastamos horas de computo 24/7 (free tier factura por tiempo activo).
+          DEADLINE=$(( $(date +%s) + 2700 ))   # ~45 min de cobertura
+          n=0
+          while [ "$(date +%s)" -lt "$DEADLINE" ]; do
+            n=$((n+1))
+            echo "═══ Ping $n · $(date -u +%H:%M:%SZ) ═══"
 
             echo "→ POST $APP_URL/api/cron/sync-matches"
-            # -f (fail) omitido: el endpoint devuelve 200 con ok:false al fallar,
-            # asi distinguimos "endpoint roto" de "ESPN momentaneamente lento".
             curl -sS --max-time 60 -X POST \
               -H "Authorization: Bearer $CRON_SECRET" \
               "$APP_URL/api/cron/sync-matches" \
               -w "\nHTTP %{http_code}\n" || true
 
             echo "→ POST $APP_URL/api/cron/lock-and-score"
-            curl -sS --max-time 60 -X POST \
+            RESP=$(curl -sS --max-time 60 -X POST \
               -H "Authorization: Bearer $CRON_SECRET" \
-              "$APP_URL/api/cron/lock-and-score" \
-              -w "\nHTTP %{http_code}\n" || true
+              "$APP_URL/api/cron/lock-and-score" || true)
+            echo "$RESP"
 
-            if [ "$i" -lt 11 ]; then sleep 300; fi
+            # idle:true => nada cerca => dormir 25 min (deja suspender Neon).
+            if printf '%s' "$RESP" | grep -q '"idle":true'; then
+              WANT=1500
+            else
+              WANT=300
+            fi
+
+            REMAIN=$(( DEADLINE - $(date +%s) ))
+            [ "$REMAIN" -le 5 ] && break
+            [ "$WANT" -gt "$REMAIN" ] && WANT=$REMAIN
+            echo "· durmiendo ${WANT}s (idle=$([ "$WANT" = 1500 ] && echo si || echo no))"
+            sleep "$WANT"
           done
 
       # CADENA CONTINUA: al terminar el bucle, este run lanza el siguiente

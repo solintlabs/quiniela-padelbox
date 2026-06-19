@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { calcPoints } from '@/lib/scoring';
 import { computeRanking } from '@/lib/ranking';
@@ -10,63 +11,88 @@ import { sendPushToUsers } from '@/lib/push';
  * los partidos manualmente sin que el cron sobreescriba sus ediciones.
  */
 export async function syncMatchesFromApi() {
-  const rules = await prisma.rules.findUnique({ where: { id: 1 } });
+  const rules = await prisma.rules.findUnique({ where: { id: 1 }, select: { syncPaused: true } });
   if (rules?.syncPaused) {
     return { created: 0, updated: 0, total: 0, paused: true as const };
   }
 
   const fixtures = await fetchWorldCupFixtures();
+  if (fixtures.length === 0) return { created: 0, updated: 0, total: 0 };
+
+  // UNA sola lectura de todos los matches por externalId (antes: 1 findUnique
+  // por fixture = N+1, ~100 queries cada sync). Reduce drasticamente el tiempo
+  // de computo de Neon (factura por tiempo activo).
+  const existingAll = await prisma.match.findMany({
+    where: { externalId: { in: fixtures.map((f) => f.externalId) } },
+  });
+  const byExt = new Map(existingAll.map((m) => [m.externalId, m]));
+
+  const ops: Prisma.PrismaPromise<unknown>[] = [];
   let created = 0;
   let updated = 0;
 
   for (const fx of fixtures) {
     const data = toDbShape(fx);
-    const existing = await prisma.match.findUnique({
-      where: { externalId: data.externalId },
-    });
-    if (existing) {
-      if (existing.status === 'FINISHED' && existing.scoredAt && data.status !== 'FINISHED') {
-        // Ya terminado Y puntuado: si ESPN devuelve un status raro transitorio
-        // (mapStatus default = SCHEDULED), NO degradar el match ni borrar su
-        // marcador. Solo refrescamos metadata inofensiva.
-        await prisma.match.update({
-          where: { id: existing.id },
-          data: {
-            stage: data.stage,
-            group: data.group,
-            homeFlag: data.homeFlag,
-            awayFlag: data.awayFlag,
-            venue: data.venue,
-          },
-        });
-      } else if (existing.manualResult) {
-        // Resultado fijado a mano (90 min en eliminatorias): NO tocar
-        // marcador/estado. Solo refrescamos equipos/horario/banderas por si
-        // ESPN definió el cruce real (sin pisar el resultado del admin).
-        await prisma.match.update({
-          where: { id: existing.id },
-          data: {
-            stage: data.stage,
-            group: data.group,
-            kickoff: data.kickoff,
-            homeTeam: data.homeTeam,
-            awayTeam: data.awayTeam,
-            homeFlag: data.homeFlag,
-            awayFlag: data.awayFlag,
-            venue: data.venue,
-          },
-        });
-      } else {
-        await prisma.match.update({ where: { id: existing.id }, data });
-      }
-      updated++;
-    } else {
-      await prisma.match.create({ data });
+    const existing = byExt.get(data.externalId);
+    if (!existing) {
+      ops.push(prisma.match.create({ data }));
       created++;
+      continue;
+    }
+
+    // Qué campos tocaría este match segun su estado.
+    let patch: Partial<typeof data>;
+    if (existing.status === 'FINISHED' && existing.scoredAt && data.status !== 'FINISHED') {
+      // Ya terminado Y puntuado: no degradar por status transitorio de ESPN.
+      patch = {
+        stage: data.stage,
+        group: data.group,
+        homeFlag: data.homeFlag,
+        awayFlag: data.awayFlag,
+        venue: data.venue,
+      };
+    } else if (existing.manualResult) {
+      // Resultado fijado a mano: no tocar marcador/estado.
+      patch = {
+        stage: data.stage,
+        group: data.group,
+        kickoff: data.kickoff,
+        homeTeam: data.homeTeam,
+        awayTeam: data.awayTeam,
+        homeFlag: data.homeFlag,
+        awayFlag: data.awayFlag,
+        venue: data.venue,
+      };
+    } else {
+      patch = data;
+    }
+
+    // CLAVE: solo escribir si ALGO cambió. En horas muertas ESPN devuelve
+    // datos identicos -> 0 writes (antes: 100 updates inutiles cada 5 min).
+    const changed = changedFields(existing, patch);
+    if (Object.keys(changed).length > 0) {
+      ops.push(prisma.match.update({ where: { id: existing.id }, data: changed }));
+      updated++;
     }
   }
 
+  if (ops.length > 0) await prisma.$transaction(ops);
   return { created, updated, total: fixtures.length };
+}
+
+/** Devuelve solo los campos de `patch` cuyo valor difiere del registro actual. */
+function changedFields<T extends Record<string, unknown>>(
+  existing: Record<string, unknown>,
+  patch: T,
+): Partial<T> {
+  const out: Partial<T> = {};
+  for (const [k, v] of Object.entries(patch)) {
+    const cur = existing[k];
+    const equal =
+      v instanceof Date && cur instanceof Date ? v.getTime() === cur.getTime() : cur === v;
+    if (!equal) out[k as keyof T] = v as T[keyof T];
+  }
+  return out;
 }
 
 function toDbShape(fx: NormalizedFixture) {
@@ -94,10 +120,12 @@ function toDbShape(fx: NormalizedFixture) {
  * También devuelve true si hay matches GROUP con group=null — esto fuerza
  * un sync para que el ESPN provider las re-mapee usando lib/fifa2026.ts.
  */
-async function hasMatchInWindow(): Promise<boolean> {
+export async function hasMatchInWindow(): Promise<boolean> {
   const now = Date.now();
   const windowStart = new Date(now - 4 * 60 * 60 * 1000); // hace 4h
-  const windowEnd = new Date(now + 30 * 60 * 1000); // dentro de 30min
+  // +90min: cubre el recordatorio "1h antes" (ventana 45-75min) para que el
+  // cron este en cadencia rapida cuando toca avisar, no solo en el kickoff.
+  const windowEnd = new Date(now + 90 * 60 * 1000);
 
   const [windowCount, missingGroupCount] = await Promise.all([
     prisma.match.count({
@@ -219,8 +247,9 @@ export async function lockAndScore() {
   }
 
   // 0. Sync inteligente: solo si hay partido cerca.
+  const inWindow = await hasMatchInWindow();
   let synced: false | Awaited<ReturnType<typeof syncMatchesFromApi>> = false;
-  if (await hasMatchInWindow()) {
+  if (inWindow) {
     try {
       synced = await syncMatchesFromApi();
     } catch (e) {
@@ -365,7 +394,10 @@ export async function lockAndScore() {
     }
   }
 
-  return { synced, locked: toLock.length, scored, scoredMatches: toScore.length };
+  // idle = no hay partido cerca/en vivo/reciente-sin-puntuar. El cron externo
+  // lee esto para espaciar sus pings (deja que Neon se suspenda y no gastar
+  // horas de computo en horas muertas).
+  return { synced, locked: toLock.length, scored, scoredMatches: toScore.length, idle: !inWindow };
 }
 
 /** Recalcula puntos de TODOS los partidos finalizados (admin manual). */

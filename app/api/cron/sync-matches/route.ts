@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { verifyCronSecret } from '@/lib/permissions';
-import { syncMatchesFromApi } from '@/lib/sync';
+import { syncMatchesFromApi, hasMatchInWindow } from '@/lib/sync';
 
 // Vercel Hobby permite hasta 60s; subimos a 30 para tener holgura frente a
 // ESPN lento + cold start de Neon. Default era 10s -> timeout 500 ocasional.
@@ -10,6 +10,11 @@ export async function GET(req: Request) {
   const denied = verifyCronSecret(req);
   if (denied) return denied;
   try {
+    // En horas muertas (ningun partido cerca/en vivo) no tiene sentido pegarle
+    // a ESPN ni leer/escribir los 100 partidos. Salta -> ahorra computo Neon.
+    if (!(await hasMatchInWindow())) {
+      return NextResponse.json({ ok: true, skipped: 'idle', created: 0, updated: 0 });
+    }
     const result = await syncMatchesFromApi();
     return NextResponse.json({ ok: true, ...result });
   } catch (e) {
