@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { formatDateTime, STAGE_LABEL } from '@/lib/format';
+import { UserPredictionsList, type PredRow } from '@/components/UserPredictionsList';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,6 +47,27 @@ export default async function UserProfilePage({ params }: { params: { id: string
   const exact = await prisma.prediction.count({ where: { userId: target.id, points: 3 } });
 
   const hiddenCount = totalPredictions - visiblePredictions.length;
+
+  // Filas serializadas para el componente cliente (orden conmutable).
+  const predRows: PredRow[] = visiblePredictions.map((p) => {
+    const m = p.match;
+    const stageLabel =
+      m.group === 'LIGA' ? 'La Liga' : m.stage === 'GROUP' && m.group ? `Grupo ${m.group}` : STAGE_LABEL[m.stage] ?? m.stage;
+    return {
+      id: p.id,
+      matchId: m.id,
+      stageLabel,
+      kickoff: m.kickoff.toISOString(),
+      homeTeam: m.homeTeam,
+      awayTeam: m.awayTeam,
+      predHome: p.homeScore,
+      predAway: p.awayScore,
+      realHome: m.homeScore,
+      realAway: m.awayScore,
+      finished: m.status === 'FINISHED',
+      points: p.points,
+    };
+  });
 
   return (
     <div className="max-w-3xl mx-auto space-y-8">
@@ -106,41 +128,7 @@ export default async function UserProfilePage({ params }: { params: { id: string
                 que aún no han cerrado.
               </p>
             )}
-            <div className="rounded-xl border border-line bg-bg-elev overflow-hidden">
-              {visiblePredictions.map((p, i) => {
-                const m = p.match;
-                const stageLabel =
-                  m.group === 'LIGA' ? 'La Liga' : m.stage === 'GROUP' && m.group ? `Grupo ${m.group}` : STAGE_LABEL[m.stage] ?? m.stage;
-                return (
-                  <Link
-                    key={p.id}
-                    href={`/partidos/${m.id}`}
-                    className={'flex items-center gap-3 px-4 py-3 hover:bg-bg ' + (i > 0 ? 'border-t border-line' : '')}
-                  >
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs text-muted">{stageLabel} · {formatDateTime(m.kickoff)}</p>
-                      <p className="text-sm truncate">
-                        {m.homeTeam} <span className="text-muted">vs</span> {m.awayTeam}
-                      </p>
-                    </div>
-                    <span className="font-display tabular-nums text-base w-14 text-center">
-                      {p.homeScore}–{p.awayScore}
-                    </span>
-                    <span className="font-display tabular-nums text-xs w-16 text-right text-muted">
-                      {m.status === 'FINISHED' && m.homeScore !== null ? `${m.homeScore}–${m.awayScore}` : '—'}
-                    </span>
-                    <span
-                      className={
-                        'text-xs w-16 text-right font-semibold ' +
-                        (p.points === 3 ? 'text-success' : p.points === 1 ? 'text-warning' : p.points === null ? 'text-muted' : 'text-muted')
-                      }
-                    >
-                      {p.points === null ? '—' : `+${p.points} pts`}
-                    </span>
-                  </Link>
-                );
-              })}
-            </div>
+            <UserPredictionsList rows={predRows} />
           </>
         )}
       </section>
