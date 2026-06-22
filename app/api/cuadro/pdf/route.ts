@@ -36,13 +36,21 @@ export async function GET(req: Request) {
     });
   }
 
-  // RFC 5987 para el nombre con espacios/caracteres.
+  // Content-Disposition con dos formas:
+  // - filename="..."  -> fallback ASCII (navegadores viejos). Sin acentos
+  //   aqui para que no salgan caracteres raros.
+  // - filename*=UTF-8'' -> nombre real con acentos/ñ (navegadores actuales).
+  const asciiFallback = result.filename
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^\x20-\x7E]/g, '')
+    .replace(/"/g, '');
   const encoded = encodeURIComponent(result.filename);
   return new Response(Buffer.from(result.bytes), {
     status: 200,
     headers: {
       'content-type': 'application/pdf',
-      'content-disposition': `attachment; filename="${result.filename.replace(/"/g, '')}"; filename*=UTF-8''${encoded}`,
+      'content-disposition': `attachment; filename="${asciiFallback}"; filename*=UTF-8''${encoded}`,
       'cache-control': 'no-store',
     },
   });

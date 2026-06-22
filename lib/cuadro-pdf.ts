@@ -171,8 +171,18 @@ export async function buildCuadroPdf(userId: string): Promise<CuadroPdfResult | 
   page.drawText('quinielabox.com', { x: MARGIN, y: MARGIN - 8, size: 9, font, color: muted });
 
   const bytes = await pdf.save();
-  const safe = (s: string) => ascii(s).replace(/[^\w\s.@-]/g, '').replace(/\s+/g, ' ').trim();
-  const filename = `Fase de grupos - ${safe(displayName)} - ${safe(dateStr)} - ${safe(user.email)}.pdf`;
+
+  // Nombre de archivo centrado en el NOMBRE del participante (el "ganador"
+  // que premias). Conserva acentos y ñ (la cabecera HTTP los codifica en
+  // UTF-8). Sin email para que no salgan "caracteres raros" con cuentas
+  // creadas sin email (qb_xxx@noemail...).
+  const realName = (user.name ?? '').trim();
+  const isSynthetic = user.email.endsWith('@noemail.quinielabox.com');
+  const niceName = realName || (isSynthetic ? 'Participante' : user.email.split('@')[0]);
+  // Solo quita caracteres ilegales en nombres de archivo; deja acentos/ñ.
+  const fileSafe = (s: string) =>
+    s.replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, ' ').trim().slice(0, 60);
+  const filename = `${fileSafe(niceName)} - Quiniela Mundial 2026.pdf`;
 
   return { bytes, filename };
 }
