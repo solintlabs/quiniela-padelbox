@@ -157,13 +157,25 @@ export async function lockAndScore() {
   const pointsWinner = rules?.pointsWinner ?? 1;
   const now = Date.now();
 
-  // SALIDA RAPIDA si no hay nada cerca (ahorra CPU Vercel en horas muertas).
-  // Si no hay partido en la ventana [-4h, +90min] entonces: no hay
-  // recordatorios (van en +45-75min), ni "ultima llamada" (en +2-9min al
-  // cierre), ni cierres (kickoff-15 de un partido a >90min esta lejos), ni
-  // partidos FINISHED sin puntuar (caerian dentro de -4h). Nada que hacer.
-  const inWindow = await hasMatchInWindow();
-  if (!inWindow) {
+  // SALIDA RAPIDA si no hay NADA que hacer (ahorra CPU Vercel en horas
+  // muertas). Solo salimos si: (a) no hay partido en la ventana [-4h, +90min]
+  // (no toca recordatorio, cierre ni sync), Y (b) no hay ningun partido
+  // FINISHED sin puntuar. La condicion (b) es la red de seguridad: si un
+  // partido termino hace >4h y aun no se puntuo (cron caido, ESPN tardio),
+  // NO salimos -> se puntua igual. Asi nunca se queda un juego sin actualizar.
+  const [inWindow, pendingScore] = await Promise.all([
+    hasMatchInWindow(),
+    prisma.match.count({
+      where: {
+        status: 'FINISHED',
+        scoredAt: null,
+        homeScore: { not: null },
+        awayScore: { not: null },
+        excludeFromScoring: false,
+      },
+    }),
+  ]);
+  if (!inWindow && pendingScore === 0) {
     return { synced: false as const, locked: 0, scored: 0, scoredMatches: 0, idle: true };
   }
 
@@ -256,13 +268,16 @@ export async function lockAndScore() {
     })).catch((e) => console.error('[push] lastcall notify:', e));
   }
 
-  // 0. Sync con el proveedor: aqui ya sabemos que hay partido en ventana
-  // (si no, habriamos salido arriba), asi que siempre sincronizamos.
+  // 0. Sync con el proveedor solo si hay partido en ventana (en vivo/proximo/
+  // reciente). Si llegamos aqui solo por un pendiente de puntuar antiguo, ese
+  // ya tiene su marcador y no hace falta re-sincronizar con ESPN.
   let synced: false | Awaited<ReturnType<typeof syncMatchesFromApi>> = false;
-  try {
-    synced = await syncMatchesFromApi();
-  } catch (e) {
-    console.error('[lock-and-score] sync provider fallo:', e instanceof Error ? e.message : e);
+  if (inWindow) {
+    try {
+      synced = await syncMatchesFromApi();
+    } catch (e) {
+      console.error('[lock-and-score] sync provider fallo:', e instanceof Error ? e.message : e);
+    }
   }
 
   // 0ter. Auto-unlock defensivo: si un partido SCHEDULED tiene lockedAt
