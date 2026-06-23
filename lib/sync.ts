@@ -157,6 +157,16 @@ export async function lockAndScore() {
   const pointsWinner = rules?.pointsWinner ?? 1;
   const now = Date.now();
 
+  // SALIDA RAPIDA si no hay nada cerca (ahorra CPU Vercel en horas muertas).
+  // Si no hay partido en la ventana [-4h, +90min] entonces: no hay
+  // recordatorios (van en +45-75min), ni "ultima llamada" (en +2-9min al
+  // cierre), ni cierres (kickoff-15 de un partido a >90min esta lejos), ni
+  // partidos FINISHED sin puntuar (caerian dentro de -4h). Nada que hacer.
+  const inWindow = await hasMatchInWindow();
+  if (!inWindow) {
+    return { synced: false as const, locked: 0, scored: 0, scoredMatches: 0, idle: true };
+  }
+
   // 0bis. Push recordatorio 1h antes del kickoff. A users pagados que
   // NO hayan predicho. Marcamos reminderSentAt para no duplicar.
   // Ventana: entre kickoff-75min y kickoff-45min (el cron corre cada 10min
@@ -246,15 +256,13 @@ export async function lockAndScore() {
     })).catch((e) => console.error('[push] lastcall notify:', e));
   }
 
-  // 0. Sync inteligente: solo si hay partido cerca.
-  const inWindow = await hasMatchInWindow();
+  // 0. Sync con el proveedor: aqui ya sabemos que hay partido en ventana
+  // (si no, habriamos salido arriba), asi que siempre sincronizamos.
   let synced: false | Awaited<ReturnType<typeof syncMatchesFromApi>> = false;
-  if (inWindow) {
-    try {
-      synced = await syncMatchesFromApi();
-    } catch (e) {
-      console.error('[lock-and-score] sync provider fallo:', e instanceof Error ? e.message : e);
-    }
+  try {
+    synced = await syncMatchesFromApi();
+  } catch (e) {
+    console.error('[lock-and-score] sync provider fallo:', e instanceof Error ? e.message : e);
   }
 
   // 0ter. Auto-unlock defensivo: si un partido SCHEDULED tiene lockedAt
@@ -397,7 +405,8 @@ export async function lockAndScore() {
   // idle = no hay partido cerca/en vivo/reciente-sin-puntuar. El cron externo
   // lee esto para espaciar sus pings (deja que Neon se suspenda y no gastar
   // horas de computo en horas muertas).
-  return { synced, locked: toLock.length, scored, scoredMatches: toScore.length, idle: !inWindow };
+  // Si llegamos aqui, habia partido en ventana -> no idle.
+  return { synced, locked: toLock.length, scored, scoredMatches: toScore.length, idle: false };
 }
 
 /** Recalcula puntos de TODOS los partidos finalizados (admin manual). */

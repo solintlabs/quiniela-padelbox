@@ -6,6 +6,12 @@ export async function GET(req: Request) {
   const user = await requireUserApi(req);
   if (user instanceof Response) return user;
 
+  // Modo ligero (?light=1): la app lo usa para el auto-refresco en vivo cada
+  // par de minutos. Devuelve marcador/estado + la prediccion del user, pero
+  // NO calcula la distribucion (que es lo caro y no cambia en partidos ya
+  // cerrados). Ahorra CPU de Vercel en el endpoint mas sondeado.
+  const light = new URL(req.url).searchParams.get('light') === '1';
+
   const matches = await prisma.match.findMany({
     // Ocultar matches de competiciones desactivadas (excludeFromScoring=true).
     // La app movil consume este endpoint para listar Mundial / Liga; si una
@@ -19,6 +25,12 @@ export async function GET(req: Request) {
       },
     },
   });
+
+  // En modo ligero devolvemos ya, sin distribucion (el auto-refresco en vivo
+  // solo necesita marcador/estado actualizado).
+  if (light) {
+    return NextResponse.json({ matches: matches.map((m) => ({ ...m, distribution: null })) });
+  }
 
   // Distribución agregada (% local/empate/visitante) por match. No expone
   // marcadores individuales ni numero total. Se muestra desde la 1a prediccion.
