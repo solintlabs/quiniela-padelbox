@@ -10,6 +10,9 @@ export interface RankingRow {
   // Movimiento de posicion desde el ultimo snapshot diario:
   // > 0 subio, < 0 bajo, 0 igual, null sin snapshot previo (nuevo).
   movement?: number | null;
+  // Campeon elegido (solo si congelado) + su bandera, para verlo en el ranking.
+  champion?: string | null;
+  championFlag?: string | null;
 }
 
 interface RankingTableProps {
@@ -75,9 +78,18 @@ export function RankingTable({ rows, meId }: RankingTableProps) {
               {pos <= 3 ? `${MEDAL[pos - 1]} ${pos}` : isMe ? `▶ ${pos}` : pos}
               <Movement m={row.movement} />
             </span>
-            <span className={'flex-1 truncate ' + (isMe ? 'font-semibold' : '')}>
-              {row.name ?? row.email}
-              {isMe && <span className="text-muted text-xs ml-2">· tú</span>}
+            <span className={'flex-1 truncate flex items-center gap-1.5 ' + (isMe ? 'font-semibold' : '')}>
+              {row.championFlag && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={row.championFlag}
+                  alt=""
+                  title={row.champion ? `Campeón: ${row.champion}` : undefined}
+                  className="w-4 h-4 rounded-sm shrink-0 object-cover"
+                />
+              )}
+              <span className="truncate">{row.name ?? row.email}</span>
+              {isMe && <span className="text-muted text-xs">· tú</span>}
             </span>
             <span className="w-12 text-right tabular-nums">{row.played}</span>
             <span className="w-20 text-right tabular-nums">{row.exact}</span>

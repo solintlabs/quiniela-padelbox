@@ -10,6 +10,19 @@ import type { RankingRow } from '@/components/RankingTable';
  * Para MVP usamos agregación in-process: con 50-100 usuarios y 64 partidos
  * es trivial. Si crece, mover a una vista materializada o query SQL.
  */
+/** Mapa nombre de equipo -> URL de bandera, sacado de los partidos (ESPN). */
+async function buildTeamFlagMap(): Promise<Map<string, string>> {
+  const matches = await prisma.match.findMany({
+    select: { homeTeam: true, homeFlag: true, awayTeam: true, awayFlag: true },
+  });
+  const map = new Map<string, string>();
+  for (const m of matches) {
+    if (m.homeFlag && !map.has(m.homeTeam)) map.set(m.homeTeam, m.homeFlag);
+    if (m.awayFlag && !map.has(m.awayTeam)) map.set(m.awayTeam, m.awayFlag);
+  }
+  return map;
+}
+
 export async function computeRanking(): Promise<RankingRow[]> {
   const [users, rules] = await Promise.all([
     prisma.user.findMany({
@@ -36,6 +49,10 @@ export async function computeRanking(): Promise<RankingRow[]> {
     prisma.rules.findUnique({ where: { id: 1 } }),
   ]);
 
+  // Mapa equipo -> bandera (URL ESPN), para mostrar la bandera del campeon
+  // elegido junto al nombre en el ranking, sin entrar al perfil de cada uno.
+  const teamFlag = await buildTeamFlagMap();
+
   // Bonus del campeón: solo si admin marcó championWinner y el user lo acertó
   // CON pick congelado (championLockedAt no null — anti-trampa post hoc).
   const championWinner = rules?.championWinner ?? null;
@@ -52,6 +69,10 @@ export async function computeRanking(): Promise<RankingRow[]> {
       u.championLockedAt !== null;
     const points = matchPoints + (wonChampionBonus ? championBonus : 0);
 
+    // Campeon elegido: solo se muestra si ya esta CONGELADO (torneo empezado),
+    // igual que en el perfil — anti-trampa antes del arranque.
+    const champion = u.championLockedAt && u.championPick ? u.championPick : null;
+
     return {
       userId: u.id,
       name: u.name,
@@ -62,6 +83,8 @@ export async function computeRanking(): Promise<RankingRow[]> {
       played,
       exact,
       points,
+      champion,
+      championFlag: champion ? teamFlag.get(champion) ?? null : null,
       createdAt: u.createdAt,
       lastRank: u.lastRank,
     };
