@@ -296,6 +296,17 @@ model PredictionLog {
   @@index([matchId, createdAt])
 }
 
+// Estado de avisos push por ronda de eliminatorias (una fila por stage).
+// Evita duplicar el aviso de "ronda desbloqueada", controla el recordatorio
+// cada 2h y el aviso "antes de cerrar". Lo gestiona el cron (lib/sync.ts).
+model KnockoutNotice {
+  stage          String    @id   // 'R32' | 'R16' | 'QF' | 'SF' | 'THIRD' | 'FINAL'
+  unlockSentAt   DateTime?       // aviso "ya se abrio la ronda"
+  lastRemindAt   DateTime?       // ultimo recordatorio cada 2h
+  preCloseSentAt DateTime?       // aviso "cierra pronto el primer partido"
+  updatedAt      DateTime  @updatedAt
+}
+
 // Singleton (siempre id=1)
 model Rules {
   id                Int       @id @default(1)

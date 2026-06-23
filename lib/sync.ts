@@ -5,6 +5,119 @@ import { computeRanking } from '@/lib/ranking';
 import { fetchWorldCupFixtures, type NormalizedFixture } from '@/lib/providers/espn';
 import { sendPushToUsers } from '@/lib/push';
 
+const KO_STAGES = ['R32', 'R16', 'QF', 'SF', 'THIRD', 'FINAL'] as const;
+const KO_LABEL: Record<string, string> = {
+  R32: 'los 1/16 de final',
+  R16: 'los octavos de final',
+  QF: 'los cuartos de final',
+  SF: 'las semifinales',
+  THIRD: 'el partido por el 3er puesto',
+  FINAL: 'la final',
+};
+// Equipo "por definir" del bracket (placeholder de ESPN antes del cruce real).
+const isPlaceholderTeam = (s: string) =>
+  /group\s|round of|third place|\bwinner\b|\brunner\b|\bwin\b|\bplace\b|\b\d(st|nd|rd|th)\b/i.test(s);
+
+/**
+ * Avisos push por RONDA de eliminatorias (no por partido):
+ *  - "ronda desbloqueada" (una vez, en cuanto los cruces tienen equipos reales)
+ *  - recordatorio cada 2h mientras la ronda este abierta (a quien le falte)
+ *  - "cierra pronto" antes de que arranque el primer partido de la ronda
+ * Todo con candado atomico (updateMany) para no duplicar si coinciden 2 crons.
+ */
+async function notifyKnockoutRounds(now: number, offsetMs: number): Promise<void> {
+  const koMatches = await prisma.match.findMany({
+    where: { stage: { in: [...KO_STAGES] }, excludeFromScoring: false },
+    select: { id: true, stage: true, kickoff: true, homeTeam: true, awayTeam: true },
+  });
+  // Solo cruces ya definidos (equipos reales), agrupados por ronda.
+  const byStage = new Map<string, typeof koMatches>();
+  for (const m of koMatches) {
+    if (isPlaceholderTeam(m.homeTeam) || isPlaceholderTeam(m.awayTeam)) continue;
+    const arr = byStage.get(m.stage) ?? [];
+    arr.push(m);
+    byStage.set(m.stage, arr);
+  }
+  if (byStage.size === 0) return; // nada desbloqueado aun
+
+  const incompleteUserIds = async (matchIds: string[]): Promise<string[]> => {
+    const grouped = await prisma.prediction.groupBy({
+      by: ['userId'],
+      where: { matchId: { in: matchIds } },
+      _count: { matchId: true },
+    });
+    const complete = new Set(
+      grouped.filter((g) => g._count.matchId >= matchIds.length).map((g) => g.userId),
+    );
+    const paid = await prisma.user.findMany({ where: { hasPaid: true }, select: { id: true } });
+    return paid.filter((u) => !complete.has(u.id)).map((u) => u.id);
+  };
+
+  for (const [stage, matches] of byStage) {
+    const label = KO_LABEL[stage] ?? 'la siguiente ronda';
+    const matchIds = matches.map((m) => m.id);
+    const firstKickoff = Math.min(...matches.map((m) => new Date(m.kickoff).getTime()));
+    const firstClose = firstKickoff - offsetMs;
+
+    await prisma.knockoutNotice.upsert({ where: { stage }, update: {}, create: { stage } });
+
+    // 1. DESBLOQUEO (una vez): la ronda ya tiene cruces y aun no empieza.
+    if (firstKickoff > now) {
+      const claim = await prisma.knockoutNotice.updateMany({
+        where: { stage, unlockSentAt: null },
+        data: { unlockSentAt: new Date(now), lastRemindAt: new Date(now) },
+      });
+      if (claim.count > 0) {
+        const paid = await prisma.user.findMany({ where: { hasPaid: true }, select: { id: true } });
+        await sendPushToUsers(paid.map((u) => u.id), () => ({
+          title: `🔓 ¡Ya están ${label}!`,
+          body: 'Los cruces ya tienen equipos. Entra y pon tus pronósticos de esta ronda.',
+          data: { type: 'ko-unlock', stage },
+        })).catch((e) => console.error('[push] ko-unlock:', e));
+        continue; // ya avisamos esta ronda en este ciclo
+      }
+    }
+
+    // 2. CIERRA PRONTO (una vez): faltan <=25 min para el cierre del 1er partido.
+    if (firstClose > now && firstClose - now <= 25 * 60_000) {
+      const claim = await prisma.knockoutNotice.updateMany({
+        where: { stage, preCloseSentAt: null },
+        data: { preCloseSentAt: new Date(now) },
+      });
+      if (claim.count > 0) {
+        const ids = await incompleteUserIds(matchIds);
+        if (ids.length > 0) {
+          await sendPushToUsers(ids, () => ({
+            title: `⏳ Cierran ${label}`,
+            body: 'Última oportunidad para completar tus pronósticos antes de que empiece.',
+            data: { type: 'ko-preclose', stage },
+          })).catch((e) => console.error('[push] ko-preclose:', e));
+        }
+      }
+      continue;
+    }
+
+    // 3. RECORDATORIO cada 2h mientras la ronda este abierta (a quien le falte).
+    if (firstClose > now) {
+      const twoHoursAgo = new Date(now - 2 * 60 * 60_000);
+      const claim = await prisma.knockoutNotice.updateMany({
+        where: { stage, OR: [{ lastRemindAt: null }, { lastRemindAt: { lt: twoHoursAgo } }] },
+        data: { lastRemindAt: new Date(now) },
+      });
+      if (claim.count > 0) {
+        const ids = await incompleteUserIds(matchIds);
+        if (ids.length > 0) {
+          await sendPushToUsers(ids, () => ({
+            title: `⚽ No olvides ${label}`,
+            body: 'Aún te faltan pronósticos de esta ronda. Entra y complétalos.',
+            data: { type: 'ko-remind', stage },
+          })).catch((e) => console.error('[push] ko-remind:', e));
+        }
+      }
+    }
+  }
+}
+
 /**
  * Sync con el proveedor externo: upsert por externalId.
  * Si Rules.syncPaused está en true, hace early return — el admin gestiona
@@ -156,6 +269,13 @@ export async function lockAndScore() {
   const pointsExact = rules?.pointsExact ?? 3;
   const pointsWinner = rules?.pointsWinner ?? 1;
   const now = Date.now();
+
+  // Avisos por ronda de eliminatorias (desbloqueo + cada 2h + cierra pronto).
+  // Va ANTES de la salida rapida para que corra siempre; es barato cuando no
+  // hay ronda abierta (los cruces aun son placeholders).
+  await notifyKnockoutRounds(now, offsetMs).catch((e) =>
+    console.error('[lock-and-score] notifyKnockoutRounds fallo:', e instanceof Error ? e.message : e),
+  );
 
   // SALIDA RAPIDA si no hay NADA que hacer (ahorra CPU Vercel en horas
   // muertas). Solo salimos si: (a) no hay partido en la ventana [-4h, +90min]
