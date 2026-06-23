@@ -154,6 +154,68 @@ export async function fetchWorldCupFixtures(): Promise<NormalizedFixture[]> {
   return events.map(toNormalized).filter((f): f is NormalizedFixture => f !== null);
 }
 
+/**
+ * Marcador a 90 minutos (reglamentario) de un partido, desde el endpoint de
+ * resumen de ESPN. Suma los goles de los periodos 1 y 2 (las dos partes) por
+ * equipo. Para eliminatorias que van a prórroga: devuelve el resultado a los
+ * 90' (el que vale en la quiniela), no el final con prórroga.
+ *
+ * Devuelve también el total (suma de TODOS los periodos) para que el llamador
+ * valide que cuadra con el marcador final de ESPN antes de confiar en el dato.
+ * null si no hay datos fiables.
+ */
+export async function fetchRegulationScore(
+  slug: string,
+  eventId: number,
+): Promise<{ home: number; away: number; totalHome: number; totalAway: number } | null> {
+  const url = `https://${HOST}/apis/site/v2/sports/soccer/${slug}/summary?event=${eventId}`;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 8000);
+  try {
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'quiniela-padelbox/1.0' },
+      next: { revalidate: 60 },
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+    if (!res.ok) return null;
+    const json = (await res.json()) as {
+      header?: {
+        competitions?: Array<{
+          competitors?: Array<{
+            homeAway?: string;
+            linescores?: Array<{ displayValue?: string; value?: number }>;
+          }>;
+        }>;
+      };
+    };
+    const comp = json.header?.competitions?.[0];
+    if (!comp?.competitors) return null;
+    const home = comp.competitors.find((c) => c.homeAway === 'home');
+    const away = comp.competitors.find((c) => c.homeAway === 'away');
+    const periodVal = (ls: { displayValue?: string; value?: number } | undefined): number => {
+      if (!ls) return 0;
+      if (typeof ls.value === 'number') return ls.value;
+      const n = Number.parseInt(ls.displayValue ?? '', 10);
+      return Number.isFinite(n) ? n : 0;
+    };
+    const reg = (c: typeof home): { reg: number; total: number } | null => {
+      const ls = c?.linescores;
+      if (!Array.isArray(ls) || ls.length < 2) return null;
+      const regScore = periodVal(ls[0]) + periodVal(ls[1]); // periodos 1 y 2 = 90 min
+      const total = ls.reduce((acc, p) => acc + periodVal(p), 0);
+      return { reg: regScore, total };
+    };
+    const h = reg(home);
+    const a = reg(away);
+    if (!h || !a) return null;
+    return { home: h.reg, away: a.reg, totalHome: h.total, totalAway: a.total };
+  } catch {
+    clearTimeout(timeoutId);
+    return null;
+  }
+}
+
 function toNormalized(e: EspnEvent): NormalizedFixture | null {
   const externalId = Number.parseInt(e.id, 10);
   if (!Number.isFinite(externalId)) return null;

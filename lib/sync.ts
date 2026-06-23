@@ -2,7 +2,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { calcPoints } from '@/lib/scoring';
 import { computeRanking } from '@/lib/ranking';
-import { fetchWorldCupFixtures, type NormalizedFixture } from '@/lib/providers/espn';
+import { fetchWorldCupFixtures, fetchRegulationScore, type NormalizedFixture } from '@/lib/providers/espn';
 import { sendPushToUsers } from '@/lib/push';
 
 const KO_STAGES = ['R32', 'R16', 'QF', 'SF', 'THIRD', 'FINAL'] as const;
@@ -17,6 +17,63 @@ const KO_LABEL: Record<string, string> = {
 // Equipo "por definir" del bracket (placeholder de ESPN antes del cruce real).
 const isPlaceholderTeam = (s: string) =>
   /group\s|round of|third place|\bwinner\b|\brunner\b|\bwin\b|\bplace\b|\b\d(st|nd|rd|th)\b/i.test(s);
+
+/**
+ * Ajusta el marcador de eliminatorias a 90 minutos. Para cada KO finalizado
+ * que aun no hemos procesado (finalHomeScore null) y no es manual, pide a ESPN
+ * el desglose por periodos: fija homeScore/awayScore = 90' (lo que puntua) y
+ * finalHomeScore/finalAwayScore = resultado final (lo que se muestra).
+ * Solo confia en el dato si la suma de TODOS los periodos cuadra con el
+ * marcador final que ya teniamos (sanity check). Si no, lo deja para el
+ * siguiente ciclo (o que el admin lo fije a mano).
+ */
+async function adjustKnockout90Min(): Promise<void> {
+  const pending = await prisma.match.findMany({
+    where: {
+      stage: { in: ['R32', 'R16', 'QF', 'SF', 'THIRD', 'FINAL'] },
+      status: 'FINISHED',
+      finalHomeScore: null,
+      manualResult: false,
+      homeScore: { not: null },
+      awayScore: { not: null },
+      excludeFromScoring: false,
+    },
+    select: { id: true, externalId: true, homeScore: true, awayScore: true, homeTeam: true, awayTeam: true },
+  });
+  if (pending.length === 0) return;
+
+  for (const m of pending) {
+    const reg = await fetchRegulationScore('fifa.world', m.externalId);
+    if (!reg) {
+      console.warn(`[90min] sin desglose para ${m.homeTeam} vs ${m.awayTeam} (reintenta luego)`);
+      continue;
+    }
+    // Sanity: la suma de todos los periodos debe cuadrar con el final de ESPN.
+    if (reg.totalHome !== m.homeScore || reg.totalAway !== m.awayScore) {
+      console.warn(
+        `[90min] descuadre en ${m.homeTeam} vs ${m.awayTeam}: periodos suman ` +
+          `${reg.totalHome}-${reg.totalAway} pero final es ${m.homeScore}-${m.awayScore}. Se omite.`,
+      );
+      continue;
+    }
+    const huboProrroga = reg.home !== m.homeScore || reg.away !== m.awayScore;
+    await prisma.match.update({
+      where: { id: m.id },
+      data: {
+        finalHomeScore: m.homeScore, // final con prorroga (lo que se muestra)
+        finalAwayScore: m.awayScore,
+        homeScore: reg.home, // 90' (lo que puntua)
+        awayScore: reg.away,
+      },
+    });
+    if (huboProrroga) {
+      console.log(
+        `[90min] ${m.homeTeam} vs ${m.awayTeam}: final ${m.homeScore}-${m.awayScore}, ` +
+          `90' ${reg.home}-${reg.away} (cuenta el 90').`,
+      );
+    }
+  }
+}
 
 /**
  * Avisos push por RONDA de eliminatorias (no por partido):
@@ -164,8 +221,10 @@ export async function syncMatchesFromApi() {
         awayFlag: data.awayFlag,
         venue: data.venue,
       };
-    } else if (existing.manualResult) {
-      // Resultado fijado a mano: no tocar marcador/estado.
+    } else if (existing.manualResult || existing.finalHomeScore !== null) {
+      // Resultado fijado a mano O eliminatoria ya ajustada a 90' (finalHomeScore
+      // seteado): NO tocar marcador/estado. homeScore guarda el 90' que cuenta;
+      // si dejaramos pasar el final de ESPN, lo pisaria cada sync.
       patch = {
         stage: data.stage,
         group: data.group,
@@ -477,8 +536,21 @@ export async function lockAndScore() {
     }
   }
 
+  // 2bis. Ajuste a 90 MINUTOS en eliminatorias. ESPN reporta el resultado
+  // final (con prórroga). Para los KO finalizados que aun no hemos ajustado,
+  // pedimos el desglose por periodos al resumen de ESPN y fijamos:
+  //   homeScore/awayScore     = resultado a 90' (lo que PUNTUA)
+  //   finalHomeScore/finalAway = resultado final con prorroga (solo MOSTRAR)
+  // Se hace ANTES del scoring para que se puntue con el 90'.
+  await adjustKnockout90Min().catch((e) =>
+    console.error('[lock-and-score] adjustKnockout90Min:', e instanceof Error ? e.message : e),
+  );
+
   // 3. Scoring — excluye matches marcados como excludeFromScoring (Liga
   // desactivada antes del Mundial, por ej.). Esos NO entran al ranking.
+  // Guarda KO: un partido de eliminatoria solo se puntua cuando su 90' ya
+  // esta resuelto (finalHomeScore seteado) o el admin lo fijo a mano
+  // (manualResult). Asi nunca se puntua con el resultado de prorroga.
   const toScore = await prisma.match.findMany({
     where: {
       status: 'FINISHED',
@@ -486,6 +558,11 @@ export async function lockAndScore() {
       homeScore: { not: null },
       awayScore: { not: null },
       excludeFromScoring: false,
+      OR: [
+        { stage: 'GROUP' },
+        { finalHomeScore: { not: null } },
+        { manualResult: true },
+      ],
     },
     include: { predictions: true },
   });

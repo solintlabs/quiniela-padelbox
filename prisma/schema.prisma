@@ -223,8 +223,14 @@ model Match {
   awayTeam      String
   homeFlag      String?
   awayFlag      String?
+  // Marcador que CUENTA para los puntos = resultado a los 90 min (reglamentario).
+  // En grupos = resultado final. En eliminatorias con prórroga, es el de los 90'.
   homeScore     Int?
   awayScore     Int?
+  // Marcador FINAL con prórroga/penales (solo para MOSTRAR). Null si no hubo
+  // prórroga (entonces final = 90 min y se muestra homeScore/awayScore).
+  finalHomeScore Int?
+  finalAwayScore Int?
   // Estadio y ciudad ("Estadio Azteca · Mexico City"). Lo trae ESPN en cada sync.
   venue         String?
   status        MatchStatus @default(SCHEDULED)

@@ -90,6 +90,8 @@ type BracketMatchData = {
   awayFlag: string | null;
   homeScore: number | null;
   awayScore: number | null;
+  finalHomeScore: number | null;
+  finalAwayScore: number | null;
   status: string;
   predictions: Array<{ homeScore: number; awayScore: number; points: number | null }>;
 };
@@ -125,8 +127,18 @@ function BracketMatch({ match: m }: { match: BracketMatchData }) {
           )}
           <span className="truncate">{teamName(m.homeTeam)}</span>
         </span>
-        <span className="font-display tabular-nums shrink-0 px-2">
-          {finished || live ? `${m.homeScore ?? 0}–${m.awayScore ?? 0}` : 'vs'}
+        <span className="font-display tabular-nums shrink-0 px-2 text-center leading-tight">
+          {finished && m.finalHomeScore != null &&
+          (m.finalHomeScore !== m.homeScore || m.finalAwayScore !== m.awayScore) ? (
+            <>
+              {m.finalHomeScore}–{m.finalAwayScore}
+              <span className="block text-[9px] text-muted font-sans">90&apos;: {m.homeScore}–{m.awayScore}</span>
+            </>
+          ) : finished || live ? (
+            `${m.homeScore ?? 0}–${m.awayScore ?? 0}`
+          ) : (
+            'vs'
+          )}
         </span>
         <span className={'flex items-center gap-1.5 min-w-0 justify-end ' + (awayReal ? '' : 'text-muted italic')}>
           <span className="truncate text-right">{teamName(m.awayTeam)}</span>

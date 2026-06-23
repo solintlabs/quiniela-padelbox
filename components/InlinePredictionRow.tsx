@@ -16,6 +16,9 @@ export interface InlineMatch {
   awayFlag: string | null;
   homeScore: number | null;
   awayScore: number | null;
+  /** Resultado final con prórroga/penales (solo si hubo; el que cuenta es homeScore/awayScore a 90'). */
+  finalHomeScore?: number | null;
+  finalAwayScore?: number | null;
   /** "Estadio Azteca · Mexico City" — dónde se juega (null si no se sabe). */
   venue?: string | null;
   status: string;
@@ -142,9 +145,25 @@ export function InlinePredictionRow({
       {/* Fila de marcador / steppers centrada debajo de los nombres */}
       <div className="flex items-center justify-center mt-2.5">
         {isFinished ? (
-          <span className="font-display tabular-nums text-xl text-center">
-            {match.homeScore}–{match.awayScore}
-          </span>
+          (() => {
+            const hadET =
+              match.finalHomeScore != null &&
+              (match.finalHomeScore !== match.homeScore || match.finalAwayScore !== match.awayScore);
+            return hadET ? (
+              <div className="text-center leading-tight">
+                <span className="font-display tabular-nums text-xl">
+                  {match.finalHomeScore}–{match.finalAwayScore}
+                </span>
+                <span className="block text-[10px] text-muted mt-0.5">
+                  90&apos;: <span className="text-ink tabular-nums">{match.homeScore}–{match.awayScore}</span> (cuenta)
+                </span>
+              </div>
+            ) : (
+              <span className="font-display tabular-nums text-xl text-center">
+                {match.homeScore}–{match.awayScore}
+              </span>
+            );
+          })()
         ) : isLocked ? (
           match.status === 'LIVE' && match.homeScore !== null && match.awayScore !== null ? (
             <div className="flex items-center gap-2">
