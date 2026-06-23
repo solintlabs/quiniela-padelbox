@@ -65,6 +65,14 @@ export default async function PublicReglasPage() {
             </div>
           </div>
         </div>
+        <div className="rounded-xl border border-warning/30 bg-warning/5 p-5">
+          <p className="font-semibold mb-2">⏱️ Todo se cuenta a los 90 minutos</p>
+          <p className="text-sm text-muted">
+            Los marcadores valen por el resultado al final de los <span className="text-ink font-semibold">90
+            minutos reglamentarios</span>. En eliminatorias, la <span className="text-ink font-semibold">prórroga
+            y los penales NO cuentan</span>: si va 1-1 a los 90 min y se define en prórroga, para la quiniela es empate 1-1.
+          </p>
+        </div>
         <div className="rounded-xl border border-accent/30 bg-accent/5 p-5">
           <p className="font-semibold mb-2">🏆 Bonus campeón del Mundial</p>
           <p className="text-sm text-muted">

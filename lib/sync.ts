@@ -71,7 +71,7 @@ async function notifyKnockoutRounds(now: number, offsetMs: number): Promise<void
         const paid = await prisma.user.findMany({ where: { hasPaid: true }, select: { id: true } });
         await sendPushToUsers(paid.map((u) => u.id), () => ({
           title: `🔓 ¡Ya están ${label}!`,
-          body: 'Los cruces ya tienen equipos. Entra y pon tus pronósticos de esta ronda.',
+          body: 'Los cruces ya tienen equipos. ⏱️ Recuerda: los marcadores cuentan a los 90 min (sin prórroga ni penales). ¡Entra y pronostica!',
           data: { type: 'ko-unlock', stage },
         })).catch((e) => console.error('[push] ko-unlock:', e));
         continue; // ya avisamos esta ronda en este ciclo

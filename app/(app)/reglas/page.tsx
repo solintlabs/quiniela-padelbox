@@ -24,7 +24,8 @@ export default async function ReglasPage() {
       <section className="space-y-4">
         <h2 className="font-display text-2xl">1. Puntuación</h2>
         <p className="text-sm text-muted">
-          Por cada partido, comparamos tu pronóstico con el resultado final:
+          Por cada partido, comparamos tu pronóstico con el resultado a los{' '}
+          <span className="text-ink font-semibold">90 minutos (tiempo reglamentario)</span>:
         </p>
         <div className="rounded-xl border border-line bg-bg-elev overflow-hidden">
           <RuleRow
@@ -47,6 +48,19 @@ export default async function ReglasPage() {
             desc="Te equivocas de ganador (o no predijiste)."
             border
           />
+        </div>
+
+        <div className="rounded-xl border border-warning/30 bg-warning/5 p-5">
+          <p className="font-semibold mb-2 flex items-center gap-2">
+            <span>⏱️</span> Importante: todo se cuenta a los 90 minutos
+          </p>
+          <p className="text-sm text-muted">
+            Los marcadores valen por el resultado al final de los <span className="text-ink font-semibold">90 minutos
+            reglamentarios</span> (más el tiempo añadido del árbitro). En las eliminatorias,
+            la <span className="text-ink font-semibold">prórroga y los penales NO cuentan</span> para tu pronóstico.
+            Ejemplo: si un partido va 1-1 a los 90 min y luego un equipo gana en prórroga, para la quiniela
+            ese partido es <span className="text-ink font-semibold">empate 1-1</span>.
+          </p>
         </div>
 
         <div className="rounded-xl border border-accent/30 bg-accent/5 p-5">

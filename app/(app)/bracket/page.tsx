@@ -86,6 +86,8 @@ type BracketMatchData = {
   kickoff: Date;
   homeTeam: string;
   awayTeam: string;
+  homeFlag: string | null;
+  awayFlag: string | null;
   homeScore: number | null;
   awayScore: number | null;
   status: string;
@@ -97,7 +99,9 @@ function teamName(s: string): string {
 }
 
 function BracketMatch({ match: m }: { match: BracketMatchData }) {
-  const defined = !isPlaceholder(m.homeTeam) && !isPlaceholder(m.awayTeam);
+  const homeReal = !isPlaceholder(m.homeTeam);
+  const awayReal = !isPlaceholder(m.awayTeam);
+  const defined = homeReal && awayReal;
   const finished = m.status === 'FINISHED' && m.homeScore !== null && m.awayScore !== null;
   const live = m.status === 'LIVE';
   const pred = m.predictions[0];
@@ -114,14 +118,22 @@ function BracketMatch({ match: m }: { match: BracketMatchData }) {
       }
     >
       <div className="flex items-center justify-between gap-2">
-        <span className={'truncate ' + (defined ? '' : 'text-muted italic')}>
-          {teamName(m.homeTeam)}
+        <span className={'flex items-center gap-1.5 min-w-0 ' + (homeReal ? '' : 'text-muted italic')}>
+          {homeReal && m.homeFlag && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={m.homeFlag} alt="" className="w-5 h-5 rounded-sm shrink-0 object-cover" />
+          )}
+          <span className="truncate">{teamName(m.homeTeam)}</span>
         </span>
         <span className="font-display tabular-nums shrink-0 px-2">
           {finished || live ? `${m.homeScore ?? 0}–${m.awayScore ?? 0}` : 'vs'}
         </span>
-        <span className={'truncate text-right ' + (defined ? '' : 'text-muted italic')}>
-          {teamName(m.awayTeam)}
+        <span className={'flex items-center gap-1.5 min-w-0 justify-end ' + (awayReal ? '' : 'text-muted italic')}>
+          <span className="truncate text-right">{teamName(m.awayTeam)}</span>
+          {awayReal && m.awayFlag && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={m.awayFlag} alt="" className="w-5 h-5 rounded-sm shrink-0 object-cover" />
+          )}
         </span>
       </div>
       <div className="flex items-center justify-between gap-2 mt-2 text-[11px] text-muted">
