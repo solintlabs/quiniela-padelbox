@@ -379,12 +379,23 @@ export async function lockAndScore() {
         { homeScore: m.homeScore!, awayScore: m.awayScore! },
         { pointsExact, pointsWinner },
       );
+      // Escribir puntos es idempotente: si dos crons coinciden, ambos
+      // escriben el MISMO valor, sin daño.
       await prisma.prediction.update({ where: { id: p.id }, data: { points } });
       pointsByUser[p.userId] = points;
       scored++;
     }
-    await prisma.match.update({ where: { id: m.id }, data: { scoredAt: new Date() } });
-    if (Object.keys(pointsByUser).length > 0) toNotify.push({ m, pointsByUser });
+    // CANDADO atómico anti doble-push: solo el primer cron que consiga poner
+    // scoredAt (de null) notifica. Si dos crons procesan el mismo partido a la
+    // vez (la cadena + el cron diario de Vercel), el segundo obtiene count=0 y
+    // NO manda el push -> el usuario recibe UNA sola notificacion.
+    const claim = await prisma.match.updateMany({
+      where: { id: m.id, scoredAt: null },
+      data: { scoredAt: new Date() },
+    });
+    if (claim.count > 0 && Object.keys(pointsByUser).length > 0) {
+      toNotify.push({ m, pointsByUser });
+    }
   }
 
   // Push: resultado personalizado + posición en el ranking. El ranking se
