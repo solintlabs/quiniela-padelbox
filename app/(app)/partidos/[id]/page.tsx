@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { PredictionForm } from '@/components/PredictionForm';
 import { Countdown } from '@/components/Countdown';
+import { MatchPredictionsList, type PredItem } from '@/components/MatchPredictionsList';
 import { formatDateTime, STAGE_LABEL } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
@@ -350,30 +351,16 @@ async function AllPredictions({
         </div>
       </div>
 
-      <h2 className="font-display text-xl mb-3">Pronósticos de los demás ({predictions.length})</h2>
-      <div className="rounded-xl border border-line bg-bg-elev overflow-hidden">
-        {predictions.map((p, i) => {
-          const isMe = p.user.id === myUserId;
-          const label = p.points === 3 ? '+3 exacto' : p.points === 1 ? '+1 ganador' : p.points === 0 ? '0' : 'pendiente';
-          const labelColor =
-            p.points === 3 ? 'text-success' : p.points === 1 ? 'text-warning' : 'text-muted';
-          return (
-            <div
-              key={p.id}
-              className={'flex items-center gap-3 px-4 py-3 ' + (i > 0 ? 'border-t border-line ' : '') + (isMe ? 'bg-accent/5' : '')}
-            >
-              <span className="flex-1 text-sm truncate">
-                {p.user.name ?? p.user.email}
-                {isMe && <span className="text-muted text-xs ml-2">· tú</span>}
-              </span>
-              <span className="font-display tabular-nums text-lg w-16 text-center">
-                {p.homeScore}–{p.awayScore}
-              </span>
-              <span className={'text-xs w-20 text-right ' + labelColor}>{label}</span>
-            </div>
-          );
-        })}
-      </div>
+      <MatchPredictionsList
+        items={predictions.map<PredItem>((p) => ({
+          id: p.id,
+          homeScore: p.homeScore,
+          awayScore: p.awayScore,
+          points: p.points,
+          label: p.user.name ?? p.user.email,
+          isMe: p.user.id === myUserId,
+        }))}
+      />
     </section>
   );
 }
