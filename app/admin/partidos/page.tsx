@@ -195,16 +195,54 @@ function toDatetimeLocal(d: Date): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-export default async function PartidosAdmin() {
-  const [matches, rules] = await Promise.all([
+const MUNDIAL_GROUPS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
+
+/** Construye el filtro de la lista segun la pestaña elegida. */
+function buildMatchFilter(filtro: string): import('@prisma/client').Prisma.MatchWhereInput {
+  if (filtro === 'liga') return { group: 'LIGA' };
+  if (filtro === 'grupos') return { stage: 'GROUP', group: { in: MUNDIAL_GROUPS } };
+  if (['R32', 'R16', 'QF', 'SF', 'THIRD', 'FINAL'].includes(filtro)) {
+    return { stage: filtro as typeof STAGES[number] };
+  }
+  return {}; // todos
+}
+
+export default async function PartidosAdmin({
+  searchParams,
+}: {
+  searchParams: Promise<{ filtro?: string }>;
+}) {
+  const sp = await searchParams;
+  const filtro = sp.filtro ?? 'todos';
+  const matchFilter = buildMatchFilter(filtro);
+
+  const [matches, rules, stageGroups, ligaCount] = await Promise.all([
     prisma.match.findMany({
+      where: matchFilter,
       orderBy: { kickoff: 'asc' },
       take: 250,
       include: { _count: { select: { predictions: true } } },
     }),
     prisma.rules.findUnique({ where: { id: 1 } }),
+    // Conteos por etapa del Mundial (para las pestañas) — excluye LIGA.
+    prisma.match.groupBy({ by: ['stage'], where: { group: { not: 'LIGA' } }, _count: { _all: true } }),
+    prisma.match.count({ where: { group: 'LIGA' } }),
   ]);
   const syncPaused = rules?.syncPaused ?? false;
+
+  const countByStage = new Map(stageGroups.map((g) => [g.stage, g._count._all]));
+  const gruposCount = countByStage.get('GROUP') ?? 0;
+  // Para "grupos" hay que restar los de LIGA (tambien son stage GROUP).
+  const mundialGruposCount = gruposCount - ligaCount;
+  const stageTabs: Array<{ key: string; label: string; count: number }> = [
+    { key: 'grupos', label: 'Grupos', count: mundialGruposCount },
+    { key: 'R32', label: '1/16', count: countByStage.get('R32') ?? 0 },
+    { key: 'R16', label: 'Octavos', count: countByStage.get('R16') ?? 0 },
+    { key: 'QF', label: 'Cuartos', count: countByStage.get('QF') ?? 0 },
+    { key: 'SF', label: 'Semis', count: countByStage.get('SF') ?? 0 },
+    { key: 'THIRD', label: '3er puesto', count: countByStage.get('THIRD') ?? 0 },
+    { key: 'FINAL', label: 'Final', count: countByStage.get('FINAL') ?? 0 },
+  ].filter((t) => t.count > 0);
 
   // Stats por competición (para el panel de toggle)
   const compStats = await Promise.all(
@@ -234,7 +272,9 @@ export default async function PartidosAdmin() {
         <div>
           <h1 className="font-display text-3xl">Partidos</h1>
           <p className="text-sm text-muted mt-1">
-            {matches.length} en base de datos · sincroniza con ESPN o gestiona a mano.
+            {filtro === 'todos'
+              ? `${matches.length} en base de datos · sincroniza con ESPN o gestiona a mano.`
+              : `${matches.length} en este filtro · sincroniza con ESPN o gestiona a mano.`}
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
@@ -376,6 +416,16 @@ export default async function PartidosAdmin() {
         grupo expande el panel ⚙️ de cada partido.
       </div>
 
+      {/* Filtro por competición / etapa */}
+      <div className="flex items-center gap-1.5 flex-wrap">
+        <span className="text-[11px] text-muted mr-1">Filtrar:</span>
+        <FiltroTab filtro="todos" actual={filtro} label="Todos" />
+        {stageTabs.map((t) => (
+          <FiltroTab key={t.key} filtro={t.key} actual={filtro} label={`${t.label} (${t.count})`} />
+        ))}
+        {ligaCount > 0 && <FiltroTab filtro="liga" actual={filtro} label={`Liga (${ligaCount})`} />}
+      </div>
+
       {/* Lista de partidos */}
       <div className="space-y-2">
         {matches.map((m) => (
@@ -476,11 +526,31 @@ export default async function PartidosAdmin() {
         ))}
         {matches.length === 0 && (
           <div className="rounded-xl border border-line bg-bg-elev py-8 text-center text-muted">
-            Aún no hay partidos. Pulsa <em>Sincronizar ESPN</em> o crea uno manual arriba.
+            {filtro === 'todos'
+              ? <>Aún no hay partidos. Pulsa <em>Sincronizar ESPN</em> o crea uno manual arriba.</>
+              : 'No hay partidos en este filtro.'}
           </div>
         )}
       </div>
     </div>
+  );
+}
+
+function FiltroTab({ filtro, actual, label }: { filtro: string; actual: string; label: string }) {
+  const href = filtro === 'todos' ? '/admin/partidos' : `/admin/partidos?filtro=${filtro}`;
+  const active = actual === filtro;
+  return (
+    <a
+      href={href}
+      className={
+        'text-xs px-2.5 py-1.5 rounded-md border transition-colors ' +
+        (active
+          ? 'border-accent bg-accent/15 text-accent font-semibold'
+          : 'border-line text-muted hover:text-ink hover:bg-bg-elev')
+      }
+    >
+      {label}
+    </a>
   );
 }
 
