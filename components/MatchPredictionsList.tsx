@@ -26,7 +26,10 @@ function pointsLabel(points: number | null): { text: string; color: string } {
  *    vistazo quién coincidió con quién.
  */
 export function MatchPredictionsList({ items }: { items: PredItem[] }) {
-  const [mode, setMode] = useState<'puntos' | 'marcador'>('puntos');
+  // Si el partido aún no terminó (nadie tiene puntos), ordenar por puntos no
+  // sirve — arrancamos POR MARCADOR. Si ya hay puntos, por puntos.
+  const hasPoints = items.some((p) => p.points !== null);
+  const [mode, setMode] = useState<'puntos' | 'marcador'>(hasPoints ? 'puntos' : 'marcador');
 
   // Conteo por marcador (para ordenar grupos por popularidad).
   const countByScore = useMemo(() => {
