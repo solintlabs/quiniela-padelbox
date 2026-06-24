@@ -56,7 +56,7 @@ export function MatchPredictionsList({ items }: { items: PredItem[] }) {
         return { key: k, home: h, away: a, list };
       })
       .sort((x, y) => {
-        if (y.list.length !== x.list.length) return y.list.length - x.list.length; // popularidad
+        // Orden ascendente por marcador: 0-0, 0-1, 0-2... 1-0, 1-1...
         if (x.home !== y.home) return x.home - y.home;
         return x.away - y.away;
       });
