@@ -75,21 +75,53 @@ export function PartidosClient({ hasPaid, views }: Props) {
     });
   }
 
+  // Filtro de fase: Todos / Grupos / Eliminatorias. Recordado en localStorage.
+  // Solo se muestra si ya hay partidos de eliminatoria con equipos reales.
+  const [phase, setPhase] = useState<'todos' | 'grupos' | 'ko'>('todos');
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('partidos-fase');
+      if (saved === 'grupos' || saved === 'ko') setPhase(saved);
+    } catch {
+      // sin persistencia
+    }
+  }, []);
+  function changePhase(p: 'todos' | 'grupos' | 'ko') {
+    setPhase(p);
+    try {
+      localStorage.setItem('partidos-fase', p);
+    } catch {
+      // sin persistencia
+    }
+  }
+  const isKO = (m: InlineMatch) => m.stage !== 'GROUP';
+
   const sectionsRaw = useMemo(
     () => (views.find((v) => v.key === viewKey) ?? views[0]).sections,
     [views, viewKey],
   );
-  // Cuando se ocultan finalizados, se filtran de cada sección (y las secciones
-  // que quedan vacías no se muestran).
-  const sections = useMemo(() => {
-    if (!hideFinished) return sectionsRaw;
+  // ¿Hay partidos de eliminatoria (equipos reales ya en la lista)?
+  const hasKnockout = useMemo(
+    () => sectionsRaw.some((s) => s.items.some(isKO)),
+    [sectionsRaw],
+  );
+  // 1) Filtra por fase (Grupos / Eliminatorias / Todos).
+  const phaseSections = useMemo(() => {
+    if (phase === 'todos') return sectionsRaw;
     return sectionsRaw
+      .map((s) => ({ ...s, items: s.items.filter((m) => (phase === 'ko' ? isKO(m) : !isKO(m))) }))
+      .filter((s) => s.items.length > 0);
+  }, [sectionsRaw, phase]);
+  // 2) Oculta finalizados (sobre lo ya filtrado por fase).
+  const sections = useMemo(() => {
+    if (!hideFinished) return phaseSections;
+    return phaseSections
       .map((s) => ({ ...s, items: s.items.filter((m) => m.status !== 'FINISHED') }))
       .filter((s) => s.items.length > 0);
-  }, [sectionsRaw, hideFinished]);
+  }, [phaseSections, hideFinished]);
   const finishedCount = useMemo(
-    () => sectionsRaw.reduce((acc, s) => acc + s.items.filter((m) => m.status === 'FINISHED').length, 0),
-    [sectionsRaw],
+    () => phaseSections.reduce((acc, s) => acc + s.items.filter((m) => m.status === 'FINISHED').length, 0),
+    [phaseSections],
   );
 
   // Estado inicial: lo que ya esta guardado en DB para cada match.
@@ -505,6 +537,32 @@ export function PartidosClient({ hasPaid, views }: Props) {
       {hasPaid && editableTotal > 0 && pendingMatches.length === 0 && dirtyCount === 0 && (
         <div className="rounded-xl border border-success/40 bg-success/5 p-3 text-sm text-success">
           ✓ ¡Has pronosticado todos los partidos abiertos! ({savedTotal}/{editableTotal})
+        </div>
+      )}
+
+      {/* Filtro de fase: Grupos / Eliminatorias — solo si ya hay eliminatorias */}
+      {hasKnockout && (
+        <div className="flex items-center gap-2 no-print">
+          <span className="text-[11px] text-muted">Fase:</span>
+          <div className="inline-flex rounded-lg border border-line p-0.5 bg-bg-elev">
+            {([
+              { k: 'todos', label: 'Todos' },
+              { k: 'grupos', label: 'Grupos' },
+              { k: 'ko', label: '🏆 Eliminatorias' },
+            ] as const).map((p) => (
+              <button
+                key={p.k}
+                type="button"
+                onClick={() => changePhase(p.k)}
+                className={
+                  'px-3 py-1.5 text-xs rounded-md transition-colors ' +
+                  (phase === p.k ? 'bg-accent text-accent-fg font-semibold' : 'text-muted hover:text-ink')
+                }
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 

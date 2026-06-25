@@ -127,8 +127,8 @@ async function notifyKnockoutRounds(now: number, offsetMs: number): Promise<void
       if (claim.count > 0) {
         const paid = await prisma.user.findMany({ where: { hasPaid: true }, select: { id: true } });
         await sendPushToUsers(paid.map((u) => u.id), () => ({
-          title: `🔓 ¡Ya están ${label}!`,
-          body: 'Los cruces ya tienen equipos. ⏱️ Recuerda: los marcadores cuentan a los 90 min (sin prórroga ni penales). ¡Entra y pronostica!',
+          title: `🔓 ¡Arrancan ${label}!`,
+          body: 'Los cruces se van conociendo poco a poco — ve pronosticando los que ya tienen equipos; los demás aparecen conforme avanza el torneo. ⏱️ Cuentan los 90 min (sin prórroga).',
           data: { type: 'ko-unlock', stage },
         })).catch((e) => console.error('[push] ko-unlock:', e));
         continue; // ya avisamos esta ronda en este ciclo
@@ -154,11 +154,15 @@ async function notifyKnockoutRounds(now: number, offsetMs: number): Promise<void
       continue;
     }
 
-    // 3. RECORDATORIO cada 2h mientras la ronda este abierta (a quien le falte).
-    if (firstClose > now) {
-      const twoHoursAgo = new Date(now - 2 * 60 * 60_000);
+    // 3. RECORDATORIO: como mucho 1 vez al día Y solo cuando el primer partido
+    // de la ronda está CERCA (dentro de ~36h). Antes de eso basta el aviso de
+    // desbloqueo — no spamear durante días cuando casi todo está "por definir".
+    const REMIND_INTERVAL_MS = 24 * 60 * 60_000; // máx 1/día
+    const REMIND_WINDOW_MS = 36 * 60 * 60_000; // solo en las ~36h previas al cierre
+    if (firstClose > now && firstClose - now <= REMIND_WINDOW_MS) {
+      const cutoff = new Date(now - REMIND_INTERVAL_MS);
       const claim = await prisma.knockoutNotice.updateMany({
-        where: { stage, OR: [{ lastRemindAt: null }, { lastRemindAt: { lt: twoHoursAgo } }] },
+        where: { stage, OR: [{ lastRemindAt: null }, { lastRemindAt: { lt: cutoff } }] },
         data: { lastRemindAt: new Date(now) },
       });
       if (claim.count > 0) {
@@ -166,7 +170,7 @@ async function notifyKnockoutRounds(now: number, offsetMs: number): Promise<void
         if (ids.length > 0) {
           await sendPushToUsers(ids, () => ({
             title: `⚽ No olvides ${label}`,
-            body: 'Aún te faltan pronósticos de esta ronda. Entra y complétalos.',
+            body: 'Aún te faltan pronósticos de esta ronda. Entra y complétalos antes de que empiece.',
             data: { type: 'ko-remind', stage },
           })).catch((e) => console.error('[push] ko-remind:', e));
         }
