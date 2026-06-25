@@ -38,8 +38,16 @@ interface Theme {
 /** Paleta de cada marca. Si no está mapeada, tema PADELBOX (dark + lima). */
 function brandTheme(name?: string): Theme {
   const n = (name ?? '').toLowerCase();
-  if (n.includes('delish')) return { bg: '#FFFFFF', accent: '#F14826', ink: '#171717' };
+  if (n.includes('delish')) return { bg: '#EFE7D2', accent: '#F14826', ink: '#2B3A37' };
   return { bg: '#0A0A0A', accent: '#B6FF3C', ink: '#FAFAFA' };
+}
+
+/** Imagen de fondo por marca (en /public). null = fondo de color liso + glow.
+ *  La imagen YA trae el logo de la marca, así que no se vuelve a dibujar. */
+function sponsorBgSrc(name?: string): string | null {
+  const n = (name ?? '').toLowerCase();
+  if (n.includes('delish')) return '/giftcards/delish-bg.png';
+  return null;
 }
 
 function hexToRgba(hex: string, alpha: number): string {
@@ -140,44 +148,53 @@ export function GiftCardStudio({ sponsors }: Props) {
         }
       }
 
-      const [logoImg, brandImg] = await Promise.all([
+      const bgSrc = sponsorBgSrc(sponsor?.name);
+      const [logoImg, brandImg, bgImg] = await Promise.all([
         sponsor?.logoUrl ? loadImage(sponsor.logoUrl) : Promise.resolve(null),
         loadImage(brandSrc),
+        bgSrc ? loadImage(bgSrc) : Promise.resolve(null),
       ]);
 
       ctx.save();
       ctx.scale(SCALE, SCALE);
 
-      // Fondo
-      ctx.fillStyle = theme.bg;
-      ctx.fillRect(0, 0, W, H);
+      if (bgImg) {
+        // Fondo de marca (imagen): se dibuja "cover" cubriendo toda la tarjeta.
+        // Trae el logo de la marca incrustado, así que no se dibuja aparte.
+        const s = Math.max(W / bgImg.width, H / bgImg.height);
+        const iw = bgImg.width * s;
+        const ih = bgImg.height * s;
+        ctx.drawImage(bgImg, (W - iw) / 2, (H - ih) / 2, iw, ih);
+      } else {
+        // Fondo de color liso + glow del acento de la marca.
+        ctx.fillStyle = theme.bg;
+        ctx.fillRect(0, 0, W, H);
+        const glow1 = ctx.createRadialGradient(W - 120, 80, 0, W - 120, 80, 420);
+        glow1.addColorStop(0, hexToRgba(theme.accent, lightBg ? 0.12 : 0.16));
+        glow1.addColorStop(1, hexToRgba(theme.accent, 0));
+        ctx.fillStyle = glow1;
+        ctx.fillRect(0, 0, W, H);
+        const glow2 = ctx.createRadialGradient(80, H - 60, 0, 80, H - 60, 380);
+        glow2.addColorStop(0, hexToRgba(theme.accent, lightBg ? 0.07 : 0.08));
+        glow2.addColorStop(1, hexToRgba(theme.accent, 0));
+        ctx.fillStyle = glow2;
+        ctx.fillRect(0, 0, W, H);
 
-      // Glow decorativo con el acento de la marca
-      const glow1 = ctx.createRadialGradient(W - 120, 80, 0, W - 120, 80, 420);
-      glow1.addColorStop(0, hexToRgba(theme.accent, lightBg ? 0.12 : 0.16));
-      glow1.addColorStop(1, hexToRgba(theme.accent, 0));
-      ctx.fillStyle = glow1;
-      ctx.fillRect(0, 0, W, H);
-      const glow2 = ctx.createRadialGradient(80, H - 60, 0, 80, H - 60, 380);
-      glow2.addColorStop(0, hexToRgba(theme.accent, lightBg ? 0.07 : 0.08));
-      glow2.addColorStop(1, hexToRgba(theme.accent, 0));
-      ctx.fillStyle = glow2;
-      ctx.fillRect(0, 0, W, H);
-
-      // Marco redondeado tipo ticket
-      const m = 28;
-      ctx.strokeStyle = hexToRgba(theme.accent, 0.6);
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.roundRect(m, m, W - m * 2, H - m * 2, 28);
-      ctx.stroke();
-      ctx.strokeStyle = hexToRgba(theme.ink, 0.18);
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([8, 8]);
-      ctx.beginPath();
-      ctx.roundRect(m + 14, m + 14, W - (m + 14) * 2, H - (m + 14) * 2, 18);
-      ctx.stroke();
-      ctx.setLineDash([]);
+        // Marco redondeado tipo ticket (solo en fondos lisos)
+        const m = 28;
+        ctx.strokeStyle = hexToRgba(theme.accent, 0.6);
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.roundRect(m, m, W - m * 2, H - m * 2, 28);
+        ctx.stroke();
+        ctx.strokeStyle = hexToRgba(theme.ink, 0.18);
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([8, 8]);
+        ctx.beginPath();
+        ctx.roundRect(m + 14, m + 14, W - (m + 14) * 2, H - (m + 14) * 2, 18);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
 
       // Eyebrow + título
       ctx.fillStyle = theme.accent;
@@ -188,21 +205,24 @@ export function GiftCardStudio({ sponsors }: Props) {
       ctx.font = `600 22px ${body}`;
       ctx.fillText(titulo.toUpperCase(), 82, 124);
 
-      // Logo arriba a la derecha: sponsor si hay; si no, PADELBOX.
-      const topLogo = logoImg ?? brandImg;
-      if (topLogo) {
-        const maxH = 88;
-        const maxW = 280;
-        const r = Math.min(maxW / topLogo.width, maxH / topLogo.height);
-        const lw = topLogo.width * r;
-        const lh = topLogo.height * r;
-        ctx.drawImage(topLogo, W - 80 - lw, 72, lw, lh);
-      } else if (sponsor) {
-        ctx.fillStyle = theme.ink;
-        ctx.font = `34px ${display}`;
-        ctx.textAlign = 'right';
-        ctx.fillText(sponsor.name.toUpperCase(), W - 80, 84);
-        ctx.textAlign = 'left';
+      // Logo arriba a la derecha: solo si el fondo NO es una imagen de marca
+      // (esa ya trae el logo). Sponsor si hay; si no, PADELBOX.
+      if (!bgImg) {
+        const topLogo = logoImg ?? brandImg;
+        if (topLogo) {
+          const maxH = 88;
+          const maxW = 280;
+          const r = Math.min(maxW / topLogo.width, maxH / topLogo.height);
+          const lw = topLogo.width * r;
+          const lh = topLogo.height * r;
+          ctx.drawImage(topLogo, W - 80 - lw, 72, lw, lh);
+        } else if (sponsor) {
+          ctx.fillStyle = theme.ink;
+          ctx.font = `34px ${display}`;
+          ctx.textAlign = 'right';
+          ctx.fillText(sponsor.name.toUpperCase(), W - 80, 84);
+          ctx.textAlign = 'left';
+        }
       }
 
       // Premio centrado: monto ($25) o producto ("1 COMBO DELISH").
