@@ -97,9 +97,9 @@ export function InlinePredictionRow({
       {/* Header */}
       <Link
         href={`/partidos/${match.id}`}
-        className="flex items-center justify-between text-xs text-muted mb-3 hover:text-ink transition-colors"
+        className="flex items-center justify-between gap-2 text-xs text-muted mb-3 hover:text-ink transition-colors"
       >
-        <span className="min-w-0">
+        <span className="min-w-0 flex-1">
           <span className="block truncate">
             {stageLabel} · {formatDateTime(match.kickoff)}
           </span>
@@ -130,11 +130,11 @@ export function InlinePredictionRow({
             // eslint-disable-next-line @next/next/no-img-element
             <img src={match.homeFlag} alt="" className="w-6 h-6 rounded-sm shrink-0 object-cover" />
           )}
-          <span className="font-semibold text-sm sm:text-base truncate">{match.homeTeam}</span>
+          <span className="font-semibold text-sm sm:text-base truncate min-w-0 flex-1">{match.homeTeam}</span>
         </div>
         <span className="text-muted text-xs shrink-0">vs</span>
         <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
-          <span className="font-semibold text-sm sm:text-base truncate text-right">{match.awayTeam}</span>
+          <span className="font-semibold text-sm sm:text-base truncate min-w-0 flex-1 text-right">{match.awayTeam}</span>
           {match.awayFlag && (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={match.awayFlag} alt="" className="w-6 h-6 rounded-sm shrink-0 object-cover" />
