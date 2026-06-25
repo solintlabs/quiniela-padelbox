@@ -83,7 +83,13 @@ export default async function MatchDetailPage({ params }: { params: { id: string
         )}
       </header>
 
-      <AllPredictions matchId={match.id} myUserId={userId} isLocked={isLocked} kickoff={match.kickoff} />
+      <AllPredictions
+        matchId={match.id}
+        myUserId={userId}
+        isLocked={isLocked}
+        kickoff={match.kickoff}
+        isKnockout={match.stage !== 'GROUP'}
+      />
 
       <section className="rounded-xl border border-line bg-bg-elev p-4 sm:p-8">
         {isFinished && mine ? (
@@ -115,12 +121,33 @@ async function AllPredictions({
   myUserId,
   isLocked,
   kickoff,
+  isKnockout,
 }: {
   matchId: string;
   myUserId: string;
   isLocked: boolean;
   kickoff: Date;
+  isKnockout: boolean;
 }) {
+  // En eliminatorias NO se muestra el % de cómo predicen los demás. Antes del
+  // cierre simplemente no se muestra nada agregado.
+  if (!isLocked && isKnockout) {
+    const lockTime = new Date(kickoff.getTime() - 15 * 60_000);
+    return (
+      <section>
+        <div className="rounded-xl border border-line bg-bg-elev p-4 sm:p-5 text-center space-y-1">
+          <p className="text-xs">
+            🔒 Los pronósticos de los demás se desbloquean{' '}
+            <strong>15 min antes del kickoff</strong>
+          </p>
+          <p className="text-[11px] text-muted">
+            Disponible a partir del <span className="text-ink">{formatDateTime(lockTime)}</span>
+          </p>
+        </div>
+      </section>
+    );
+  }
+
   // Si aún no está cerrado, mostramos solo DISTRIBUCION agregada
   // (cuántos votan home/empate/away) — no exponemos predicciones individuales.
   if (!isLocked) {
@@ -287,7 +314,8 @@ async function AllPredictions({
 
   return (
     <section className="space-y-4">
-      {/* Comparativa: barra 1X2 + marcadores más predichos */}
+      {/* Comparativa de % — solo en grupos. En eliminatorias no se muestra. */}
+      {!isKnockout && (
       <div className="rounded-xl border border-accent/30 bg-accent/5 p-5">
         <p className="text-xs uppercase tracking-[0.18em] text-accent font-bold mb-3">
           Comparativa · qué predijeron los demás
@@ -350,6 +378,7 @@ async function AllPredictions({
           </div>
         </div>
       </div>
+      )}
 
       <MatchPredictionsList
         items={predictions.map<PredItem>((p) => ({

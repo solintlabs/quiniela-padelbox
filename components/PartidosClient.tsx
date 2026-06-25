@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { InlinePredictionRow, type InlineMatch } from './InlinePredictionRow';
 
@@ -78,14 +78,7 @@ export function PartidosClient({ hasPaid, views }: Props) {
   // Filtro de fase: Todos / Grupos / Eliminatorias. Recordado en localStorage.
   // Solo se muestra si ya hay partidos de eliminatoria con equipos reales.
   const [phase, setPhase] = useState<'todos' | 'grupos' | 'ko'>('todos');
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem('partidos-fase');
-      if (saved === 'grupos' || saved === 'ko') setPhase(saved);
-    } catch {
-      // sin persistencia
-    }
-  }, []);
+  const phaseInit = useRef(false);
   function changePhase(p: 'todos' | 'grupos' | 'ko') {
     setPhase(p);
     try {
@@ -105,6 +98,35 @@ export function PartidosClient({ hasPaid, views }: Props) {
     () => sectionsRaw.some((s) => s.items.some(isKO)),
     [sectionsRaw],
   );
+  // ¿Queda algún partido de GRUPOS aún abierto para pronosticar? Si ya no
+  // quedan, la fase de grupos terminó -> es momento de las eliminatorias.
+  const hasOpenGroupMatch = useMemo(() => {
+    const now = Date.now();
+    return sectionsRaw.some((s) =>
+      s.items.some(
+        (m) =>
+          m.stage === 'GROUP' &&
+          m.status === 'SCHEDULED' &&
+          !m.lockedAt &&
+          new Date(m.kickoff).getTime() - 15 * 60_000 > now,
+      ),
+    );
+  }, [sectionsRaw]);
+  // Inicializa la fase una sola vez: respeta la preferencia guardada; si no hay
+  // y la fase de grupos YA TERMINÓ (no quedan grupos abiertos) y hay
+  // eliminatorias, arranca directamente en "Eliminatorias".
+  useEffect(() => {
+    if (phaseInit.current) return;
+    phaseInit.current = true;
+    let saved: string | null = null;
+    try {
+      saved = localStorage.getItem('partidos-fase');
+    } catch {
+      // sin persistencia
+    }
+    if (saved === 'grupos' || saved === 'ko' || saved === 'todos') setPhase(saved);
+    else if (hasKnockout && !hasOpenGroupMatch) setPhase('ko');
+  }, [hasKnockout, hasOpenGroupMatch]);
   // 1) Filtra por fase (Grupos / Eliminatorias / Todos).
   const phaseSections = useMemo(() => {
     if (phase === 'todos') return sectionsRaw;

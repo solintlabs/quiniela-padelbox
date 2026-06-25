@@ -59,8 +59,11 @@ export async function GET(req: Request) {
 
   const withDist = matches.map((m) => {
     const raw = distByMatch.get(m.id);
+    // En eliminatorias NO se muestra la distribución (% de cómo predicen los
+    // demás). Solo en fase de grupos.
+    const isKo = m.stage !== 'GROUP';
     const distribution =
-      raw && raw.total >= MIN_PREDS_FOR_DIST
+      !isKo && raw && raw.total >= MIN_PREDS_FOR_DIST
         ? {
             homePct: Math.round((raw.h / raw.total) * 100),
             drawPct: Math.round((raw.d / raw.total) * 100),
