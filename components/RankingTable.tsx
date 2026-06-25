@@ -54,13 +54,13 @@ export function RankingTable({ rows, meId }: RankingTableProps) {
   }
   return (
     <div className="rounded-xl border border-line bg-bg-elev overflow-hidden">
-      <div className="flex items-center px-4 py-3 text-xs uppercase tracking-[0.12em] text-muted border-b border-line">
-        <span className="w-14">#</span>
-        <span className="flex-1">Jugador</span>
-        <span className="w-12 text-right">PJ</span>
-        <span className="w-20 text-right">Exactos</span>
-        <span className="w-16 text-right">Pts</span>
-        <span className="w-6" />
+      <div className="flex items-center gap-1 px-3 sm:px-4 py-3 text-[10px] sm:text-xs uppercase tracking-[0.12em] text-muted border-b border-line">
+        <span className="w-12 sm:w-14 shrink-0">#</span>
+        <span className="flex-1 min-w-0">Jugador</span>
+        <span className="w-8 sm:w-12 text-right shrink-0">PJ</span>
+        <span className="w-10 sm:w-20 text-right shrink-0">Exac.</span>
+        <span className="w-10 sm:w-16 text-right shrink-0">Pts</span>
+        <span className="w-4 shrink-0" />
       </div>
       {rows.map((row, i) => {
         const pos = i + 1;
@@ -70,15 +70,15 @@ export function RankingTable({ rows, meId }: RankingTableProps) {
             key={row.userId}
             href={`/usuarios/${row.userId}`}
             className={
-              'flex items-center px-4 py-3 text-sm border-t border-line hover:bg-bg transition-colors ' +
+              'flex items-center gap-1 px-3 sm:px-4 py-3 text-sm border-t border-line hover:bg-bg transition-colors ' +
               (isMe ? 'bg-accent/10' : '')
             }
           >
-            <span className="w-14 tabular-nums flex items-center gap-1">
+            <span className="w-12 sm:w-14 shrink-0 tabular-nums flex items-center gap-0.5">
               {pos <= 3 ? `${MEDAL[pos - 1]} ${pos}` : isMe ? `▶ ${pos}` : pos}
               <Movement m={row.movement} />
             </span>
-            <span className={'flex-1 truncate flex items-center gap-1.5 ' + (isMe ? 'font-semibold' : '')}>
+            <span className={'flex-1 min-w-0 flex items-center gap-1.5 ' + (isMe ? 'font-semibold' : '')}>
               {row.championFlag && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -88,15 +88,15 @@ export function RankingTable({ rows, meId }: RankingTableProps) {
                   className="w-4 h-4 rounded-sm shrink-0 object-cover"
                 />
               )}
-              <span className="truncate">{row.name ?? row.email}</span>
-              {isMe && <span className="text-muted text-xs">· tú</span>}
+              <span className="truncate min-w-0 flex-1">{row.name ?? row.email}</span>
+              {isMe && <span className="text-muted text-xs shrink-0">· tú</span>}
             </span>
-            <span className="w-12 text-right tabular-nums">{row.played}</span>
-            <span className="w-20 text-right tabular-nums">{row.exact}</span>
-            <span className={'w-16 text-right tabular-nums font-display ' + (isMe ? 'text-accent' : '')}>
+            <span className="w-8 sm:w-12 text-right shrink-0 tabular-nums">{row.played}</span>
+            <span className="w-10 sm:w-20 text-right shrink-0 tabular-nums">{row.exact}</span>
+            <span className={'w-10 sm:w-16 text-right shrink-0 tabular-nums font-display ' + (isMe ? 'text-accent' : '')}>
               {row.points}
             </span>
-            <span className="w-6 text-right text-muted">→</span>
+            <span className="w-4 shrink-0 text-right text-muted">→</span>
           </Link>
         );
       })}
