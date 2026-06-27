@@ -76,78 +76,13 @@ async function adjustKnockout90Min(): Promise<void> {
 }
 
 /**
- * Recordatorio DIARIO (resumen) — como mucho 1 vez al día, en horario diurno
- * (Caracas), a los pagados a los que les falten partidos por pronosticar en las
- * próximas 48h. Sustituye a los recordatorios por-partido (eran spam).
- * Claim atómico en Rules.lastDigestAt para no duplicar entre crons.
- */
-async function sendDailyDigest(now: number, offsetMs: number): Promise<void> {
-  // Solo de día: hora UTC 15-23 ≈ 11:00-19:00 Caracas (GMT-4). Evita avisos de
-  // madrugada.
-  const utcHour = new Date(now).getUTCHours();
-  if (utcHour < 15 || utcHour > 23) return;
-
-  // Claim: solo el primero que consiga marcar lastDigestAt (no enviado en las
-  // últimas ~20h) sigue. Los demás crons obtienen count=0 y salen.
-  const claim = await prisma.rules.updateMany({
-    where: {
-      id: 1,
-      OR: [{ lastDigestAt: null }, { lastDigestAt: { lt: new Date(now - 20 * 60 * 60_000) } }],
-    },
-    data: { lastDigestAt: new Date(now) },
-  });
-  if (claim.count === 0) return;
-
-  // Partidos abiertos (predecibles, equipos reales) en las próximas 48h.
-  const soon = new Date(now + 48 * 60 * 60_000);
-  const openMatches = await prisma.match.findMany({
-    where: {
-      status: 'SCHEDULED',
-      lockedAt: null,
-      excludeFromScoring: false,
-      kickoff: { gt: new Date(now + offsetMs), lte: soon },
-    },
-    select: { id: true, homeTeam: true, awayTeam: true },
-  });
-  const realOpenIds = openMatches
-    .filter((m) => !isPlaceholderTeam(m.homeTeam) && !isPlaceholderTeam(m.awayTeam))
-    .map((m) => m.id);
-  if (realOpenIds.length === 0) return;
-
-  const [paid, predicted] = await Promise.all([
-    prisma.user.findMany({ where: { hasPaid: true }, select: { id: true } }),
-    prisma.prediction.groupBy({
-      by: ['userId'],
-      where: { matchId: { in: realOpenIds } },
-      _count: { matchId: true },
-    }),
-  ]);
-  const predCount = new Map(predicted.map((p) => [p.userId, p._count.matchId]));
-  const pendingByUser = new Map<string, number>();
-  for (const u of paid) {
-    const pend = realOpenIds.length - (predCount.get(u.id) ?? 0);
-    if (pend > 0) pendingByUser.set(u.id, pend);
-  }
-  if (pendingByUser.size === 0) return;
-
-  await sendPushToUsers([...pendingByUser.keys()], (uid) => {
-    const n = pendingByUser.get(uid) ?? 0;
-    return {
-      title: `⚽ Te faltan ${n} partido${n !== 1 ? 's' : ''} por pronosticar`,
-      body: 'Entra y completa tus pronósticos antes de que cierren. ¡Suma puntos!',
-      data: { type: 'daily-digest' },
-    };
-  }).catch((e) => console.error('[push] daily digest:', e));
-}
-
-/**
  * Avisos push por RONDA de eliminatorias (no por partido):
  *  - "ronda desbloqueada" (una vez, en cuanto los cruces tienen equipos reales)
  *  - recordatorio cada 2h mientras la ronda este abierta (a quien le falte)
  *  - "cierra pronto" antes de que arranque el primer partido de la ronda
  * Todo con candado atomico (updateMany) para no duplicar si coinciden 2 crons.
  */
-async function notifyKnockoutRounds(now: number): Promise<void> {
+async function notifyKnockoutRounds(now: number, offsetMs: number): Promise<void> {
   const koMatches = await prisma.match.findMany({
     where: { stage: { in: [...KO_STAGES] }, excludeFromScoring: false },
     select: { id: true, stage: true, kickoff: true, homeTeam: true, awayTeam: true },
@@ -162,9 +97,24 @@ async function notifyKnockoutRounds(now: number): Promise<void> {
   }
   if (byStage.size === 0) return; // nada desbloqueado aun
 
+  const incompleteUserIds = async (matchIds: string[]): Promise<string[]> => {
+    const grouped = await prisma.prediction.groupBy({
+      by: ['userId'],
+      where: { matchId: { in: matchIds } },
+      _count: { matchId: true },
+    });
+    const complete = new Set(
+      grouped.filter((g) => g._count.matchId >= matchIds.length).map((g) => g.userId),
+    );
+    const paid = await prisma.user.findMany({ where: { hasPaid: true }, select: { id: true } });
+    return paid.filter((u) => !complete.has(u.id)).map((u) => u.id);
+  };
+
   for (const [stage, matches] of byStage) {
     const label = KO_LABEL[stage] ?? 'la siguiente ronda';
+    const matchIds = matches.map((m) => m.id);
     const firstKickoff = Math.min(...matches.map((m) => new Date(m.kickoff).getTime()));
+    const firstClose = firstKickoff - offsetMs;
 
     await prisma.knockoutNotice.upsert({ where: { stage }, update: {}, create: { stage } });
 
@@ -181,11 +131,51 @@ async function notifyKnockoutRounds(now: number): Promise<void> {
           body: 'Los cruces se van conociendo poco a poco — ve pronosticando los que ya tienen equipos; los demás aparecen conforme avanza el torneo. ⏱️ Cuentan los 90 min (sin prórroga).',
           data: { type: 'ko-unlock', stage },
         })).catch((e) => console.error('[push] ko-unlock:', e));
+        continue; // ya avisamos esta ronda en este ciclo
       }
     }
-    // (Los recordatorios "cierra pronto" y "cada día" de la ronda se quitaron:
-    // ahora el resumen diario general — sendDailyDigest — ya cubre "te faltan N
-    // partidos por pronosticar", incluidos los de eliminatorias.)
+
+    // 2. CIERRA PRONTO (una vez): faltan <=25 min para el cierre del 1er partido.
+    if (firstClose > now && firstClose - now <= 25 * 60_000) {
+      const claim = await prisma.knockoutNotice.updateMany({
+        where: { stage, preCloseSentAt: null },
+        data: { preCloseSentAt: new Date(now) },
+      });
+      if (claim.count > 0) {
+        const ids = await incompleteUserIds(matchIds);
+        if (ids.length > 0) {
+          await sendPushToUsers(ids, () => ({
+            title: `⏳ Cierran ${label}`,
+            body: 'Última oportunidad para completar tus pronósticos antes de que empiece.',
+            data: { type: 'ko-preclose', stage },
+          })).catch((e) => console.error('[push] ko-preclose:', e));
+        }
+      }
+      continue;
+    }
+
+    // 3. RECORDATORIO: como mucho 1 vez al día Y solo cuando el primer partido
+    // de la ronda está CERCA (dentro de ~36h). Antes de eso basta el aviso de
+    // desbloqueo — no spamear durante días cuando casi todo está "por definir".
+    const REMIND_INTERVAL_MS = 24 * 60 * 60_000; // máx 1/día
+    const REMIND_WINDOW_MS = 36 * 60 * 60_000; // solo en las ~36h previas al cierre
+    if (firstClose > now && firstClose - now <= REMIND_WINDOW_MS) {
+      const cutoff = new Date(now - REMIND_INTERVAL_MS);
+      const claim = await prisma.knockoutNotice.updateMany({
+        where: { stage, OR: [{ lastRemindAt: null }, { lastRemindAt: { lt: cutoff } }] },
+        data: { lastRemindAt: new Date(now) },
+      });
+      if (claim.count > 0) {
+        const ids = await incompleteUserIds(matchIds);
+        if (ids.length > 0) {
+          await sendPushToUsers(ids, () => ({
+            title: `⚽ No olvides ${label}`,
+            body: 'Aún te faltan pronósticos de esta ronda. Entra y complétalos antes de que empiece.',
+            data: { type: 'ko-remind', stage },
+          })).catch((e) => console.error('[push] ko-remind:', e));
+        }
+      }
+    }
   }
 }
 
@@ -343,17 +333,11 @@ export async function lockAndScore() {
   const pointsWinner = rules?.pointsWinner ?? 1;
   const now = Date.now();
 
-  // Aviso de "ronda de eliminatorias desbloqueada" (una vez por ronda).
-  await notifyKnockoutRounds(now).catch((e) =>
+  // Avisos por ronda de eliminatorias (desbloqueo + cada 2h + cierra pronto).
+  // Va ANTES de la salida rapida para que corra siempre; es barato cuando no
+  // hay ronda abierta (los cruces aun son placeholders).
+  await notifyKnockoutRounds(now, offsetMs).catch((e) =>
     console.error('[lock-and-score] notifyKnockoutRounds fallo:', e instanceof Error ? e.message : e),
-  );
-
-  // RECORDATORIO DIARIO (resumen). Sustituye a los avisos por partido (1h
-  // antes + última llamada), que eran demasiados. Se envía COMO MUCHO 1 vez al
-  // día, en horario diurno, a los pagados a los que les falten partidos por
-  // pronosticar (próximas 48h). Race-safe: claim atómico en Rules.lastDigestAt.
-  await sendDailyDigest(now, offsetMs).catch((e) =>
-    console.error('[lock-and-score] sendDailyDigest fallo:', e instanceof Error ? e.message : e),
   );
 
   // SALIDA RAPIDA si no hay NADA que hacer (ahorra CPU Vercel en horas
@@ -378,8 +362,94 @@ export async function lockAndScore() {
     return { synced: false as const, locked: 0, scored: 0, scoredMatches: 0, idle: true };
   }
 
-  // (Los recordatorios por partido se eliminaron — ahora hay un único resumen
-  // diario, sendDailyDigest, llamado arriba antes de la salida rápida.)
+  // 0bis. Push recordatorio 1h antes del kickoff. A users pagados que
+  // NO hayan predicho. Marcamos reminderSentAt para no duplicar.
+  // Ventana: entre kickoff-75min y kickoff-45min (el cron corre cada 10min
+  // asi que cualquier partido caera en una de estas ejecuciones).
+  const reminderWindowStart = new Date(now + 45 * 60_000);
+  const reminderWindowEnd = new Date(now + 75 * 60_000);
+  const toRemind = await prisma.match.findMany({
+    where: {
+      reminderSentAt: null,
+      lockedAt: null,
+      status: 'SCHEDULED',
+      kickoff: { gte: reminderWindowStart, lte: reminderWindowEnd },
+    },
+    select: { id: true, homeTeam: true, awayTeam: true, kickoff: true },
+  });
+  for (const m of toRemind) {
+    // Marca como enviado YA — race-safe vs duplicate crons
+    const claim = await prisma.match.updateMany({
+      where: { id: m.id, reminderSentAt: null },
+      data: { reminderSentAt: new Date() },
+    });
+    if (claim.count === 0) continue; // otro cron ya lo agarro
+
+    const usersNoPred = await prisma.user.findMany({
+      where: {
+        hasPaid: true,
+        predictions: { none: { matchId: m.id } },
+      },
+      select: { id: true },
+    });
+    if (usersNoPred.length === 0) continue;
+
+    const minsToKickoff = Math.max(
+      1,
+      Math.round((new Date(m.kickoff).getTime() - now) / 60_000),
+    );
+    await sendPushToUsers(usersNoPred.map((u) => u.id), () => ({
+      title: `⚽ ${m.homeTeam} vs ${m.awayTeam}`,
+      body: `Empieza en ${minsToKickoff} min y no has predicho. ¡No te lo pierdas!`,
+      data: { type: 'match-reminder', matchId: m.id },
+    })).catch((e) => console.error('[push] reminder notify:', e));
+  }
+
+  // 0ter. Push "última llamada": pocos minutos ANTES de que se cierre el
+  // pronóstico. El cierre es kickoff - lockOffsetMin (15 por defecto), así que
+  // avisamos cuando faltan 2-9 min para ese cierre (≈ 17-24 min del kickoff).
+  // A pagados que aún NO han predicho. Marca lastCallSentAt para no duplicar.
+  const lockSoonStart = new Date(now + 2 * 60_000); // el cierre ocurre en >=2min
+  const lockSoonEnd = new Date(now + 9 * 60_000); // ...y en <=9min
+  const toLastCall = await prisma.match.findMany({
+    where: {
+      lastCallSentAt: null,
+      lockedAt: null,
+      status: 'SCHEDULED',
+      // kickoff - offset (= momento de cierre) cae en la ventana [+2min, +9min]
+      kickoff: {
+        gte: new Date(lockSoonStart.getTime() + offsetMs),
+        lte: new Date(lockSoonEnd.getTime() + offsetMs),
+      },
+    },
+    select: { id: true, homeTeam: true, awayTeam: true, kickoff: true },
+  });
+  for (const m of toLastCall) {
+    const claim = await prisma.match.updateMany({
+      where: { id: m.id, lastCallSentAt: null },
+      data: { lastCallSentAt: new Date() },
+    });
+    if (claim.count === 0) continue;
+
+    const usersNoPred = await prisma.user.findMany({
+      where: { hasPaid: true, predictions: { none: { matchId: m.id } } },
+      select: { id: true },
+    });
+    if (usersNoPred.length === 0) continue;
+
+    const minsToClose = Math.max(
+      1,
+      Math.round((new Date(m.kickoff).getTime() - offsetMs - now) / 60_000),
+    );
+    const autofillOn = rules?.autofillZeroOnLock ?? false;
+    await sendPushToUsers(usersNoPred.map((u) => u.id), () => ({
+      title: `⏳ Cierra en ${minsToClose} min — ${m.homeTeam} vs ${m.awayTeam}`,
+      body: autofillOn
+        ? `Aún no has pronosticado. Si no lo haces, quedará 0-0. ¡Entra y ponlo!`
+        : `Última oportunidad para enviar tu pronóstico antes del cierre.`,
+      data: { type: 'match-lastcall', matchId: m.id },
+    })).catch((e) => console.error('[push] lastcall notify:', e));
+  }
 
   // 0. Sync con el proveedor solo si hay partido en ventana (en vivo/proximo/
   // reciente). Si llegamos aqui solo por un pendiente de puntuar antiguo, ese
