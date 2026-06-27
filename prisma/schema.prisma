@@ -353,6 +353,9 @@ model Rules {
   // pronosticado reciben un 0-0 automático (red de seguridad para que nadie
   // se quede sin marcador). El admin lo activa en /admin/reglas.
   autofillZeroOnLock Boolean  @default(false)
+  // Último envío del recordatorio DIARIO (resumen "te faltan N partidos"),
+  // para no mandar más de uno al día (antes se mandaba uno por partido = spam).
+  lastDigestAt      DateTime?
   // Si true: se muestra la barra "Cómo predicen" (% gana local / empate /
   // visitante agregado) en cada partido, en web y app. Toggle en /admin/reglas.
   showDistribution  Boolean   @default(true)

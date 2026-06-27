@@ -1,0 +1,1 @@
+ALTER TABLE "Rules" ADD COLUMN "lastDigestAt" TIMESTAMP(3);
