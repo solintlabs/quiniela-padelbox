@@ -439,7 +439,7 @@ export async function lockAndScore() {
         lte: new Date(lockSoonEnd.getTime() + offsetMs),
       },
     },
-    select: { id: true, homeTeam: true, awayTeam: true, kickoff: true },
+    select: { id: true, homeTeam: true, awayTeam: true, kickoff: true, stage: true },
   });
   for (const m of toLastCall) {
     const claim = await prisma.match.updateMany({
@@ -458,12 +458,17 @@ export async function lockAndScore() {
       1,
       Math.round((new Date(m.kickoff).getTime() - offsetMs - now) / 60_000),
     );
-    const autofillOn = rules?.autofillZeroOnLock ?? false;
+    // El 0-0 automático solo aplica en grupos. En eliminatorias, si no rellena,
+    // no suma — el mensaje debe dejarlo claro (no prometer un 0-0 que no se pone).
+    const isKo = m.stage !== 'GROUP';
+    const willAutofill = (rules?.autofillZeroOnLock ?? false) && !isKo;
     await sendPushToUsers(usersNoPred.map((u) => u.id), () => ({
       title: `⏳ Cierra en ${minsToClose} min — ${m.homeTeam} vs ${m.awayTeam}`,
-      body: autofillOn
-        ? `Aún no has pronosticado. Si no lo haces, quedará 0-0. ¡Entra y ponlo!`
-        : `Última oportunidad para enviar tu pronóstico antes del cierre.`,
+      body: willAutofill
+        ? 'Aún no has pronosticado. Si no lo haces, quedará 0-0. ¡Entra y ponlo!'
+        : isKo
+          ? 'En eliminatorias NO hay 0-0 automático: si no rellenas, no sumas. ¡Última oportunidad!'
+          : 'Última oportunidad para enviar tu pronóstico antes del cierre.',
       data: { type: 'match-lastcall', matchId: m.id },
     })).catch((e) => console.error('[push] lastcall notify:', e));
   }
