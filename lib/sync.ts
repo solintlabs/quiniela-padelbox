@@ -4,6 +4,11 @@ import { calcPoints } from '@/lib/scoring';
 import { computeRanking } from '@/lib/ranking';
 import { fetchWorldCupFixtures, fetchRegulationScore, type NormalizedFixture } from '@/lib/providers/espn';
 import { sendPushToUsers } from '@/lib/push';
+import { sendBulkEmail } from '@/lib/email';
+import { buildKnockoutReminderEmail } from '@/lib/emails/ko-reminder';
+
+// Base URL para enlaces/imagenes en emails enviados desde el cron (sin request).
+const APP_ORIGIN = process.env.AUTH_URL ?? process.env.NEXTAUTH_URL ?? 'https://quinielabox.com';
 
 const KO_STAGES = ['R32', 'R16', 'QF', 'SF', 'THIRD', 'FINAL'] as const;
 const KO_LABEL: Record<string, string> = {
@@ -125,12 +130,24 @@ async function notifyKnockoutRounds(now: number, offsetMs: number): Promise<void
         data: { unlockSentAt: new Date(now), lastRemindAt: new Date(now) },
       });
       if (claim.count > 0) {
-        const paid = await prisma.user.findMany({ where: { hasPaid: true }, select: { id: true } });
+        const paid = await prisma.user.findMany({
+          where: { hasPaid: true },
+          select: { id: true, email: true },
+        });
+        // Push a todos los pagados.
         await sendPushToUsers(paid.map((u) => u.id), () => ({
           title: `🔓 ¡Arrancan ${label}!`,
-          body: 'Los cruces se van conociendo poco a poco — ve pronosticando los que ya tienen equipos; los demás aparecen conforme avanza el torneo. ⏱️ Cuentan los 90 min (sin prórroga).',
+          body: 'En eliminatorias NO hay 0-0 automático: si no rellenas, no sumas. Ve pronosticando los cruces conforme salen. ⏱️ Cuentan los 90 min (sin prórroga).',
           data: { type: 'ko-unlock', stage },
         })).catch((e) => console.error('[push] ko-unlock:', e));
+        // Email (una vez por ronda) recordando rellenar — solo a pagados.
+        const { subject, html, text } = buildKnockoutReminderEmail({ label, origin: APP_ORIGIN });
+        await sendBulkEmail(
+          paid.map((u) => u.email).filter((e): e is string => !!e),
+          subject,
+          html,
+          text,
+        ).catch((e) => console.error('[email] ko-unlock:', e));
         continue; // ya avisamos esta ronda en este ciclo
       }
     }
@@ -483,7 +500,7 @@ export async function lockAndScore() {
   // 1. Bloqueo por hora
   const toLock = await prisma.match.findMany({
     where: { lockedAt: null, kickoff: { lte: new Date(now + offsetMs) } },
-    select: { id: true, homeTeam: true, awayTeam: true },
+    select: { id: true, homeTeam: true, awayTeam: true, stage: true },
   });
   if (toLock.length) {
     await prisma.match.updateMany({
@@ -502,7 +519,9 @@ export async function lockAndScore() {
       });
       if (usersNoPred.length === 0) continue;
 
-      if (autofill) {
+      // El 0-0 automático SOLO aplica en fase de grupos. En eliminatorias, quien
+      // no rellena no suma nada por ese partido (no se le pone 0-0).
+      if (autofill && m.stage === 'GROUP') {
         // Red de seguridad: crear 0-0 para los pagados sin predicción.
         await prisma.prediction.createMany({
           data: usersNoPred.map((u) => ({ userId: u.id, matchId: m.id, homeScore: 0, awayScore: 0 })),
