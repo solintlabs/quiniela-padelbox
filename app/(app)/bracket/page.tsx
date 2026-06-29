@@ -11,6 +11,39 @@ const KNOCKOUT_STAGES = ['R32', 'R16', 'QF', 'SF', 'THIRD', 'FINAL'] as const;
 const isPlaceholder = (s: string) =>
   /group\s|round of|third place|\bwinner\b|\brunner\b|\bwin\b|\bplace\b|\b\d(st|nd|rd|th)\b/i.test(s);
 
+// Orden de avance (sin el 3er puesto: ahí van los perdedores de semis).
+const ADVANCE_ORDER = ['R32', 'R16', 'QF', 'SF', 'FINAL'] as const;
+function nextStage(stage: string): string | null {
+  const i = (ADVANCE_ORDER as readonly string[]).indexOf(stage);
+  return i >= 0 && i < ADVANCE_ORDER.length - 1 ? ADVANCE_ORDER[i + 1] : null;
+}
+
+/**
+ * Quién avanza de un cruce terminado: 'home' | 'away' | null.
+ * 1) Por marcador FINAL (con prórroga). 2) Si quedó empate (penales), se mira
+ * qué equipo aparece en la siguiente ronda (lo rellena ESPN con el clasificado).
+ */
+function advancingSide(
+  m: { stage: string; status: string; homeTeam: string; awayTeam: string; homeScore: number | null; awayScore: number | null; finalHomeScore: number | null; finalAwayScore: number | null },
+  all: Array<{ stage: string; homeTeam: string; awayTeam: string }>,
+): 'home' | 'away' | null {
+  if (!(m.status === 'FINISHED' && m.homeScore !== null && m.awayScore !== null)) return null;
+  const fh = m.finalHomeScore ?? m.homeScore;
+  const fa = m.finalAwayScore ?? m.awayScore;
+  if (fh !== null && fa !== null) {
+    if (fh > fa) return 'home';
+    if (fa > fh) return 'away';
+  }
+  const next = nextStage(m.stage);
+  if (next) {
+    const inNext = (team: string) =>
+      all.some((x) => x.stage === next && (x.homeTeam === team || x.awayTeam === team));
+    if (!isPlaceholder(m.homeTeam) && inNext(m.homeTeam)) return 'home';
+    if (!isPlaceholder(m.awayTeam) && inNext(m.awayTeam)) return 'away';
+  }
+  return null;
+}
+
 /**
  * Vista de SOLO LECTURA del cuadro de eliminatorias. Muestra todas las rondas
  * (1/16 → Final) con sus cruces llenándose: equipos "por definir" mientras no
@@ -70,7 +103,7 @@ export default async function BracketPage() {
               </h2>
               <div className="space-y-2">
                 {r.items.map((m) => (
-                  <BracketMatch key={m.id} match={m} />
+                  <BracketMatch key={m.id} match={m} advancing={advancingSide(m, matches)} />
                 ))}
               </div>
             </section>
@@ -100,13 +133,20 @@ function teamName(s: string): string {
   return isPlaceholder(s) ? 'Por definir' : s;
 }
 
-function BracketMatch({ match: m }: { match: BracketMatchData }) {
+function BracketMatch({ match: m, advancing }: { match: BracketMatchData; advancing: 'home' | 'away' | null }) {
   const homeReal = !isPlaceholder(m.homeTeam);
   const awayReal = !isPlaceholder(m.awayTeam);
   const defined = homeReal && awayReal;
   const finished = m.status === 'FINISHED' && m.homeScore !== null && m.awayScore !== null;
   const live = m.status === 'LIVE';
   const pred = m.predictions[0];
+  // Clases para el equipo ganador (pasa de ronda) vs el eliminado.
+  const winCls = (side: 'home' | 'away') =>
+    advancing === side
+      ? 'font-semibold text-ink'
+      : advancing && advancing !== side
+        ? 'text-muted opacity-50 line-through decoration-1'
+        : '';
 
   return (
     <article
@@ -121,11 +161,12 @@ function BracketMatch({ match: m }: { match: BracketMatchData }) {
     >
       <div className="flex items-center justify-between gap-2">
         <span className={'flex items-center gap-1.5 min-w-0 ' + (homeReal ? '' : 'text-muted italic')}>
+          {advancing === 'home' && <span className="text-success shrink-0" title="Avanza">✓</span>}
           {homeReal && m.homeFlag && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={m.homeFlag} alt="" className="w-5 h-5 rounded-sm shrink-0 object-cover" />
+            <img src={m.homeFlag} alt="" className={'w-5 h-5 rounded-sm shrink-0 object-cover ' + (advancing === 'away' ? 'opacity-50' : '')} />
           )}
-          <span className="truncate">{teamName(m.homeTeam)}</span>
+          <span className={'truncate ' + winCls('home')}>{teamName(m.homeTeam)}</span>
         </span>
         <span className="font-display tabular-nums shrink-0 px-2 text-center leading-tight">
           {finished && m.finalHomeScore != null &&
@@ -141,11 +182,12 @@ function BracketMatch({ match: m }: { match: BracketMatchData }) {
           )}
         </span>
         <span className={'flex items-center gap-1.5 min-w-0 justify-end ' + (awayReal ? '' : 'text-muted italic')}>
-          <span className="truncate text-right">{teamName(m.awayTeam)}</span>
+          <span className={'truncate text-right ' + winCls('away')}>{teamName(m.awayTeam)}</span>
           {awayReal && m.awayFlag && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={m.awayFlag} alt="" className="w-5 h-5 rounded-sm shrink-0 object-cover" />
+            <img src={m.awayFlag} alt="" className={'w-5 h-5 rounded-sm shrink-0 object-cover ' + (advancing === 'home' ? 'opacity-50' : '')} />
           )}
+          {advancing === 'away' && <span className="text-success shrink-0" title="Avanza">✓</span>}
         </span>
       </div>
       <div className="flex items-center justify-between gap-2 mt-2 text-[11px] text-muted">
