@@ -336,7 +336,11 @@ export function GiftCardStudio({ sponsors }: Props) {
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
         const safe = (s: string) => s.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase();
-        a.download = `giftcard-${code ? safe(code) : safe(sponsor?.name ?? 'padelbox')}.png`;
+        // Nombre del archivo: el NOMBRE del ganador primero (para ubicarlo de un
+        // vistazo cuando hay varios), luego sponsor y el codigo al final (unicidad).
+        const who = ganador.trim() ? safe(ganador.trim()) : safe(sponsor?.name ?? 'padelbox');
+        const suffix = code ? `-${safe(code)}` : '';
+        a.download = `giftcard-${who}${suffix}.png`;
         a.click();
         URL.revokeObjectURL(a.href);
       }, 'image/png');
