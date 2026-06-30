@@ -182,6 +182,7 @@ export async function fetchRegulationScore(
     const json = (await res.json()) as {
       header?: {
         competitions?: Array<{
+          status?: { type?: { name?: string } };
           competitors?: Array<{
             homeAway?: string;
             linescores?: Array<{ displayValue?: string; value?: number }>;
@@ -191,6 +192,12 @@ export async function fetchRegulationScore(
     };
     const comp = json.header?.competitions?.[0];
     if (!comp?.competitors) return null;
+    // En tanda de penaltis ESPN añade un periodo extra con los GOLES de la
+    // tanda (p.ej. 3-4). Esos no son goles del partido: el último periodo es la
+    // tanda y hay que excluirlo del total, o el sanity check del llamador
+    // (suma de periodos == marcador final de ESPN) nunca cuadra y el KO no se
+    // puntúa jamás.
+    const isShootout = comp.status?.type?.name === 'STATUS_FINAL_PEN';
     const home = comp.competitors.find((c) => c.homeAway === 'home');
     const away = comp.competitors.find((c) => c.homeAway === 'away');
     const periodVal = (ls: { displayValue?: string; value?: number } | undefined): number => {
@@ -203,7 +210,8 @@ export async function fetchRegulationScore(
       const ls = c?.linescores;
       if (!Array.isArray(ls) || ls.length < 2) return null;
       const regScore = periodVal(ls[0]) + periodVal(ls[1]); // periodos 1 y 2 = 90 min
-      const total = ls.reduce((acc, p) => acc + periodVal(p), 0);
+      const goalPeriods = isShootout ? ls.slice(0, -1) : ls; // sin la tanda de penaltis
+      const total = goalPeriods.reduce((acc, p) => acc + periodVal(p), 0);
       return { reg: regScore, total };
     };
     const h = reg(home);
