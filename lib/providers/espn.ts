@@ -35,11 +35,21 @@ function makeRange(daysBack: number, daysAhead: number): { start: string; end: s
   return { start: fmt(start), end: fmt(end) };
 }
 
-const COMPETITIONS: Array<{ slug: string; range: () => { start: string; end: string } }> = [
-  // Mundial 2026: ventana fija de las fechas oficiales del torneo.
-  { slug: 'fifa.world', range: () => ({ start: '20260601', end: '20260731' }) },
+const COMPETITIONS: Array<{ slug: string; ranges: () => Array<{ start: string; end: string }> }> = [
+  // Mundial 2026: el scoreboard de ESPN devuelve como MÁXIMO ~100 eventos por
+  // llamada. El torneo tiene 104 partidos (72 grupos + 32 eliminatorias), así
+  // que pedir toda la ventana de una vez truncaba los 4 últimos (semifinales,
+  // 3er puesto y final). Se parte en tramos mensuales; cada uno queda por
+  // debajo del límite y se fusionan por event id en fetchWorldCupFixtures.
+  {
+    slug: 'fifa.world',
+    ranges: () => [
+      { start: '20260601', end: '20260630' },
+      { start: '20260701', end: '20260731' },
+    ],
+  },
   // La Liga: ventana rodante de -2 a +10 días para capturar jornadas en juego/próximas.
-  { slug: 'esp.1', range: () => makeRange(2, 10) },
+  { slug: 'esp.1', ranges: () => [makeRange(2, 10)] },
 ];
 
 /** Shape normalizado que devuelve este provider. Es lo único que sync.ts conoce. */
@@ -140,18 +150,23 @@ async function fetchCompetition(slug: string, start: string, end: string): Promi
  */
 export async function fetchWorldCupFixtures(): Promise<NormalizedFixture[]> {
   const results = await Promise.allSettled(
-    COMPETITIONS.map(async (c) => {
-      const { start, end } = c.range();
-      return fetchCompetition(c.slug, start, end);
-    }),
+    COMPETITIONS.flatMap((c) =>
+      c.ranges().map((r) => fetchCompetition(c.slug, r.start, r.end)),
+    ),
   );
 
-  const events: EspnEvent[] = [];
+  // Fusionar por event id: los tramos son disjuntos, pero deduplicar deja el
+  // fetch a prueba de solapes futuros (dos fixtures con el mismo id romperían
+  // el upsert por externalId del sync).
+  const byId = new Map<string, EspnEvent>();
   for (const r of results) {
-    if (r.status === 'fulfilled') events.push(...r.value);
-    else console.error('[espn] competition failed:', r.reason);
+    if (r.status === 'fulfilled') {
+      for (const e of r.value) byId.set(e.id, e);
+    } else {
+      console.error('[espn] competition failed:', r.reason);
+    }
   }
-  return events.map(toNormalized).filter((f): f is NormalizedFixture => f !== null);
+  return [...byId.values()].map(toNormalized).filter((f): f is NormalizedFixture => f !== null);
 }
 
 /**
@@ -329,8 +344,8 @@ function mapStage(slug: string | undefined, notes: Array<{ headline: string }> |
   const s = (slug ?? '').toLowerCase();
   const n = (notes?.[0]?.headline ?? '').toLowerCase();
   const t = s + ' ' + n;
-  if (t.includes('final') && !t.includes('semi') && !t.includes('quarter') && !t.includes('third')) return 'FINAL';
-  if (t.includes('third')) return 'THIRD';
+  if (t.includes('final') && !t.includes('semi') && !t.includes('quarter') && !t.includes('third') && !t.includes('3rd')) return 'FINAL';
+  if (t.includes('third') || t.includes('3rd')) return 'THIRD';
   if (t.includes('semi')) return 'SF';
   if (t.includes('quarter')) return 'QF';
   if (t.includes('round-of-16') || t.includes('round of 16') || t.includes('r16')) return 'R16';
