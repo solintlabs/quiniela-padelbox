@@ -1,0 +1,190 @@
+import Link from 'next/link';
+import { prisma } from '@/lib/db';
+import { requireTenantRolePage } from '@/lib/saas/permissions';
+import { competitionScope, fixtureScope } from '@/lib/saas/scope';
+import { describeRules, rulesOf, lockTimeFor } from '@/lib/saas/scoring';
+import { computeCompetitionRanking } from '@/lib/saas/ranking';
+import { hasAtLeastRole } from '@/lib/saas/roles';
+import { showsBranding } from '@/lib/saas/plans';
+import { formatDateTime } from '@/lib/format';
+
+export const metadata = { robots: { index: false, follow: false } };
+export const dynamic = 'force-dynamic';
+
+/**
+ * Vista del jugador: próximos partidos y clasificación de su club.
+ */
+export default async function TenantHomePage({ params }: { params: { tenant: string } }) {
+  const ctx = await requireTenantRolePage(params.tenant, 'PLAYER');
+  const { tenant, membership } = ctx;
+
+  const competition = await prisma.saasCompetition.findFirst({
+    where: competitionScope(tenant.id, { status: { in: ['OPEN', 'LOCKED', 'FINISHED'] } }),
+    orderBy: { createdAt: 'desc' },
+  });
+
+  if (!competition) {
+    return (
+      <Shell tenant={tenant}>
+        <p className="text-sm text-muted rounded-xl border border-line p-5">
+          {hasAtLeastRole(membership.role, 'ADMIN')
+            ? 'Aún no has abierto ninguna competición. Ve al panel para publicarla.'
+            : 'El organizador todavía no ha abierto la quiniela. Vuelve en un rato.'}
+        </p>
+      </Shell>
+    );
+  }
+
+  const now = new Date();
+  const [fixtures, ranking] = await Promise.all([
+    prisma.saasFixture.findMany({
+      where: fixtureScope(tenant.id, {
+        competitionId: competition.id,
+        kickoff: { gte: new Date(now.getTime() - 3 * 86_400_000) },
+      }),
+      orderBy: { kickoff: 'asc' },
+      take: 12,
+      include: { homeTeam: true, awayTeam: true },
+    }),
+    computeCompetitionRanking(tenant.id, competition.id),
+  ]);
+
+  const myEntries = await prisma.saasEntry.findMany({
+    where: { membershipId: membership.id, fixtureId: { in: fixtures.map((f) => f.id) } },
+    select: { fixtureId: true, homeScore: true, awayScore: true, points: true },
+  });
+  const entryByFixture = new Map(myEntries.map((e) => [e.fixtureId, e]));
+
+  return (
+    <Shell tenant={tenant}>
+      {!membership.hasPaid && (
+        <p className="rounded-xl border border-accent/40 bg-accent/5 p-4 text-sm">
+          Tu inscripción está pendiente de confirmar por el organizador. Podrás
+          pronosticar en cuanto la valide.
+        </p>
+      )}
+
+      <section className="space-y-3">
+        <div className="flex items-baseline justify-between gap-3 flex-wrap">
+          <h2 className="font-display text-xl">{competition.name}</h2>
+          <ul className="flex flex-wrap gap-1.5">
+            {describeRules(rulesOf(competition)).map((line) => (
+              <li key={line} className="text-[11px] rounded-full border border-line px-2 py-0.5 text-muted">
+                {line}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {fixtures.length === 0 ? (
+          <p className="text-sm text-muted rounded-xl border border-line p-5">
+            No hay partidos próximos.
+          </p>
+        ) : (
+          <ul className="space-y-2">
+            {fixtures.map((f) => {
+              const entry = entryByFixture.get(f.id);
+              const closesAt = lockTimeFor(f.kickoff, competition.lockOffsetMin);
+              const closed = f.lockedAt !== null || closesAt.getTime() <= now.getTime();
+              return (
+                <li key={f.id} className="rounded-xl border border-line bg-bg-elev p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium truncate">
+                        {f.homeTeam.name} <span className="text-muted">vs</span> {f.awayTeam.name}
+                      </p>
+                      <p className="text-xs text-muted mt-0.5">
+                        {formatDateTime(f.kickoff)}
+                        {f.round ? ` · ${f.round}` : ''}
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      {f.homeScore !== null && f.awayScore !== null ? (
+                        <p className="font-display text-lg tabular-nums">
+                          {f.homeScore}–{f.awayScore}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-muted">{closed ? 'Cerrado' : 'Abierto'}</p>
+                      )}
+                      {entry && (
+                        <p className="text-xs text-muted tabular-nums">
+                          Tú: {entry.homeScore}–{entry.awayScore}
+                          {entry.points !== null && ` · +${entry.points}`}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="font-display text-xl">Clasificación</h2>
+        {ranking.length === 0 ? (
+          <p className="text-sm text-muted">Aún no hay jugadores.</p>
+        ) : (
+          <ol className="rounded-xl border border-line bg-bg-elev divide-y divide-line overflow-hidden">
+            {ranking.slice(0, 20).map((row) => (
+              <li
+                key={row.membershipId}
+                className={
+                  'flex items-center gap-3 px-4 py-2.5 ' +
+                  (row.membershipId === membership.id ? 'bg-accent/5' : '')
+                }
+              >
+                <span className="w-7 text-sm text-muted tabular-nums">{row.position}</span>
+                <span className="flex-1 min-w-0 truncate text-sm">{row.displayName || 'Jugador'}</span>
+                <span className="text-xs text-muted tabular-nums">{row.exact} exactos</span>
+                <span className="font-display tabular-nums w-12 text-right">{row.points}</span>
+              </li>
+            ))}
+          </ol>
+        )}
+      </section>
+
+      {hasAtLeastRole(membership.role, 'ADMIN') && (
+        <Link
+          href={`/saas/${tenant.slug}/panel`}
+          className="inline-flex h-10 px-4 rounded-lg border border-line text-sm items-center"
+        >
+          ← Volver al panel
+        </Link>
+      )}
+    </Shell>
+  );
+}
+
+function Shell({
+  tenant,
+  children,
+}: {
+  tenant: { name: string; slug: string; accentColor: string; plan: 'FREE' | 'PRO' | 'CUSTOM' };
+  children: React.ReactNode;
+}) {
+  return (
+    <main className="min-h-screen bg-bg">
+      <div className="max-w-3xl mx-auto px-6 py-10 space-y-8">
+        <header>
+          <p
+            className="text-xs uppercase tracking-[0.28em] font-bold"
+            style={{ color: tenant.accentColor }}
+          >
+            {tenant.name}
+          </p>
+          <h1 className="font-display text-3xl mt-1">La quiniela</h1>
+        </header>
+
+        {children}
+
+        {showsBranding(tenant.plan) && (
+          <p className="text-[11px] text-muted text-center pt-6 border-t border-line">
+            Powered by QuinielaBOX
+          </p>
+        )}
+      </div>
+    </main>
+  );
+}
