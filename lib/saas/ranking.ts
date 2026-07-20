@@ -37,7 +37,16 @@ interface RankingInput {
  * Los empatados comparten posición (1, 2, 2, 4), que es lo que la gente
  * espera de una clasificación deportiva.
  */
-export function rankRows(input: RankingInput[], pointsExact: number): SaasRankingRow[] {
+export function rankRows(
+  input: RankingInput[],
+  /**
+   * Valores de puntos que cuentan como marcador exacto. Es una lista y no un
+   * número porque con el bonus de empate activo un exacto puede valer
+   * pointsExact o pointsExact + pointsDrawBonus.
+   */
+  exactValues: readonly number[],
+): SaasRankingRow[] {
+  const exactSet = new Set(exactValues);
   const rows = input.map((row) => {
     const scored = row.entries.filter((e) => e.points !== null);
     return {
@@ -46,7 +55,7 @@ export function rankRows(input: RankingInput[], pointsExact: number): SaasRankin
       displayName: row.displayName,
       joinedAt: row.joinedAt,
       played: scored.length,
-      exact: scored.filter((e) => e.points === pointsExact).length,
+      exact: scored.filter((e) => e.points !== null && exactSet.has(e.points)).length,
       points: scored.reduce((acc, e) => acc + (e.points ?? 0), 0),
     };
   });
@@ -83,9 +92,14 @@ export async function computeCompetitionRanking(
 ): Promise<SaasRankingRow[]> {
   const competition = await prisma.saasCompetition.findFirst({
     where: { id: competitionId, tenantId },
-    select: { id: true, pointsExact: true },
+    select: { id: true, pointsExact: true, pointsDrawBonus: true },
   });
   if (!competition) return [];
+
+  const exactValues = [
+    competition.pointsExact,
+    competition.pointsExact + competition.pointsDrawBonus,
+  ];
 
   const memberships = await prisma.saasMembership.findMany({
     where: { tenantId },
@@ -115,6 +129,6 @@ export async function computeCompetitionRanking(
       joinedAt: m.createdAt,
       entries: byMembership.get(m.id) ?? [],
     })),
-    competition.pointsExact,
+    exactValues,
   );
 }

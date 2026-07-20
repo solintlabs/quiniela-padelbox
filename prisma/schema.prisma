@@ -506,11 +506,23 @@ model SaasCompetition {
   format SaasCompetitionFormat @default(LEAGUE)
   status SaasCompetitionStatus @default(DRAFT)
 
-  // Puntuación propia. Reusa la fórmula pura de lib/scoring.ts sin tocarla.
-  pointsExact   Int @default(3)
-  pointsWinner  Int @default(1)
-  pointsBonus   Int @default(0)
-  lockOffsetMin Int @default(15)
+  // -------- Puntuación, a gusto del organizador --------
+  // El núcleo (exacto / ganador) reusa la fórmula pura de lib/scoring.ts.
+  // Los extras son aditivos y vienen a 0 = desactivados, así que una
+  // competición recién creada puntúa igual que PADELBOX (3/1/0).
+  //
+  // El marcador exacto es EXCLUYENTE: quien lo acierta se lleva pointsExact y
+  // no acumula los parciales, o acertar de pleno pagaría menos que fallar
+  // con estilo.
+  pointsExact     Int @default(3) // marcador clavado
+  pointsWinner    Int @default(1) // acertar 1X2
+  pointsGoalDiff  Int @default(0) // acertar la diferencia de goles
+  pointsTeamScore Int @default(0) // por cada equipo cuyo marcador aciertas
+  pointsDrawBonus Int @default(0) // extra por clavar un empate (es más difícil)
+  // Reservado para el pick de campeón del torneo (equivalente al +25 de
+  // PADELBOX). Se aplicará en el panel del organizador, aún sin usar.
+  pointsBonus     Int @default(0)
+  lockOffsetMin   Int @default(15)
 
   lastSyncedAt DateTime?
 
