@@ -165,8 +165,14 @@ model Tenant {
   trialEndsAt     DateTime?
   stripeCustomerId String?
   stripeSubId     String?
+  // Idioma por defecto del comercio. El usuario puede sobreescribirlo;
+  // prioridad final: usuario > tenant > dispositivo (Fase 6).
+  defaultLocale   String       @default("es")
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
+
+  memberships  SaasMembership[]
+  competitions SaasCompetition[]
 
   @@index([status])
   @@index([slug])
@@ -409,6 +415,191 @@ model WeeklyPrize {
   awardedAt     DateTime?           // cuándo se otorgó (sello temporal)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+}
+
+// =====================================================
+// SaaS multi-tenant — tablas propias (Fase 1)
+// =====================================================
+// REGLA: toda tabla del SaaS empieza por `Saas`. Ninguna tiene FK ni relación
+// hacia los modelos de PADELBOX (User, Match, Prediction, Rules...), así que
+// la quiniela actual no cambia de comportamiento ni de forma.
+//
+// El único puente con el mundo viejo es `SaasMembership.userId`, que guarda un
+// `User.id` como String suelto, SIN relation de Prisma: así un organizador
+// entra con el mismo magic link de siempre y el modelo `User` no se toca.
+// El precio es que no hay cascade automático — al borrar un usuario hay que
+// limpiar sus memberships en código (lib/saas/memberships.ts).
+
+enum SaasRole {
+  OWNER   // creó el tenant, único que toca facturación
+  ADMIN   // gestiona la competición y los jugadores
+  PLAYER  // solo pronostica
+}
+
+enum SaasProvider {
+  ESPN
+  MANUAL
+}
+
+enum SaasCompetitionFormat {
+  LEAGUE     // liga regular (jornadas)
+  GROUPS_KO  // grupos + eliminatorias (tipo Mundial)
+  KO         // solo eliminatorias
+  CUSTOM
+}
+
+enum SaasCompetitionStatus {
+  DRAFT     // el organizador la está montando, invisible para jugadores
+  OPEN      // admite pronósticos; la sincroniza el cron
+  LOCKED    // cerrada a nuevos pronósticos, aún se puntúa
+  FINISHED
+}
+
+enum SaasFixtureStatus {
+  SCHEDULED
+  LIVE
+  FINISHED
+  POSTPONED
+  CANCELLED
+}
+
+// Usuario ↔ tenant. Un mismo email puede ser OWNER de su club y PLAYER en el
+// club de otro sin duplicar cuenta.
+model SaasMembership {
+  id       String   @id @default(cuid())
+  tenantId String
+  userId   String   // -> User.id (sin relation, ver nota de arriba)
+  role     SaasRole @default(PLAYER)
+
+  // Pago off-platform del jugador al organizador (el bote del club).
+  // Equivalente por tenant a User.hasPaid, que sigue siendo solo de PADELBOX.
+  hasPaid  Boolean   @default(false)
+  paidAt   DateTime?
+  paidNote String?
+
+  // Nombre elegido para ESTE tenant. Null = se usa el del User.
+  displayName String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant  Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  entries SaasEntry[]
+
+  @@unique([tenantId, userId])
+  @@index([userId])
+  @@index([tenantId, role])
+}
+
+// Competición de un tenant. Cada una lleva SU config de puntos: aquí no hay
+// singleton global equivalente a Rules.
+model SaasCompetition {
+  id       String @id @default(cuid())
+  tenantId String
+  name     String
+  sport    String @default("soccer")
+
+  provider SaasProvider @default(MANUAL)
+  espnSlug String?      // "esp.1", "fifa.world"... verificado contra {core}/leagues
+  season   String?
+
+  format SaasCompetitionFormat @default(LEAGUE)
+  status SaasCompetitionStatus @default(DRAFT)
+
+  // Puntuación propia. Reusa la fórmula pura de lib/scoring.ts sin tocarla.
+  pointsExact   Int @default(3)
+  pointsWinner  Int @default(1)
+  pointsBonus   Int @default(0)
+  lockOffsetMin Int @default(15)
+
+  lastSyncedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant   Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  teams    SaasTeam[]
+  fixtures SaasFixture[]
+
+  @@index([tenantId, status])
+  @@index([status, provider])
+}
+
+// Equipos de una competición (importados de ESPN o creados a mano).
+model SaasTeam {
+  id            String  @id @default(cuid())
+  competitionId String
+  name          String
+  shortName     String?
+  logoUrl       String?
+  espnId        String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  competition  SaasCompetition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  homeFixtures SaasFixture[]   @relation("SaasFixtureHome")
+  awayFixtures SaasFixture[]   @relation("SaasFixtureAway")
+
+  @@unique([competitionId, name])
+  @@unique([competitionId, espnId])
+  @@index([competitionId])
+}
+
+// Partido de una competición.
+model SaasFixture {
+  id            String @id @default(cuid())
+  competitionId String
+  homeTeamId    String
+  awayTeamId    String
+
+  kickoff DateTime
+  // Texto libre de la fase: "Jornada 12", "Grupo A", "Octavos".
+  round   String?
+
+  homeScore Int?
+  awayScore Int?
+  status    SaasFixtureStatus @default(SCHEDULED)
+
+  lockedAt DateTime?
+  scoredAt DateTime?
+
+  source     SaasProvider @default(MANUAL)
+  externalId String?      // ESPN event.id
+  // Si true, el sync del proveedor NO pisa marcador ni estado (edición manual).
+  manualResult Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  competition SaasCompetition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  homeTeam    SaasTeam        @relation("SaasFixtureHome", fields: [homeTeamId], references: [id], onDelete: Cascade)
+  awayTeam    SaasTeam        @relation("SaasFixtureAway", fields: [awayTeamId], references: [id], onDelete: Cascade)
+  entries     SaasEntry[]
+
+  @@unique([competitionId, externalId])
+  @@index([competitionId, kickoff])
+  @@index([status])
+}
+
+// Pronóstico de un jugador para un partido. Cuelga de la membership, no del
+// User: así un pronóstico siempre pertenece a un tenant concreto.
+model SaasEntry {
+  id           String @id @default(cuid())
+  membershipId String
+  fixtureId    String
+  homeScore    Int
+  awayScore    Int
+  points       Int?   // null hasta que el scoring lo calcula
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  membership SaasMembership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  fixture    SaasFixture    @relation(fields: [fixtureId], references: [id], onDelete: Cascade)
+
+  @@unique([membershipId, fixtureId])
+  @@index([fixtureId])
 }
 
 // Métodos de pago configurables desde /admin/pagos.
