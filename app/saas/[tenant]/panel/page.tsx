@@ -5,6 +5,7 @@ import { competitionScope, membershipScope } from '@/lib/saas/scope';
 import { describeRules, rulesOf } from '@/lib/saas/scoring';
 import { PLANS, limitsFor } from '@/lib/saas/plans';
 import { formatDateTime } from '@/lib/format';
+import { UpgradeButton } from './UpgradeButton';
 
 export const metadata = { robots: { index: false, follow: false } };
 export const dynamic = 'force-dynamic';
@@ -18,10 +19,11 @@ export default async function PanelPage({
   searchParams,
 }: {
   params: { tenant: string };
-  searchParams: { nueva?: string; aviso?: string };
+  searchParams: { nueva?: string; aviso?: string; upgraded?: string };
 }) {
   const ctx = await requireTenantRolePage(params.tenant, 'ADMIN');
   const { tenant } = ctx;
+  const isOwner = ctx.membership.role === 'OWNER';
 
   const [competitions, players, paidCount] = await Promise.all([
     prisma.saasCompetition.findMany({
@@ -58,6 +60,23 @@ export default async function PanelPage({
           </Link>
         </header>
 
+        {searchParams.upgraded && (
+          <p className="rounded-xl border border-accent/40 bg-accent/5 p-4 text-sm">
+            ¡Listo! Tu plan <strong>Pro</strong> está activo. Ya tienes más jugadores,
+            más competencias y sin anuncios.
+          </p>
+        )}
+        {isOwner && tenant.plan === 'FREE' && (
+          <section className="rounded-2xl border border-accent/40 bg-accent/5 p-5 sm:p-6">
+            <p className="text-xs uppercase tracking-[0.28em] text-accent font-bold">Plan Pro</p>
+            <h2 className="font-display text-xl mt-1">Sube a Pro cuando tu quiniela crezca</h2>
+            <p className="text-sm text-muted mt-1 mb-4">
+              Hasta 500 jugadores, 5 competencias a la vez, catálogo de 221 ligas y sin anuncios
+              para tus jugadores. $9/mes, se paga aquí en la web.
+            </p>
+            <UpgradeButton slug={tenant.slug} />
+          </section>
+        )}
         {searchParams.nueva && (
           <p className="rounded-xl border border-accent/40 bg-accent/5 p-4 text-sm">
             Tu quiniela está creada. Comparte el enlace de invitación y empieza a

@@ -54,7 +54,7 @@ export const PLANS: Record<TenantPlan, Plan> = {
   PRO: {
     id: 'PRO',
     name: 'Pro',
-    priceUsd: 29,
+    priceUsd: 9,
     period: 'mes',
     tagline: 'Para clubes y comercios que lo hacen en serio.',
     limits: {

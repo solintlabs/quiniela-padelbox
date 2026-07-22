@@ -5,7 +5,8 @@
   "description": "Quiniela Mundial 2026 PADELBOX — Next.js 14 + Prisma + Neon + NextAuth",
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && prisma migrate deploy && next build",
+    "build": "prisma generate && npm run migrate:ci && next build",
+    "migrate:ci": "if [ \"$VERCEL_ENV\" = production ]; then prisma migrate deploy; else echo 'skip migrate (no es production)'; fi",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
@@ -36,6 +37,7 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "resend": "^4.0.1",
+    "stripe": "^22.3.2",
     "tailwind-merge": "^2.5.5",
     "zod": "^3.23.8"
   },
