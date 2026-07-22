@@ -42,7 +42,7 @@ export default async function LoginPage({
   searchParams: Promise<{ closed?: string }>;
 }) {
   const session = await auth();
-  if (session?.user) redirect('/');
+  if (session?.user) redirect('/mi-quiniela');
 
   const params = await searchParams;
   const showClosedAttempt = params.closed === '1';
@@ -189,7 +189,7 @@ export default async function LoginPage({
                 }
               }
 
-              await signIn('resend', { email, redirectTo: '/' });
+              await signIn('resend', { email, redirectTo: '/mi-quiniela' });
             }}
             className="space-y-2"
           >
@@ -214,7 +214,7 @@ export default async function LoginPage({
               <form
                 action={async () => {
                   'use server';
-                  await signIn('google', { redirectTo: '/' });
+                  await signIn('google', { redirectTo: '/mi-quiniela' });
                 }}
               >
                 <Button type="submit" variant="secondary" size="lg" className="w-full">
