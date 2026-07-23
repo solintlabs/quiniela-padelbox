@@ -6,6 +6,7 @@ import { describeRules, rulesOf } from '@/lib/saas/scoring';
 import { PLANS, limitsFor } from '@/lib/saas/plans';
 import { formatDateTime } from '@/lib/format';
 import { UpgradeButton } from './UpgradeButton';
+import { SyncButton } from './SyncButton';
 
 export const metadata = { robots: { index: false, follow: false } };
 export const dynamic = 'force-dynamic';
@@ -145,6 +146,7 @@ export default async function PanelPage({
                     </li>
                   ))}
                 </ul>
+                {c.provider === 'ESPN' && <SyncButton slug={tenant.slug} competitionId={c.id} />}
               </article>
             ))
           )}

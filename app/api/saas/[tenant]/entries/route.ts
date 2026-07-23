@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { requireTenantMemberApi } from '@/lib/saas/permissions';
 import { entryScope, fixtureScope } from '@/lib/saas/scope';
 import { canSubmitEntry } from '@/lib/saas/scoring';
+import { hasAtLeastRole } from '@/lib/saas/roles';
 
 /**
  * Pronósticos del jugador que hace la petición.
@@ -54,7 +55,8 @@ export async function POST(
 
   // Igual que en PADELBOX: sin pagar la entrada al bote no se pronostica.
   // Lo marca el organizador a mano; el dinero nunca pasa por la app.
-  if (!ctx.membership.hasPaid) {
+  // Excepción: el organizador (ADMIN/OWNER) siempre puede — no se paga a sí mismo.
+  if (!ctx.membership.hasPaid && !hasAtLeastRole(ctx.membership.role, 'ADMIN')) {
     return Response.json(
       {
         error: 'Inscripción pendiente',

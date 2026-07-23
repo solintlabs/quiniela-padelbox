@@ -119,7 +119,9 @@ export async function POST(
       espnSlug: data.provider === 'ESPN' ? data.espnSlug : null,
       season: data.season ?? null,
       format: data.format,
-      status: 'DRAFT',
+      // Abierta desde el minuto uno: acepta pronósticos y entra en el sync.
+      // El organizador puede cerrarla luego desde el panel si quiere.
+      status: 'OPEN',
       pointsExact: data.pointsExact,
       pointsWinner: data.pointsWinner,
       pointsGoalDiff: data.pointsGoalDiff,

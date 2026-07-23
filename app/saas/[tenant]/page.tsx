@@ -7,6 +7,7 @@ import { computeCompetitionRanking } from '@/lib/saas/ranking';
 import { hasAtLeastRole } from '@/lib/saas/roles';
 import { showsBranding } from '@/lib/saas/plans';
 import { formatDateTime } from '@/lib/format';
+import { TenantFixtures, type FixtureVM } from './TenantFixtures';
 
 export const metadata = { robots: { index: false, follow: false } };
 export const dynamic = 'force-dynamic';
@@ -55,6 +56,29 @@ export default async function TenantHomePage({ params }: { params: { tenant: str
   });
   const entryByFixture = new Map(myEntries.map((e) => [e.fixtureId, e]));
 
+  // El organizador (ADMIN/OWNER) siempre puede pronosticar; el jugador, cuando
+  // el organizador confirma su inscripción.
+  const canPredict = membership.hasPaid || hasAtLeastRole(membership.role, 'ADMIN');
+  const fixtureVMs: FixtureVM[] = fixtures.map((f) => {
+    const closed =
+      f.lockedAt !== null ||
+      lockTimeFor(f.kickoff, competition.lockOffsetMin).getTime() <= now.getTime();
+    const e = entryByFixture.get(f.id);
+    return {
+      id: f.id,
+      home: f.homeTeam.name,
+      away: f.awayTeam.name,
+      kickoff: formatDateTime(f.kickoff),
+      round: f.round,
+      closed,
+      homeScore: f.homeScore,
+      awayScore: f.awayScore,
+      myHome: e?.homeScore ?? null,
+      myAway: e?.awayScore ?? null,
+      points: e?.points ?? null,
+    };
+  });
+
   return (
     <Shell tenant={tenant}>
       {!membership.hasPaid && (
@@ -76,49 +100,7 @@ export default async function TenantHomePage({ params }: { params: { tenant: str
           </ul>
         </div>
 
-        {fixtures.length === 0 ? (
-          <p className="text-sm text-muted rounded-xl border border-line p-5">
-            No hay partidos próximos.
-          </p>
-        ) : (
-          <ul className="space-y-2">
-            {fixtures.map((f) => {
-              const entry = entryByFixture.get(f.id);
-              const closesAt = lockTimeFor(f.kickoff, competition.lockOffsetMin);
-              const closed = f.lockedAt !== null || closesAt.getTime() <= now.getTime();
-              return (
-                <li key={f.id} className="rounded-xl border border-line bg-bg-elev p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium truncate">
-                        {f.homeTeam.name} <span className="text-muted">vs</span> {f.awayTeam.name}
-                      </p>
-                      <p className="text-xs text-muted mt-0.5">
-                        {formatDateTime(f.kickoff)}
-                        {f.round ? ` · ${f.round}` : ''}
-                      </p>
-                    </div>
-                    <div className="text-right shrink-0">
-                      {f.homeScore !== null && f.awayScore !== null ? (
-                        <p className="font-display text-lg tabular-nums">
-                          {f.homeScore}–{f.awayScore}
-                        </p>
-                      ) : (
-                        <p className="text-xs text-muted">{closed ? 'Cerrado' : 'Abierto'}</p>
-                      )}
-                      {entry && (
-                        <p className="text-xs text-muted tabular-nums">
-                          Tú: {entry.homeScore}–{entry.awayScore}
-                          {entry.points !== null && ` · +${entry.points}`}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
+        <TenantFixtures slug={tenant.slug} canPredict={canPredict} fixtures={fixtureVMs} />
       </section>
 
       <section className="space-y-3">

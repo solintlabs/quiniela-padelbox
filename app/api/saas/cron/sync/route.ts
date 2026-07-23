@@ -1,6 +1,8 @@
+import { prisma } from '@/lib/db';
 import { verifyCronSecret } from '@/lib/permissions';
 import { requireSaasEnabled } from '@/lib/saas/flags';
 import { syncOpenCompetitions } from '@/lib/saas/sync';
+import { lockDueFixtures, scoreCompetition } from '@/lib/saas/scoring';
 
 /**
  * POST /api/saas/cron/sync — sincroniza las competiciones ESPN abiertas.
@@ -27,10 +29,27 @@ async function handle(req: Request): Promise<Response> {
   const startedAt = Date.now();
   try {
     const result = await syncOpenCompetitions();
+
+    // Tras importar resultados: cerrar los partidos que ya toca y puntuar los
+    // finalizados. Sin esto los puntos se quedaban en null y el ranking en 0.
+    const open = await prisma.saasCompetition.findMany({
+      where: { status: 'OPEN' },
+      select: { id: true, lockOffsetMin: true },
+    });
+    let locked = 0;
+    let scored = 0;
+    for (const c of open) {
+      locked += await lockDueFixtures(c);
+      const s = await scoreCompetition(c.id);
+      scored += s.entriesScored;
+    }
+
     return Response.json({
       ok: true,
       ms: Date.now() - startedAt,
       ...result,
+      locked,
+      scored,
     });
   } catch (e) {
     const error = e instanceof Error ? e.message : String(e);
