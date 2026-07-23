@@ -8,6 +8,7 @@ import { formatDateTime } from '@/lib/format';
 import { UpgradeButton } from './UpgradeButton';
 import { SyncButton } from './SyncButton';
 import { PlayersManager } from './PlayersManager';
+import { CompetitionSettings } from './CompetitionSettings';
 
 export const metadata = { robots: { index: false, follow: false } };
 export const dynamic = 'force-dynamic';
@@ -147,7 +148,22 @@ export default async function PanelPage({
                     </li>
                   ))}
                 </ul>
-                {c.provider === 'ESPN' && <SyncButton slug={tenant.slug} competitionId={c.id} />}
+                <div className="flex flex-wrap gap-2 items-start">
+                  {c.provider === 'ESPN' && <SyncButton slug={tenant.slug} competitionId={c.id} />}
+                  <CompetitionSettings
+                    slug={tenant.slug}
+                    competitionId={c.id}
+                    status={c.status}
+                    initial={{
+                      pointsExact: c.pointsExact,
+                      pointsWinner: c.pointsWinner,
+                      pointsGoalDiff: c.pointsGoalDiff,
+                      pointsTeamScore: c.pointsTeamScore,
+                      pointsDrawBonus: c.pointsDrawBonus,
+                      lockOffsetMin: c.lockOffsetMin,
+                    }}
+                  />
+                </div>
               </article>
             ))
           )}
