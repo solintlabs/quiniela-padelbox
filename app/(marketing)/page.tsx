@@ -210,7 +210,7 @@ export default async function LandingPage() {
   // Los usuarios que ya tienen sesión van directo a su quiniela; la home
   // pública es solo para visitantes.
   const session = await auth();
-  if (session?.user) redirect('/mi-quiniela');
+  if (session?.user) redirect('/mis-quinielas');
 
   return (
     <main className="lz">

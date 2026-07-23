@@ -41,7 +41,7 @@ export default async function LoginPage({
   searchParams: Promise<{ closed?: string }>;
 }) {
   const session = await auth();
-  if (session?.user) redirect('/mi-quiniela');
+  if (session?.user) redirect('/mis-quinielas');
 
   const params = await searchParams;
   const showClosedAttempt = params.closed === '1';
@@ -124,7 +124,7 @@ export default async function LoginPage({
                 }
               }
 
-              await signIn('resend', { email, redirectTo: '/mi-quiniela' });
+              await signIn('resend', { email, redirectTo: '/mis-quinielas' });
             }}
             className="space-y-2"
           >
@@ -146,7 +146,7 @@ export default async function LoginPage({
               <form
                 action={async () => {
                   'use server';
-                  await signIn('google', { redirectTo: '/mi-quiniela' });
+                  await signIn('google', { redirectTo: '/mis-quinielas' });
                 }}
               >
                 <button
@@ -167,7 +167,7 @@ export default async function LoginPage({
               <form
                 action={async () => {
                   'use server';
-                  await signIn('apple', { redirectTo: '/mi-quiniela' });
+                  await signIn('apple', { redirectTo: '/mis-quinielas' });
                 }}
               >
                 <button
