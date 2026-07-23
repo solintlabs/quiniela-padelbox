@@ -7,6 +7,7 @@ import { PLANS, limitsFor } from '@/lib/saas/plans';
 import { formatDateTime } from '@/lib/format';
 import { UpgradeButton } from './UpgradeButton';
 import { SyncButton } from './SyncButton';
+import { PlayersManager } from './PlayersManager';
 
 export const metadata = { robots: { index: false, follow: false } };
 export const dynamic = 'force-dynamic';
@@ -151,6 +152,8 @@ export default async function PanelPage({
             ))
           )}
         </section>
+
+        <PlayersManager slug={tenant.slug} />
       </div>
     </main>
   );
