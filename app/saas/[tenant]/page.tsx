@@ -5,7 +5,8 @@ import { competitionScope, fixtureScope } from '@/lib/saas/scope';
 import { describeRules, rulesOf, lockTimeFor } from '@/lib/saas/scoring';
 import { computeCompetitionRanking } from '@/lib/saas/ranking';
 import { hasAtLeastRole } from '@/lib/saas/roles';
-import { showsBranding } from '@/lib/saas/plans';
+import { showsBranding, showsAds } from '@/lib/saas/plans';
+import { tenantThemeVars } from '@/lib/saas/theme';
 import { formatDateTime } from '@/lib/format';
 import { TenantFixtures, type FixtureVM } from './TenantFixtures';
 
@@ -155,7 +156,7 @@ function Shell({
   children: React.ReactNode;
 }) {
   return (
-    <main className="min-h-screen bg-bg">
+    <main className="min-h-screen bg-bg" style={tenantThemeVars(tenant.accentColor)}>
       <div className="max-w-3xl mx-auto px-6 py-10 space-y-8">
         <header>
           <p
@@ -169,9 +170,24 @@ function Shell({
 
         {children}
 
+        {showsAds(tenant.plan) && (
+          <a
+            href="/"
+            className="block rounded-xl border border-dashed border-line bg-bg-elev p-3 text-center text-xs text-muted hover:border-accent transition-colors"
+          >
+            Publicidad ·{' '}
+            <span className="text-accent font-semibold">
+              Crea tu propia quiniela gratis en QuinielaBOX →
+            </span>
+          </a>
+        )}
+
         {showsBranding(tenant.plan) && (
           <p className="text-[11px] text-muted text-center pt-6 border-t border-line">
-            Powered by QuinielaBOX
+            Powered by QuinielaBOX ·{' '}
+            <a href="/" className="hover:text-accent">
+              crea la tuya
+            </a>
           </p>
         )}
       </div>

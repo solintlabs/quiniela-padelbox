@@ -10,6 +10,8 @@ import { SyncButton } from './SyncButton';
 import { PlayersManager } from './PlayersManager';
 import { CompetitionSettings } from './CompetitionSettings';
 import { FixturesManager } from './FixturesManager';
+import { AddCompetition } from './AddCompetition';
+import { tenantThemeVars } from '@/lib/saas/theme';
 
 export const metadata = { robots: { index: false, follow: false } };
 export const dynamic = 'force-dynamic';
@@ -44,7 +46,7 @@ export default async function PanelPage({
   const inviteUrl = `/saas/${tenant.slug}/unirse`;
 
   return (
-    <main className="min-h-screen bg-bg">
+    <main className="min-h-screen bg-bg" style={tenantThemeVars(tenant.accentColor)}>
       <div className="max-w-4xl mx-auto px-6 py-10 space-y-8">
         <header className="flex items-start justify-between gap-4 flex-wrap">
           <div>
@@ -169,6 +171,7 @@ export default async function PanelPage({
               </article>
             ))
           )}
+          {competitions.length < limits.maxCompetitions && <AddCompetition slug={tenant.slug} />}
         </section>
 
         <PlayersManager slug={tenant.slug} />
