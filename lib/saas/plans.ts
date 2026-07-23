@@ -46,7 +46,10 @@ export const PLANS: Record<TenantPlan, Plan> = {
     limits: {
       maxPlayers: 15,
       maxCompetitions: 1,
-      espnCatalog: false,
+      // Catálogo ESPN habilitado también en FREE: sin él, y sin la entrada
+      // manual de partidos aún construida, el plan gratis sería inservible.
+      // El Pro se diferencia por jugadores, competencias y sin anuncios.
+      espnCatalog: true,
       removeBranding: false,
       showsAds: true,
     },

@@ -29,9 +29,17 @@ export default async function TenantHomePage({ params }: { params: { tenant: str
       <Shell tenant={tenant}>
         <p className="text-sm text-muted rounded-xl border border-line p-5">
           {hasAtLeastRole(membership.role, 'ADMIN')
-            ? 'Aún no has abierto ninguna competición. Ve al panel para publicarla.'
+            ? 'Todavía no hay ninguna competición en esta quiniela. Ve al panel para crearla.'
             : 'El organizador todavía no ha abierto la quiniela. Vuelve en un rato.'}
         </p>
+        {hasAtLeastRole(membership.role, 'ADMIN') && (
+          <Link
+            href={`/saas/${tenant.slug}/panel`}
+            className="inline-flex h-11 px-5 rounded-lg bg-accent text-accent-fg font-display tracking-tight text-sm items-center"
+          >
+            Ir al panel →
+          </Link>
+        )}
       </Shell>
     );
   }

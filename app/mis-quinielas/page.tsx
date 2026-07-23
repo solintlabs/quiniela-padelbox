@@ -35,6 +35,7 @@ export default async function MisQuinielasPage() {
         hasPaid: true,
         championPick: true,
         role: true,
+        createdAt: true,
         _count: { select: { predictions: true } },
       },
     }),
@@ -45,10 +46,14 @@ export default async function MisQuinielasPage() {
     }),
   ]);
 
-  // ¿Participa en PADELBOX? (heurística: tiene datos reales ahí)
+  // ¿Participa en PADELBOX? Band-aid transitorio hasta que PADELBOX sea un tenant:
+  // los 143 usuarios existentes (creados antes del lanzamiento SaaS) son de
+  // PADELBOX. Los nuevos (post-lanzamiento, vía SaaS) no, salvo actividad real.
+  const legacyBefore = new Date(process.env.PADELBOX_LEGACY_BEFORE ?? '2026-07-23T00:00:00Z');
   const inPadelbox =
     !!padelUser &&
-    (padelUser.hasPaid ||
+    (padelUser.createdAt < legacyBefore ||
+      padelUser.hasPaid ||
       !!padelUser.championPick ||
       padelUser._count.predictions > 0 ||
       padelUser.role === 'ADMIN');
