@@ -5,6 +5,24 @@
 
 ---
 
+## 🟢 Sesión 2 — el SaaS ya es JUGABLE de punta a punta (plan FREE)
+
+El backend estaba hecho pero **sin cablear**. Cableado en esta sesión (todo live):
+- Competencia se crea **OPEN** (no atascada en DRAFT).
+- **UI de pronóstico** interactiva en `/saas/[slug]` (steppers → POST entries). Fichero `app/saas/[tenant]/TenantFixtures.tsx`.
+- **Scoring cableado**: el cron `/api/saas/cron/sync` ahora hace lock + score, y **quedó programado en `vercel.json`** (cada hora). Antes no corría.
+- Botón manual **"↻ Actualizar partidos y puntos"** en el panel → `POST /api/saas/[tenant]/competitions/[id]/sync`.
+- **Gestión de jugadores** en el panel (`PlayersManager.tsx`) → marcar pagados (PATCH players).
+- El **OWNER siempre puede pronosticar** (no se paga a sí mismo).
+- **Login con Google** activo; **hub `/mis-quinielas`** post-login; login genérico QuinielaBOX.
+- **Apple**: provider aislado en try/catch (no puede tumbar el login); `.p8` corregido en Vercel. Falta verificación de dominio para que funcione al pulsarlo.
+
+**Flujo testeable como cliente (FREE):** login → `/mis-quinielas` → crear en `/saas/nueva` → panel "Actualizar partidos y puntos" → pronosticar → invitar → marcar pagados → puntos. Pro vía botón + Stripe.
+
+**Backlog SaaS (pendiente, ver también gaps abajo):** bonus de campeón (+25, necesita migración additive — hacerla con cuidado, ojo al drift de KnockoutNotice del PR), sponsors por tenant, logo/tema del club, partidos a mano (no-ESPN), editar reglas tras crear, demo-tenant público, PDF/push.
+
+---
+
 ## ✅ Ya está LIVE en producción (quinielabox.com)
 
 - **Landing SaaS en la raíz `/`** (rediseño: estadio, juegos, demo, planes, features). Los usuarios **ya logueados** se redirigen solos a `/mi-quiniela`.
