@@ -9,6 +9,7 @@ import { UpgradeButton } from './UpgradeButton';
 import { SyncButton } from './SyncButton';
 import { PlayersManager } from './PlayersManager';
 import { CompetitionSettings } from './CompetitionSettings';
+import { FixturesManager } from './FixturesManager';
 
 export const metadata = { robots: { index: false, follow: false } };
 export const dynamic = 'force-dynamic';
@@ -164,6 +165,7 @@ export default async function PanelPage({
                     }}
                   />
                 </div>
+                <FixturesManager slug={tenant.slug} competitionId={c.id} provider={c.provider} />
               </article>
             ))
           )}
