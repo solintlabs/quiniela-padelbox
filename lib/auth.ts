@@ -30,9 +30,10 @@ const hasApple =
   !!process.env.APPLE_PRIVATE_KEY;
 
 /**
- * El "client secret" de Apple es un JWT ES256 firmado con la key .p8. Caduca
- * (máx 6 meses), así que en vez de guardarlo a mano lo generamos aquí desde
- * los datos en env y lo cacheamos. Se regenera solo — nada que renovar.
+ * El "client secret" de Apple es un JWT ES256 firmado con la key .p8. Se genera
+ * aquí desde los datos en env y se cachea. Si el .p8 está mal, esto LANZA — por
+ * eso el caller lo envuelve en try/catch: un problema de Apple NUNCA debe tumbar
+ * el resto del login (Resend + Google).
  */
 let appleSecretCache: { jwt: string; exp: number } | null = null;
 async function appleClientSecret(): Promise<string> {
@@ -54,6 +55,60 @@ async function appleClientSecret(): Promise<string> {
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth(async () => {
+  const providers: NextAuthConfig['providers'] = [
+    Resend({
+      apiKey: process.env.RESEND_API_KEY,
+      from: process.env.EMAIL_FROM ?? 'onboarding@resend.dev',
+      async sendVerificationRequest({ identifier: to, url, provider }) {
+        const origin = new URL(url).origin;
+        const { subject, html, text } = buildMagicLinkEmail({ url, origin });
+        const res = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${provider.apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ from: provider.from, to, subject, html, text }),
+        });
+        if (!res.ok) {
+          const body = await res.text().catch(() => '');
+          throw new Error(`Resend error ${res.status}: ${body}`);
+        }
+      },
+    }),
+  ];
+
+  if (hasGoogle) {
+    providers.push(
+      Google({
+        clientId: process.env.GOOGLE_CLIENT_ID!,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+        // Google verifica los emails → seguro vincular al usuario que ya existe.
+        allowDangerousEmailAccountLinking: true,
+      }),
+    );
+  }
+
+  // Apple aislado: si el secret falla (p.ej. .p8 mal pegado), se salta y el
+  // resto del login sigue funcionando. Nunca tumba la auth.
+  if (hasApple) {
+    try {
+      const clientSecret = await appleClientSecret();
+      providers.push(
+        Apple({
+          clientId: process.env.AUTH_APPLE_ID!,
+          clientSecret,
+          allowDangerousEmailAccountLinking: true,
+        }),
+      );
+    } catch (e) {
+      console.error(
+        '[auth] Sign in with Apple deshabilitado (secret inválido):',
+        e instanceof Error ? e.message : e,
+      );
+    }
+  }
+
   return {
     adapter: PrismaAdapter(prisma),
     session: { strategy: 'database' },
@@ -61,51 +116,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth(async () => {
       signIn: '/login',
       verifyRequest: '/login/verify',
     },
-    providers: [
-      Resend({
-        apiKey: process.env.RESEND_API_KEY,
-        from: process.env.EMAIL_FROM ?? 'onboarding@resend.dev',
-        // HTML personalizado branded
-        async sendVerificationRequest({ identifier: to, url, provider }) {
-          const origin = new URL(url).origin;
-          const { subject, html, text } = buildMagicLinkEmail({ url, origin });
-
-          const res = await fetch('https://api.resend.com/emails', {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${provider.apiKey}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ from: provider.from, to, subject, html, text }),
-          });
-
-          if (!res.ok) {
-            const body = await res.text().catch(() => '');
-            throw new Error(`Resend error ${res.status}: ${body}`);
-          }
-        },
-      }),
-      ...(hasGoogle
-        ? [
-            Google({
-              clientId: process.env.GOOGLE_CLIENT_ID!,
-              clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-              // Google verifica los emails → seguro vincular al usuario que ya
-              // existe con el mismo email. Sin esto: "OAuthAccountNotLinked".
-              allowDangerousEmailAccountLinking: true,
-            }),
-          ]
-        : []),
-      ...(hasApple
-        ? [
-            Apple({
-              clientId: process.env.AUTH_APPLE_ID!,
-              clientSecret: await appleClientSecret(),
-              allowDangerousEmailAccountLinking: true,
-            }),
-          ]
-        : []),
-    ],
+    providers,
     callbacks: {
       async session({ session, user }) {
         if (session.user && user) {
