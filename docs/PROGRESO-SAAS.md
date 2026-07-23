@@ -19,7 +19,22 @@ El backend estaba hecho pero **sin cablear**. Cableado en esta sesión (todo liv
 
 **Flujo testeable como cliente (FREE):** login → `/mis-quinielas` → crear en `/saas/nueva` → panel "Actualizar partidos y puntos" → pronosticar → invitar → marcar pagados → puntos. Pro vía botón + Stripe.
 
-**Backlog SaaS (pendiente, ver también gaps abajo):** bonus de campeón (+25, necesita migración additive — hacerla con cuidado, ojo al drift de KnockoutNotice del PR), sponsors por tenant, logo/tema del club, partidos a mano (no-ESPN), editar reglas tras crear, demo-tenant público, PDF/push.
+**Panel del organizador (ya construido, tipo admin PADELBOX):**
+- Crear/añadir competición (ESPN o manual) — `AddCompetition.tsx`.
+- Editar puntos y cierre + abrir/cerrar — `CompetitionSettings.tsx` + PATCH `competitions/[id]`.
+- Partidos y resultados: ver, editar/fijar marcador a mano (recalcula al instante), añadir partidos manuales — `FixturesManager.tsx` + rutas `fixtures`.
+- Gestión de jugadores (marcar pagados) — `PlayersManager.tsx`.
+- Sincronizar ESPN + puntuar a demanda — `SyncButton.tsx`.
+- **Color del tenant** aplicado a TODO el UI (`lib/saas/theme.ts` → override de `--accent`).
+
+**Modelo FREE vs PRO (ya diferenciado):**
+- Límites en `lib/saas/plans.ts` (enforced en las APIs): FREE 15 jugadores / 1 competencia / **con anuncios** / marca QuinielaBOX; PRO $9 → 500 / 5 / **sin anuncios** / sin marca; CUSTOM ilimitado.
+- FREE muestra slot de publicidad (self-promo QuinielaBOX) + "Powered by QuinielaBOX"; PRO los quita.
+- **Nota:** FREE usa catálogo ESPN (se habilitó porque la entrada manual sola no bastaba). Si se quiere reservar el catálogo a PRO, hay que construir bien la entrada manual primero.
+
+**Backlog SaaS pendiente:** bonus de campeón (+25, **necesita tabla nueva `SaasChampionPick` + migración additive** — con cuidado, ojo al drift de KnockoutNotice del PR), sponsors por tenant, subida de logo (blob), demo-tenant público, PDF/push, bracket KO.
+
+**⚠️ App móvil (repo aparte — NO está en esta carpeta):** el usuario pide adaptar la app Expo (`solintlabs/quiniela-padelbox-app`) al modelo multi-tenant y probar en TestFlight. **No se puede hacer desde este repo:** hay que clonar el repo de la app, reescribir su cliente (hoy es solo-PADELBOX, `API_URL` hardcoded), y la subida a TestFlight exige credenciales de Apple/EAS interactivas del dueño. Es un proyecto propio, dependiente de que la API SaaS web esté estable (lo está). Pendiente de abordar en su repo con intervención del dueño.
 
 ---
 
