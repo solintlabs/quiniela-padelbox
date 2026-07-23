@@ -183,9 +183,12 @@ function Plans() {
                 <li key={f}>{f}</li>
               ))}
             </ul>
-            <a className={`btn ${highlighted ? 'btn--solid' : ''}`} href="#contacto">
+            <Link
+              className={`btn ${highlighted ? 'btn--solid' : ''}`}
+              href={plan.priceUsd === null ? '#contacto' : '/saas/nueva'}
+            >
               {plan.priceUsd === null ? 'Contactar' : plan.priceUsd === 0 ? 'Empezar gratis' : 'Elegir Pro'}
-            </a>
+            </Link>
           </article>
         );
       })}
@@ -236,7 +239,7 @@ export default async function LandingPage() {
           </nav>
           <div className="lz-top__cta">
             <Link className="lz-top__enter" href="/login">Entrar</Link>
-            <a className="btn btn--solid btn--sm" href="#descargar">Descargar gratis</a>
+            <Link className="btn btn--solid btn--sm" href="/saas/nueva">Crea tu quiniela</Link>
           </div>
         </div>
       </header>
@@ -255,8 +258,15 @@ export default async function LandingPage() {
               Le dicen quiniela, prode, penca, polla o porra — da igual cómo la llames en tu país.
             </p>
             <div className="hero__cta rise">
-              <Stores />
+              <Link className="btn btn--solid btn--lg" href="/saas/nueva">
+                Crea tu quiniela gratis
+                <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+              </Link>
               <DemoTour variant="pill" />
+            </div>
+            <div className="hero__stores rise">
+              <span className="hero__stores-label">O descárgala en tu móvil:</span>
+              <Stores />
             </div>
             <div className="rating rise">
               <Stars /> 4,8 en las tiendas · jugadores ilimitados · gratis
@@ -494,6 +504,12 @@ export default async function LandingPage() {
           <p className="eyebrow rise"><Ball /> Empieza hoy</p>
           <h2 className="rise">¿Jugamos?</h2>
           <p className="lede rise">Tardas menos en crear tu quiniela que en discutir cuánto vale acertar un empate.</p>
+          <div className="rise">
+            <Link className="btn btn--solid btn--lg" href="/saas/nueva">
+              Crea tu quiniela gratis
+              <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+            </Link>
+          </div>
           <div className="rise"><Stores /></div>
         </div>
       </section>

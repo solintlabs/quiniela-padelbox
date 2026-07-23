@@ -94,6 +94,9 @@
 .lz .btn--solid { background: var(--lime); color: var(--lime-ink); }
 .lz .btn--solid::before { background: var(--ink); } .lz .btn--solid:hover { color: var(--paper); }
 .lz .btn--sm { padding: .55rem 1.05rem; font-size: var(--s--1); }
+.lz .btn--lg { padding: 1rem 1.9rem; font-size: var(--s-1); }
+.lz .hero__stores { display: flex; flex-direction: column; gap: .5rem; }
+.lz .hero__stores-label { font-size: var(--s--1); color: #B9C7AC; }
 .lz .btn svg { width: 1em; height: 1em; fill: none; stroke: currentColor; stroke-width: 2; transition: transform .3s cubic-bezier(.2,.8,.3,1); }
 .lz .btn:hover svg { transform: translateX(3px); }
 

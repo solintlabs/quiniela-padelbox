@@ -71,9 +71,8 @@ export default async function MisQuinielasPage() {
     });
   }
 
-  // Una sola → directo. Ninguna → estado vacío. Varias → elegir.
-  if (quinielas.length === 1) redirect(quinielas[0].href);
-
+  // El hub siempre se muestra: el usuario ve sus quinielas Y tiene el botón de
+  // crear una nueva. (Antes saltaba directo con una sola y ocultaba el "crear".)
   return (
     <main className="min-h-screen bg-bg">
       <div className="max-w-2xl mx-auto px-6 py-14">
