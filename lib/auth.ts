@@ -64,6 +64,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           Google({
             clientId: process.env.GOOGLE_CLIENT_ID!,
             clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+            // Google verifica los emails, así que es seguro vincular la cuenta
+            // de Google a un usuario que ya existe con el mismo email (creado
+            // por magic link). Sin esto, NextAuth da "OAuthAccountNotLinked".
+            allowDangerousEmailAccountLinking: true,
           }),
         ]
       : []),
