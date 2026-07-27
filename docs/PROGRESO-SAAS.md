@@ -5,6 +5,23 @@
 
 ---
 
+## 🟢 Sesión 3 — personalización del organizador, logout, app en TestFlight
+
+**Web (todo live en producción):**
+- **Cerrar sesión** en el hub `/mis-quinielas` y en el panel del tenant (`app/saas/actions.ts` → `saasSignOut`).
+- **Panel de personalización del organizador** (`TenantSettings.tsx`): editar nombre, color de acento, **logo** (URL, beneficio Pro) y **premios** (texto libre). PATCH `/api/saas/[tenant]`.
+  - Nueva columna additive `Tenant.prizesText` (migración `20260727_add_tenant_prizes`, **ya aplicada en prod**, verificada).
+- **Patrocinadores por tenant** (`SponsorsManager.tsx`): reutiliza `Sponsor.tenantId` (los de PADELBOX son tenantId null). Añadir/quitar = beneficio Pro. Rutas `/api/saas/[tenant]/sponsors` (+ `/[id]` DELETE).
+- **Vista del jugador** ahora renderiza **logo**, **premios** y **patrocinadores**, y tiene **metadata/OG propia por tenant** (`generateMetadata`).
+- **Stripe checkout**: envuelto en try/catch → ahora devuelve el **error real de Stripe** (502) en vez de un 500 opaco. El fallo "no se puede iniciar el pago" es casi seguro **precio y clave en modos distintos (test/live)**. Las claves Stripe en Vercel son "sensibles" → no se pueden leer por `vercel env pull` (por eso los diagnósticos las veían vacías), pero la app SÍ las tiene en runtime. **Acción pendiente del dueño:** pulsar "Subir a Pro" y leer el mensaje de error real → confirmar/corregir el modo del precio.
+
+**App móvil (repo `~/Dev/quiniela-padelbox-app`, EAS `solintlabs`):**
+- Se hizo `npm install` + **build de producción iOS con EAS** (credenciales de firma ya guardadas, válidas hasta 2027). Build `b4fc4529-…` **finished**, IPA generado.
+- **Submit a TestFlight** lanzado. La app SIGUE siendo la de PADELBOX single-tenant (v1.0.9) — esto verifica el pipeline y da un build fresco. La **adaptación multi-tenant de la app es el siguiente gran bloque** (reescribir su cliente hoy hardcoded a PADELBOX; necesita iterar con builds de desarrollo en el dispositivo del dueño).
+- **EXPO_TOKEN** lo pasó el dueño por el chat → **debe revocarlo/regenerarlo** en expo.dev/settings/access-tokens.
+
+---
+
 ## 🟢 Sesión 2 — el SaaS ya es JUGABLE de punta a punta (plan FREE)
 
 El backend estaba hecho pero **sin cablear**. Cableado en esta sesión (todo live):
