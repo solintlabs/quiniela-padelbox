@@ -64,9 +64,11 @@ export function applyStripeEvent(
       return { status: 'PAYMENT_FAILED', plan: current.plan };
 
     case 'customer.subscription.deleted':
-      // Cancelación: se cae al plan gratuito, no se borra nada. Los datos del
-      // comercio siguen ahí si vuelve.
-      return { status: 'CANCELLED', plan: 'FREE' };
+      // Cancelación del Pro: se cae al plan gratuito pero la quiniela SIGUE
+      // abierta y accesible (status ACTIVE). No se borra nada; el organizador
+      // puede volver a Pro cuando quiera. CANCELLED se reserva para cuando el
+      // propio organizador cierra su quiniela (deja de servir tráfico → 404).
+      return { status: 'ACTIVE', plan: 'FREE' };
   }
 }
 

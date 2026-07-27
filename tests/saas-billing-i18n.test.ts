@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { applyStripeEvent, isTrialActive, trialDaysLeft } from '@/lib/saas/billing';
+import { isTenantAccessible } from '@/lib/saas/tenant';
 import {
   resolveLocale,
   translator,
@@ -48,12 +49,13 @@ describe('applyStripeEvent', () => {
     expect(next.plan).toBe('CUSTOM');
   });
 
-  it('cancelar cae a plan gratuito sin borrar el comercio', () => {
+  it('cancelar cae a plan gratuito pero la quiniela sigue abierta (accesible)', () => {
+    // Cancelar Pro NO debe cerrar la quiniela: status ACTIVE (accesible), no
+    // CANCELLED (que 404ea). Los jugadores siguen jugando en el plan gratis.
     const active = { status: 'ACTIVE' as const, plan: 'PRO' as const };
-    expect(applyStripeEvent(active, 'customer.subscription.deleted')).toEqual({
-      status: 'CANCELLED',
-      plan: 'FREE',
-    });
+    const next = applyStripeEvent(active, 'customer.subscription.deleted');
+    expect(next).toEqual({ status: 'ACTIVE', plan: 'FREE' });
+    expect(isTenantAccessible(next.status)).toBe(true);
   });
 });
 
