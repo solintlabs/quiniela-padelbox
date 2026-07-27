@@ -12,6 +12,7 @@ import { TenantFixtures, type FixtureVM } from './TenantFixtures';
 import { TenantPodium } from './TenantPodium';
 import { ChampionPicker } from './ChampionPicker';
 import { TenantRules } from './TenantRules';
+import { SaasLegalFooter } from '@/components/SaasLegalFooter';
 import type { Metadata } from 'next';
 
 export const dynamic = 'force-dynamic';
@@ -349,6 +350,8 @@ function Shell({
             </a>
           </p>
         )}
+
+        <SaasLegalFooter />
       </div>
     </main>
   );

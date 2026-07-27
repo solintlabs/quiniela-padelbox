@@ -16,6 +16,7 @@ import { TenantSettings } from './TenantSettings';
 import { SponsorsManager } from './SponsorsManager';
 import { InviteShare } from './InviteShare';
 import { ChampionWinner } from './ChampionWinner';
+import { SaasLegalFooter } from '@/components/SaasLegalFooter';
 import { tenantThemeVars } from '@/lib/saas/theme';
 import { saasSignOut } from '../../actions';
 
@@ -223,6 +224,8 @@ export default async function PanelPage({
         <SponsorsManager slug={tenant.slug} isPro={isPro} initial={sponsors} />
 
         <PlayersManager slug={tenant.slug} />
+
+        <SaasLegalFooter />
       </div>
     </main>
   );

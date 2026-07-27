@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { saasSignOut } from '../saas/actions';
+import { SaasLegalFooter } from '@/components/SaasLegalFooter';
 
 export const metadata = {
   title: 'Mis quinielas',
@@ -141,6 +142,8 @@ export default async function MisQuinielasPage() {
             </button>
           </form>
         </div>
+
+        <SaasLegalFooter />
       </div>
     </main>
   );
