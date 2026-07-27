@@ -7,6 +7,7 @@ import { describeRules, rulesOf } from '@/lib/saas/scoring';
 import { PLANS, limitsFor } from '@/lib/saas/plans';
 import { formatDateTime } from '@/lib/format';
 import { UpgradeButton } from './UpgradeButton';
+import { ManageBillingButton } from './ManageBillingButton';
 import { SyncButton } from './SyncButton';
 import { PlayersManager } from './PlayersManager';
 import { CompetitionSettings } from './CompetitionSettings';
@@ -112,6 +113,20 @@ export default async function PanelPage({
               para tus jugadores. $9/mes, se paga aquí en la web.
             </p>
             <UpgradeButton slug={tenant.slug} />
+          </section>
+        )}
+        {isOwner && tenant.plan !== 'FREE' && (
+          <section className="rounded-2xl border border-line bg-bg-elev p-5 sm:p-6">
+            <p className="text-xs uppercase tracking-[0.28em] text-accent font-bold">
+              Plan {plan.name}
+            </p>
+            <h2 className="font-display text-xl mt-1">Tu suscripción</h2>
+            <p className="text-sm text-muted mt-1 mb-4">
+              Gestiona el método de pago, consulta tus facturas o cancela tu plan
+              cuando quieras. Al cancelar, la quiniela vuelve al plan gratuito al
+              final del periodo pagado.
+            </p>
+            <ManageBillingButton slug={tenant.slug} />
           </section>
         )}
         {searchParams.nueva && (
