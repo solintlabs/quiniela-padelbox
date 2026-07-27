@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { prisma } from '@/lib/db';
 import { requireUserApi } from '@/lib/permissions';
 import { requireSaasEnabled } from '@/lib/saas/flags';
 import {
@@ -27,6 +28,40 @@ const bodySchema = z.object({
   logoUrl: z.string().url().max(500).optional().nullable(),
   defaultLocale: z.enum(['es', 'en', 'pt']).optional(),
 });
+
+/**
+ * GET /api/saas/tenants — las quinielas del usuario (para el selector del móvil
+ * y cualquier cliente con JWT). Devuelve una entrada por membresía SaaS.
+ */
+export async function GET(req: Request): Promise<Response> {
+  const off = requireSaasEnabled();
+  if (off) return off;
+
+  const user = await requireUserApi(req);
+  if (user instanceof Response) return user;
+
+  const memberships = await prisma.saasMembership.findMany({
+    where: { userId: user.id },
+    orderBy: { createdAt: 'asc' },
+    select: {
+      role: true,
+      hasPaid: true,
+      tenant: { select: { slug: true, name: true, accentColor: true, logoUrl: true, plan: true } },
+    },
+  });
+
+  return Response.json({
+    tenants: memberships.map((m) => ({
+      slug: m.tenant.slug,
+      name: m.tenant.name,
+      accentColor: m.tenant.accentColor,
+      logoUrl: m.tenant.logoUrl,
+      plan: m.tenant.plan,
+      role: m.role,
+      hasPaid: m.hasPaid,
+    })),
+  });
+}
 
 export async function POST(req: Request): Promise<Response> {
   const off = requireSaasEnabled();
