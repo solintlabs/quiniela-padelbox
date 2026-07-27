@@ -15,9 +15,19 @@
 - **Vista del jugador** ahora renderiza **logo**, **premios** y **patrocinadores**, y tiene **metadata/OG propia por tenant** (`generateMetadata`).
 - **Stripe checkout**: envuelto en try/catch → ahora devuelve el **error real de Stripe** (502) en vez de un 500 opaco. El fallo "no se puede iniciar el pago" es casi seguro **precio y clave en modos distintos (test/live)**. Las claves Stripe en Vercel son "sensibles" → no se pueden leer por `vercel env pull` (por eso los diagnósticos las veían vacías), pero la app SÍ las tiene en runtime. **Acción pendiente del dueño:** pulsar "Subir a Pro" y leer el mensaje de error real → confirmar/corregir el modo del precio.
 
+**Paridad PRO con PADELBOX (todo live):**
+- **Stripe checkout ARREGLADO**: el error real era Managed Payments (activado por defecto en la cuenta bajo la organización) exigiendo tax_code. Se pasa `managed_payments[enabled]=false` por request. Ya se puede subir a Pro (cupón DESCUENTODEV 100% para probar).
+- **Podio** social en la vista del jugador (`TenantPodium`, color del tenant).
+- **Banderas/escudos** de equipos en los partidos (logoUrl → FixtureVM) y escudo del campeón de cada jugador en el ranking.
+- **Pick de campeón (+bonus)** completo: tabla `SaasChampionPick` + `SaasCompetition.championWinnerTeamId` (migración). El jugador elige (`ChampionPicker`, se congela al primer partido); el organizador fija ganador (`ChampionWinner`) y bonus (`pointsBonus` en CompetitionSettings). Se suma en `computeCompetitionRanking`. Tests en `saas-scoring.test.ts`.
+- **Compartir la quiniela** con botones WhatsApp/email/copiar/nativo (`InviteShare`), URL absoluta.
+- **Personalización**: nombre, color, logo (Pro), premios, patrocinadores (Pro), **reglas propias**, **cuota/bote e info de pago** (migración `Tenant.rulesText/entryFee/paymentInfo`). El jugador ve "Reglas e inscripción" con resumen de puntos AUTOGENERADO desde la config (defaults que se adaptan) + cuota + cómo pagar.
+- **Cerrar sesión** en hub y panel. **SEO/OG por tenant**.
+
 **App móvil (repo `~/Dev/quiniela-padelbox-app`, EAS `solintlabs`):**
-- Se hizo `npm install` + **build de producción iOS con EAS** (credenciales de firma ya guardadas, válidas hasta 2027). Build `b4fc4529-…` **finished**, IPA generado.
-- **Submit a TestFlight** lanzado. La app SIGUE siendo la de PADELBOX single-tenant (v1.0.9) — esto verifica el pipeline y da un build fresco. La **adaptación multi-tenant de la app es el siguiente gran bloque** (reescribir su cliente hoy hardcoded a PADELBOX; necesita iterar con builds de desarrollo en el dispositivo del dueño).
+- `npm install` + **builds de producción iOS con EAS** OK (credenciales de firma guardadas, válidas hasta 2027). Pipeline verificado.
+- **Icono nuevo QuinielaBOX**: una **Q (anillo) con balón de fútbol dentro**, lima sobre fondo #0A0A0A. Generado con `sharp` desde SVG en `scripts/gen-icons.mjs` (icon/adaptive/splash). Build `d9d9d925-…` con el icono nuevo en curso → TestFlight.
+- **Conversión multi-tenant de la app = PENDIENTE (gran bloque)**. La app sigue single-tenant PADELBOX. Requiere: (1) que la API SaaS acepte el JWT móvil (hoy `/api/saas/*` puede usar solo sesión NextAuth — verificar), (2) endpoint "mis quinielas" para móvil, (3) reescribir pantallas (hub → quiniela → pronósticos/ranking/campeón), (4) iterar con builds de desarrollo en el iPhone del dueño. Decidido arrancarlo; no se puede completar+probar a ciegas en una tacada.
 - **EXPO_TOKEN** lo pasó el dueño por el chat → **debe revocarlo/regenerarlo** en expo.dev/settings/access-tokens.
 
 ---
