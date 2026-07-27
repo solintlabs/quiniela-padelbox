@@ -1,3 +1,4 @@
+import Stripe from 'stripe';
 import { prisma } from '@/lib/db';
 import { requireTenantRoleApi } from '@/lib/saas/permissions';
 import { isBillingConfigured } from '@/lib/saas/billing';
@@ -51,9 +52,13 @@ export async function POST(
       subscription_data: { metadata: { tenantId: tenant.id } },
       // Permite cupones (p. ej. el 100% para la compra de verificación).
       allow_promotion_codes: true,
+      // Managed Payments viene activado por defecto en esta cuenta y exige un
+      // tax_code en el producto; lo desactivamos por request para no bloquear
+      // el checkout (nosotros no gestionamos impuestos automáticos).
+      managed_payments: { enabled: false },
       success_url: `${origin}/saas/${tenant.slug}/panel?upgraded=1`,
       cancel_url: `${origin}/saas/${tenant.slug}/panel`,
-    });
+    } as Stripe.Checkout.SessionCreateParams);
 
     return Response.json({ url: session.url });
   } catch (e) {
