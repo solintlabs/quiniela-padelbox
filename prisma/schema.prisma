@@ -160,6 +160,7 @@ model Tenant {
   logoUrl         String?
   accentColor     String       @default("#B6FF3C")
   contactWhatsapp String?
+  prizesText      String?                       // premios de la quiniela (texto libre, multilínea)
   status          TenantStatus @default(LEAD)
   plan            TenantPlan   @default(FREE)
   trialEndsAt     DateTime?

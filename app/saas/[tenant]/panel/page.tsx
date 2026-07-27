@@ -11,6 +11,8 @@ import { PlayersManager } from './PlayersManager';
 import { CompetitionSettings } from './CompetitionSettings';
 import { FixturesManager } from './FixturesManager';
 import { AddCompetition } from './AddCompetition';
+import { TenantSettings } from './TenantSettings';
+import { SponsorsManager } from './SponsorsManager';
 import { tenantThemeVars } from '@/lib/saas/theme';
 import { saasSignOut } from '../../actions';
 
@@ -32,7 +34,7 @@ export default async function PanelPage({
   const { tenant } = ctx;
   const isOwner = ctx.membership.role === 'OWNER';
 
-  const [competitions, players, paidCount] = await Promise.all([
+  const [competitions, players, paidCount, sponsors] = await Promise.all([
     prisma.saasCompetition.findMany({
       where: competitionScope(tenant.id),
       orderBy: { createdAt: 'desc' },
@@ -40,10 +42,16 @@ export default async function PanelPage({
     }),
     prisma.saasMembership.count({ where: membershipScope(tenant.id) }),
     prisma.saasMembership.count({ where: membershipScope(tenant.id, { hasPaid: true }) }),
+    prisma.sponsor.findMany({
+      where: { tenantId: tenant.id },
+      orderBy: { sortOrder: 'asc' },
+      select: { id: true, name: true, logoUrl: true, url: true },
+    }),
   ]);
 
   const plan = PLANS[tenant.plan];
   const limits = limitsFor(tenant.plan);
+  const isPro = tenant.plan !== 'FREE';
   const inviteUrl = `/saas/${tenant.slug}/unirse`;
 
   return (
@@ -123,6 +131,19 @@ export default async function PanelPage({
           </code>
         </section>
 
+        {isOwner && (
+          <TenantSettings
+            slug={tenant.slug}
+            isPro={isPro}
+            initial={{
+              name: tenant.name,
+              accentColor: tenant.accentColor,
+              logoUrl: tenant.logoUrl ?? '',
+              prizesText: tenant.prizesText ?? '',
+            }}
+          />
+        )}
+
         <section className="space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="font-display text-xl">Competiciones</h2>
@@ -184,6 +205,8 @@ export default async function PanelPage({
           )}
           {competitions.length < limits.maxCompetitions && <AddCompetition slug={tenant.slug} />}
         </section>
+
+        <SponsorsManager slug={tenant.slug} isPro={isPro} initial={sponsors} />
 
         <PlayersManager slug={tenant.slug} />
       </div>

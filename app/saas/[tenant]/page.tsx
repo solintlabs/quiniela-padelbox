@@ -9,9 +9,30 @@ import { showsBranding, showsAds } from '@/lib/saas/plans';
 import { tenantThemeVars } from '@/lib/saas/theme';
 import { formatDateTime } from '@/lib/format';
 import { TenantFixtures, type FixtureVM } from './TenantFixtures';
+import type { Metadata } from 'next';
 
-export const metadata = { robots: { index: false, follow: false } };
 export const dynamic = 'force-dynamic';
+
+export async function generateMetadata({
+  params,
+}: {
+  params: { tenant: string };
+}): Promise<Metadata> {
+  const tenant = await prisma.tenant.findUnique({
+    where: { slug: params.tenant },
+    select: { name: true },
+  });
+  if (!tenant) return { title: 'Quiniela · QuinielaBOX' };
+  const title = `${tenant.name} · Quiniela`;
+  const description = `Pronostica los partidos y compite en la clasificación de ${tenant.name}. Quiniela creada con QuinielaBOX.`;
+  return {
+    title,
+    description,
+    // Las páginas de jugador requieren membresía → no se indexan.
+    robots: { index: false, follow: false },
+    openGraph: { title, description, type: 'website' },
+  };
+}
 
 /**
  * Vista del jugador: próximos partidos y clasificación de su club.
@@ -20,6 +41,12 @@ export default async function TenantHomePage({ params }: { params: { tenant: str
   const ctx = await requireTenantRolePage(params.tenant, 'PLAYER');
   const { tenant, membership } = ctx;
 
+  const sponsors = await prisma.sponsor.findMany({
+    where: { tenantId: tenant.id },
+    orderBy: { sortOrder: 'asc' },
+    select: { id: true, name: true, logoUrl: true, url: true },
+  });
+
   const competition = await prisma.saasCompetition.findFirst({
     where: competitionScope(tenant.id, { status: { in: ['OPEN', 'LOCKED', 'FINISHED'] } }),
     orderBy: { createdAt: 'desc' },
@@ -27,7 +54,7 @@ export default async function TenantHomePage({ params }: { params: { tenant: str
 
   if (!competition) {
     return (
-      <Shell tenant={tenant}>
+      <Shell tenant={tenant} sponsors={sponsors}>
         <p className="text-sm text-muted rounded-xl border border-line p-5">
           {hasAtLeastRole(membership.role, 'ADMIN')
             ? 'Todavía no hay ninguna competición en esta quiniela. Ve al panel para crearla.'
@@ -89,7 +116,7 @@ export default async function TenantHomePage({ params }: { params: { tenant: str
   });
 
   return (
-    <Shell tenant={tenant}>
+    <Shell tenant={tenant} sponsors={sponsors}>
       {!membership.hasPaid && (
         <p className="rounded-xl border border-accent/40 bg-accent/5 p-4 text-sm">
           Tu inscripción está pendiente de confirmar por el organizador. Podrás
@@ -150,25 +177,76 @@ export default async function TenantHomePage({ params }: { params: { tenant: str
 
 function Shell({
   tenant,
+  sponsors,
   children,
 }: {
-  tenant: { name: string; slug: string; accentColor: string; plan: 'FREE' | 'PRO' | 'CUSTOM' };
+  tenant: {
+    name: string;
+    slug: string;
+    accentColor: string;
+    plan: 'FREE' | 'PRO' | 'CUSTOM';
+    logoUrl: string | null;
+    prizesText: string | null;
+  };
+  sponsors: Array<{ id: string; name: string; logoUrl: string | null; url: string | null }>;
   children: React.ReactNode;
 }) {
   return (
     <main className="min-h-screen bg-bg" style={tenantThemeVars(tenant.accentColor)}>
       <div className="max-w-3xl mx-auto px-6 py-10 space-y-8">
-        <header>
-          <p
-            className="text-xs uppercase tracking-[0.28em] font-bold"
-            style={{ color: tenant.accentColor }}
-          >
-            {tenant.name}
-          </p>
-          <h1 className="font-display text-3xl mt-1">La quiniela</h1>
+        <header className="flex items-center gap-4">
+          {tenant.logoUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={tenant.logoUrl}
+              alt={tenant.name}
+              className="h-14 w-14 rounded-xl object-contain border border-line bg-bg-elev"
+            />
+          )}
+          <div>
+            <p
+              className="text-xs uppercase tracking-[0.28em] font-bold"
+              style={{ color: tenant.accentColor }}
+            >
+              {tenant.name}
+            </p>
+            <h1 className="font-display text-3xl mt-1">La quiniela</h1>
+          </div>
         </header>
 
         {children}
+
+        {tenant.prizesText && (
+          <section className="rounded-xl border border-line bg-bg-elev p-5">
+            <h2 className="font-display text-lg mb-2">Premios</h2>
+            <p className="text-sm whitespace-pre-line leading-relaxed">{tenant.prizesText}</p>
+          </section>
+        )}
+
+        {sponsors.length > 0 && (
+          <section className="pt-2">
+            <p className="text-[11px] uppercase tracking-[0.2em] text-muted text-center mb-3">
+              Patrocinadores
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-4">
+              {sponsors.map((s) => {
+                const inner = s.logoUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={s.logoUrl} alt={s.name} className="h-8 object-contain" />
+                ) : (
+                  <span className="text-sm text-muted">{s.name}</span>
+                );
+                return s.url ? (
+                  <a key={s.id} href={s.url} target="_blank" rel="noopener noreferrer" className="opacity-80 hover:opacity-100">
+                    {inner}
+                  </a>
+                ) : (
+                  <span key={s.id}>{inner}</span>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
         {showsAds(tenant.plan) && (
           <a
