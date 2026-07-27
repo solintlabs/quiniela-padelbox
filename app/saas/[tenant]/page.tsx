@@ -9,6 +9,7 @@ import { showsBranding, showsAds } from '@/lib/saas/plans';
 import { tenantThemeVars } from '@/lib/saas/theme';
 import { formatDateTime } from '@/lib/format';
 import { TenantFixtures, type FixtureVM } from './TenantFixtures';
+import { TenantPodium } from './TenantPodium';
 import type { Metadata } from 'next';
 
 export const dynamic = 'force-dynamic';
@@ -139,8 +140,28 @@ export default async function TenantHomePage({ params }: { params: { tenant: str
         <TenantFixtures slug={tenant.slug} canPredict={canPredict} fixtures={fixtureVMs} />
       </section>
 
+      {ranking.length > 0 && (
+        <TenantPodium
+          top={ranking.slice(0, 3).map((r) => ({
+            membershipId: r.membershipId,
+            displayName: r.displayName || 'Jugador',
+            points: r.points,
+          }))}
+          me={(() => {
+            const mine = ranking.find((r) => r.membershipId === membership.id);
+            if (!mine || mine.position <= 3) return null;
+            const third = ranking[2]?.points ?? 0;
+            return {
+              position: mine.position,
+              points: mine.points,
+              pointsToPodium: Math.max(0, third - mine.points + 1),
+            };
+          })()}
+        />
+      )}
+
       <section className="space-y-3">
-        <h2 className="font-display text-xl">Clasificación</h2>
+        <h2 className="font-display text-xl">Clasificación completa</h2>
         {ranking.length === 0 ? (
           <p className="text-sm text-muted">Aún no hay jugadores.</p>
         ) : (
