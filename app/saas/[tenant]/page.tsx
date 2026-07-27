@@ -11,6 +11,7 @@ import { formatDateTime } from '@/lib/format';
 import { TenantFixtures, type FixtureVM } from './TenantFixtures';
 import { TenantPodium } from './TenantPodium';
 import { ChampionPicker } from './ChampionPicker';
+import { TenantRules } from './TenantRules';
 import type { Metadata } from 'next';
 
 export const dynamic = 'force-dynamic';
@@ -143,10 +144,19 @@ export default async function TenantHomePage({ params }: { params: { tenant: str
     <Shell tenant={tenant} sponsors={sponsors}>
       {!membership.hasPaid && (
         <p className="rounded-xl border border-accent/40 bg-accent/5 p-4 text-sm">
-          Tu inscripción está pendiente de confirmar por el organizador. Podrás
-          pronosticar en cuanto la valide.
+          Tu inscripción está pendiente de confirmar por el organizador
+          {tenant.entryFee ? ` (cuota: ${tenant.entryFee})` : ''}. Paga el bote y
+          podrás pronosticar en cuanto la valide. Detalles abajo.
         </p>
       )}
+
+      <TenantRules
+        pointsSummary={describeRules(rulesOf(competition))}
+        championBonus={competition.pointsBonus}
+        entryFee={tenant.entryFee}
+        paymentInfo={tenant.paymentInfo}
+        rulesText={tenant.rulesText}
+      />
 
       <section className="space-y-3">
         <div className="flex items-baseline justify-between gap-3 flex-wrap">

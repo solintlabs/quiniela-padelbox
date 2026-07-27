@@ -18,6 +18,9 @@ const patchSchema = z.object({
   accentColor: z.string().regex(hex, 'Color inválido').optional(),
   logoUrl: z.string().trim().url('URL inválida').max(500).nullable().optional(),
   prizesText: z.string().trim().max(4000).nullable().optional(),
+  rulesText: z.string().trim().max(4000).nullable().optional(),
+  entryFee: z.string().trim().max(120).nullable().optional(),
+  paymentInfo: z.string().trim().max(2000).nullable().optional(),
 });
 
 export async function PATCH(
@@ -42,7 +45,15 @@ export async function PATCH(
   const updated = await prisma.tenant.update({
     where: { id: ctx.tenant.id },
     data,
-    select: { name: true, accentColor: true, logoUrl: true, prizesText: true },
+    select: {
+      name: true,
+      accentColor: true,
+      logoUrl: true,
+      prizesText: true,
+      rulesText: true,
+      entryFee: true,
+      paymentInfo: true,
+    },
   });
 
   return Response.json({ tenant: updated });

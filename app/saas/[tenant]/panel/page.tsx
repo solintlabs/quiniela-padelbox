@@ -142,6 +142,9 @@ export default async function PanelPage({
               accentColor: tenant.accentColor,
               logoUrl: tenant.logoUrl ?? '',
               prizesText: tenant.prizesText ?? '',
+              rulesText: tenant.rulesText ?? '',
+              entryFee: tenant.entryFee ?? '',
+              paymentInfo: tenant.paymentInfo ?? '',
             }}
           />
         )}

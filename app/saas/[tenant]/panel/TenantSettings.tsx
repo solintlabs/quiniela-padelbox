@@ -15,13 +15,24 @@ export function TenantSettings({
 }: {
   slug: string;
   isPro: boolean;
-  initial: { name: string; accentColor: string; logoUrl: string; prizesText: string };
+  initial: {
+    name: string;
+    accentColor: string;
+    logoUrl: string;
+    prizesText: string;
+    rulesText: string;
+    entryFee: string;
+    paymentInfo: string;
+  };
 }) {
   const router = useRouter();
   const [name, setName] = useState(initial.name);
   const [accentColor, setAccentColor] = useState(initial.accentColor);
   const [logoUrl, setLogoUrl] = useState(initial.logoUrl);
   const [prizesText, setPrizesText] = useState(initial.prizesText);
+  const [rulesText, setRulesText] = useState(initial.rulesText);
+  const [entryFee, setEntryFee] = useState(initial.entryFee);
+  const [paymentInfo, setPaymentInfo] = useState(initial.paymentInfo);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,6 +46,9 @@ export function TenantSettings({
         name: name.trim(),
         accentColor,
         prizesText: prizesText.trim() || null,
+        rulesText: rulesText.trim() || null,
+        entryFee: entryFee.trim() || null,
+        paymentInfo: paymentInfo.trim() || null,
       };
       if (isPro) body.logoUrl = logoUrl.trim() || null;
 
@@ -123,6 +137,51 @@ export function TenantSettings({
         <span className="text-[11px] text-muted">
           Se muestran a tus jugadores en su tablero. Texto libre.
         </span>
+      </label>
+
+      <div className="pt-2 border-t border-line">
+        <h3 className="font-display text-base">Inscripción y reglas</h3>
+        <p className="text-xs text-muted mt-0.5">
+          Lo que ve el jugador para apuntarse. El resumen de puntos se genera solo
+          con tu configuración; aquí añades el bote y tus reglas propias.
+        </p>
+      </div>
+
+      <div className="grid sm:grid-cols-2 gap-3">
+        <label className="block text-sm">
+          <span className="text-muted">Cuota / bote</span>
+          <input
+            value={entryFee}
+            onChange={(e) => setEntryFee(e.target.value)}
+            maxLength={120}
+            placeholder="p. ej. $10"
+            className="mt-1 w-full h-10 rounded-lg border border-line bg-bg px-3"
+          />
+        </label>
+      </div>
+
+      <label className="block text-sm">
+        <span className="text-muted">Cómo pagar el bote</span>
+        <textarea
+          value={paymentInfo}
+          onChange={(e) => setPaymentInfo(e.target.value)}
+          maxLength={2000}
+          rows={3}
+          placeholder={'Pago Móvil: 0412-…\nZelle: correo@…\nBinance: …'}
+          className="mt-1 w-full rounded-lg border border-line bg-bg px-3 py-2 resize-y"
+        />
+      </label>
+
+      <label className="block text-sm">
+        <span className="text-muted">Reglas propias (opcional)</span>
+        <textarea
+          value={rulesText}
+          onChange={(e) => setRulesText(e.target.value)}
+          maxLength={4000}
+          rows={4}
+          placeholder={'Se muestran junto al resumen automático de puntos.\nEj.: el bote se reparte 70/20/10, empates a favor del que se apuntó antes…'}
+          className="mt-1 w-full rounded-lg border border-line bg-bg px-3 py-2 resize-y"
+        />
       </label>
 
       <div className="flex items-center gap-3">

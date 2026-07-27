@@ -161,6 +161,9 @@ model Tenant {
   accentColor     String       @default("#B6FF3C")
   contactWhatsapp String?
   prizesText      String?                       // premios de la quiniela (texto libre, multilínea)
+  rulesText       String?                       // reglas propias del organizador (además del resumen automático)
+  entryFee        String?                       // cuota/bote de inscripción (texto libre: "$10", "10 USDT"…)
+  paymentInfo     String?                       // cómo pagar el bote (pago móvil, Zelle…), texto libre
   status          TenantStatus @default(LEAD)
   plan            TenantPlan   @default(FREE)
   trialEndsAt     DateTime?
