@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { headers } from 'next/headers';
 import { prisma } from '@/lib/db';
 import { requireTenantRolePage } from '@/lib/saas/permissions';
 import { competitionScope, membershipScope } from '@/lib/saas/scope';
@@ -13,6 +14,7 @@ import { FixturesManager } from './FixturesManager';
 import { AddCompetition } from './AddCompetition';
 import { TenantSettings } from './TenantSettings';
 import { SponsorsManager } from './SponsorsManager';
+import { InviteShare } from './InviteShare';
 import { tenantThemeVars } from '@/lib/saas/theme';
 import { saasSignOut } from '../../actions';
 
@@ -52,7 +54,12 @@ export default async function PanelPage({
   const plan = PLANS[tenant.plan];
   const limits = limitsFor(tenant.plan);
   const isPro = tenant.plan !== 'FREE';
-  const inviteUrl = `/saas/${tenant.slug}/unirse`;
+
+  // URL absoluta del enlace de invitación, para compartir por WhatsApp/email.
+  const h = headers();
+  const host = h.get('x-forwarded-host') ?? h.get('host') ?? 'www.quinielabox.com';
+  const proto = h.get('x-forwarded-proto') ?? 'https';
+  const inviteUrl = `${proto}://${host}/saas/${tenant.slug}/unirse`;
 
   return (
     <main className="min-h-screen bg-bg" style={tenantThemeVars(tenant.accentColor)}>
@@ -120,16 +127,7 @@ export default async function PanelPage({
           <Stat label="Competiciones" value={String(competitions.length)} />
         </section>
 
-        <section className="rounded-xl border border-line bg-bg-elev p-5">
-          <h2 className="font-display text-lg">Invita a tus jugadores</h2>
-          <p className="text-sm text-muted mt-1">
-            Comparte este enlace por WhatsApp. Quien entre queda apuntado, y tú
-            confirmas quién ha pagado el bote.
-          </p>
-          <code className="mt-3 block rounded-lg bg-bg border border-line px-3 py-2.5 text-sm font-mono break-all">
-            {inviteUrl}
-          </code>
-        </section>
+        <InviteShare url={inviteUrl} name={tenant.name} />
 
         {isOwner && (
           <TenantSettings
