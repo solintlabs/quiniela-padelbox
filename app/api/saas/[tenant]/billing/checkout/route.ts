@@ -26,33 +26,41 @@ export async function POST(
 
   const { tenant } = ctx;
 
-  // Reusa el cliente de Stripe del tenant o créalo la primera vez.
-  let customerId = tenant.stripeCustomerId;
-  if (!customerId) {
-    const customer = await stripe().customers.create({
-      email: tenant.adminEmail,
-      name: tenant.name,
-      metadata: { tenantId: tenant.id, slug: tenant.slug },
+  try {
+    // Reusa el cliente de Stripe del tenant o créalo la primera vez.
+    let customerId = tenant.stripeCustomerId;
+    if (!customerId) {
+      const customer = await stripe().customers.create({
+        email: tenant.adminEmail,
+        name: tenant.name,
+        metadata: { tenantId: tenant.id, slug: tenant.slug },
+      });
+      customerId = customer.id;
+      await prisma.tenant.update({
+        where: { id: tenant.id },
+        data: { stripeCustomerId: customerId },
+      });
+    }
+
+    const origin = new URL(req.url).origin;
+    const session = await stripe().checkout.sessions.create({
+      mode: 'subscription',
+      customer: customerId,
+      line_items: [{ price: proPriceId(), quantity: 1 }],
+      client_reference_id: tenant.id,
+      subscription_data: { metadata: { tenantId: tenant.id } },
+      // Permite cupones (p. ej. el 100% para la compra de verificación).
+      allow_promotion_codes: true,
+      success_url: `${origin}/saas/${tenant.slug}/panel?upgraded=1`,
+      cancel_url: `${origin}/saas/${tenant.slug}/panel`,
     });
-    customerId = customer.id;
-    await prisma.tenant.update({
-      where: { id: tenant.id },
-      data: { stripeCustomerId: customerId },
-    });
+
+    return Response.json({ url: session.url });
+  } catch (e) {
+    // Devuelve el motivo real de Stripe (p. ej. precio en modo distinto a la
+    // clave) en vez de un 500 opaco, para poder diagnosticarlo.
+    const msg = e instanceof Error ? e.message : 'Error de Stripe';
+    console.error('[billing/checkout]', msg);
+    return Response.json({ error: `Stripe: ${msg}` }, { status: 502 });
   }
-
-  const origin = new URL(req.url).origin;
-  const session = await stripe().checkout.sessions.create({
-    mode: 'subscription',
-    customer: customerId,
-    line_items: [{ price: proPriceId(), quantity: 1 }],
-    client_reference_id: tenant.id,
-    subscription_data: { metadata: { tenantId: tenant.id } },
-    // Permite cupones (p. ej. el 100% para la compra de verificación).
-    allow_promotion_codes: true,
-    success_url: `${origin}/saas/${tenant.slug}/panel?upgraded=1`,
-    cancel_url: `${origin}/saas/${tenant.slug}/panel`,
-  });
-
-  return Response.json({ url: session.url });
 }
