@@ -38,13 +38,21 @@ function IconBook({ active }: IconProps) {
     </svg>
   );
 }
+function IconGear({ active }: IconProps) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <circle cx="12" cy="12" r="3" />
+      <path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1" />
+    </svg>
+  );
+}
 
 /**
  * Navegación del tenant estilo PADELBOX: barra inferior fija en móvil (para el
  * pulgar) y tabs horizontales en escritorio. Los enlaces cuelgan del slug del
  * tenant. El estado activo se marca con el pathname.
  */
-export function TenantNav({ slug }: { slug: string }) {
+export function TenantNav({ slug, isAdmin = false }: { slug: string; isAdmin?: boolean }) {
   const pathname = usePathname() ?? '';
   const base = `/saas/${slug}`;
 
@@ -53,6 +61,9 @@ export function TenantNav({ slug }: { slug: string }) {
     { href: `${base}/partidos`, label: 'Partidos', Icon: IconBall, active: pathname.startsWith(`${base}/partidos`) },
     { href: `${base}/ranking`, label: 'Ranking', Icon: IconTrophy, active: pathname.startsWith(`${base}/ranking`) },
     { href: `${base}/reglas`, label: 'Reglas', Icon: IconBook, active: pathname.startsWith(`${base}/reglas`) },
+    ...(isAdmin
+      ? [{ href: `${base}/panel`, label: 'Panel', Icon: IconGear, active: pathname.startsWith(`${base}/panel`) }]
+      : []),
   ];
 
   return (
@@ -80,7 +91,7 @@ export function TenantNav({ slug }: { slug: string }) {
         className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-bg/95 backdrop-blur-md border-t border-line"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
-        <ul className="grid grid-cols-4">
+        <ul className="grid" style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}>
           {tabs.map((t) => {
             const Icon = t.Icon;
             return (

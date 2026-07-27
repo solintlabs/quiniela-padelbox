@@ -94,7 +94,7 @@ export default async function JugarLayout({
           </div>
         </header>
 
-        <TenantNav slug={tenant.slug} />
+        <TenantNav slug={tenant.slug} isAdmin={isAdmin} />
 
         {children}
 

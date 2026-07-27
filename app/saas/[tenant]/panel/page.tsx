@@ -18,6 +18,7 @@ import { SponsorsManager } from './SponsorsManager';
 import { InviteShare } from './InviteShare';
 import { ChampionWinner } from './ChampionWinner';
 import { SaasLegalFooter } from '@/components/SaasLegalFooter';
+import { TenantNav } from '../TenantNav';
 import { tenantThemeVars } from '@/lib/saas/theme';
 import { saasSignOut } from '../../actions';
 
@@ -68,7 +69,7 @@ export default async function PanelPage({
   const inviteUrl = `${proto}://${host}/saas/${tenant.slug}/unirse`;
 
   return (
-    <main className="min-h-screen bg-bg" style={tenantThemeVars(tenant.accentColor)}>
+    <main className="min-h-screen bg-bg pb-24 sm:pb-10" style={tenantThemeVars(tenant.accentColor)}>
       <div className="max-w-4xl mx-auto px-6 py-10 space-y-8">
         <header className="flex items-start justify-between gap-4 flex-wrap">
           <div>
@@ -97,6 +98,8 @@ export default async function PanelPage({
             </form>
           </div>
         </header>
+
+        <TenantNav slug={tenant.slug} isAdmin />
 
         {searchParams.upgraded && (
           <p className="rounded-xl border border-accent/40 bg-accent/5 p-4 text-sm">
