@@ -6,6 +6,8 @@ export interface FixtureVM {
   id: string;
   home: string;
   away: string;
+  homeLogo: string | null;
+  awayLogo: string | null;
   kickoff: string;
   round: string | null;
   closed: boolean;
@@ -14,6 +16,13 @@ export interface FixtureVM {
   myHome: number | null;
   myAway: number | null;
   points: number | null;
+}
+
+/** Escudo/bandera del equipo (o un punto neutro si no hay imagen). */
+function Crest({ src, alt }: { src: string | null; alt: string }) {
+  if (!src) return null;
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={src} alt={alt} className="inline-block h-4 w-4 object-contain align-[-2px] mr-1" />;
 }
 
 /**
@@ -79,7 +88,9 @@ function Row({ slug, canPredict, f }: { slug: string; canPredict: boolean; f: Fi
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium truncate">
-            {f.home} <span className="text-muted">vs</span> {f.away}
+            <Crest src={f.homeLogo} alt={f.home} />
+            {f.home} <span className="text-muted">vs</span> <Crest src={f.awayLogo} alt={f.away} />
+            {f.away}
           </p>
           <p className="text-xs text-muted mt-0.5">
             {f.kickoff}

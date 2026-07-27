@@ -9,6 +9,13 @@ import { entryScope } from '@/lib/saas/scope';
  * memberships de un tenant y entries de una competición.
  */
 
+export interface ChampionInfo {
+  name: string;
+  logoUrl: string | null;
+  /** El pick coincidió con el campeón fijado por el organizador. */
+  correct: boolean;
+}
+
 export interface SaasRankingRow {
   membershipId: string;
   userId: string;
@@ -17,6 +24,7 @@ export interface SaasRankingRow {
   exact: number;
   points: number;
   position: number;
+  champion: ChampionInfo | null;
 }
 
 interface RankingInput {
@@ -25,6 +33,9 @@ interface RankingInput {
   displayName: string;
   joinedAt: Date;
   entries: Array<{ points: number | null }>;
+  /** Puntos de bonus (p. ej. acertar el campeón). Suma a los puntos, no cuenta como jugado ni exacto. */
+  bonus: number;
+  champion: ChampionInfo | null;
 }
 
 /**
@@ -56,7 +67,8 @@ export function rankRows(
       joinedAt: row.joinedAt,
       played: scored.length,
       exact: scored.filter((e) => e.points !== null && exactSet.has(e.points)).length,
-      points: scored.reduce((acc, e) => acc + (e.points ?? 0), 0),
+      points: scored.reduce((acc, e) => acc + (e.points ?? 0), 0) + row.bonus,
+      champion: row.champion,
     };
   });
 
@@ -92,7 +104,13 @@ export async function computeCompetitionRanking(
 ): Promise<SaasRankingRow[]> {
   const competition = await prisma.saasCompetition.findFirst({
     where: { id: competitionId, tenantId },
-    select: { id: true, pointsExact: true, pointsDrawBonus: true },
+    select: {
+      id: true,
+      pointsExact: true,
+      pointsDrawBonus: true,
+      pointsBonus: true,
+      championWinnerTeamId: true,
+    },
   });
   if (!competition) return [];
 
@@ -101,16 +119,21 @@ export async function computeCompetitionRanking(
     competition.pointsExact + competition.pointsDrawBonus,
   ];
 
-  const memberships = await prisma.saasMembership.findMany({
-    where: { tenantId },
-    select: { id: true, userId: true, displayName: true, createdAt: true },
-  });
+  const [memberships, entries, picks] = await Promise.all([
+    prisma.saasMembership.findMany({
+      where: { tenantId },
+      select: { id: true, userId: true, displayName: true, createdAt: true },
+    }),
+    prisma.saasEntry.findMany({
+      where: entryScope(tenantId, { fixture: { competitionId } }),
+      select: { membershipId: true, points: true },
+    }),
+    prisma.saasChampionPick.findMany({
+      where: { competitionId },
+      select: { membershipId: true, teamId: true, team: { select: { name: true, logoUrl: true } } },
+    }),
+  ]);
   if (memberships.length === 0) return [];
-
-  const entries = await prisma.saasEntry.findMany({
-    where: entryScope(tenantId, { fixture: { competitionId } }),
-    select: { membershipId: true, points: true },
-  });
 
   const byMembership = new Map<string, Array<{ points: number | null }>>();
   for (const entry of entries) {
@@ -119,16 +142,27 @@ export async function computeCompetitionRanking(
     byMembership.set(entry.membershipId, list);
   }
 
+  const pickByMembership = new Map(picks.map((p) => [p.membershipId, p]));
+  const winner = competition.championWinnerTeamId;
+
   return rankRows(
-    memberships.map((m) => ({
-      membershipId: m.id,
-      userId: m.userId,
-      // El nombre real del User se resuelve en la capa de presentación; aquí
-      // no se toca la tabla User.
-      displayName: m.displayName ?? '',
-      joinedAt: m.createdAt,
-      entries: byMembership.get(m.id) ?? [],
-    })),
+    memberships.map((m) => {
+      const pick = pickByMembership.get(m.id);
+      // El bonus solo se otorga cuando el organizador ya fijó el campeón y el
+      // pick coincide. Antes de eso el pick se muestra pero no puntúa.
+      const correct = !!pick && !!winner && pick.teamId === winner;
+      return {
+        membershipId: m.id,
+        userId: m.userId,
+        // El nombre real del User se resuelve en la capa de presentación; aquí
+        // no se toca la tabla User.
+        displayName: m.displayName ?? '',
+        joinedAt: m.createdAt,
+        entries: byMembership.get(m.id) ?? [],
+        bonus: correct ? competition.pointsBonus : 0,
+        champion: pick ? { name: pick.team.name, logoUrl: pick.team.logoUrl, correct } : null,
+      };
+    }),
     exactValues,
   );
 }

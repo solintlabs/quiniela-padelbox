@@ -8,6 +8,7 @@ export interface CompRules {
   pointsGoalDiff: number;
   pointsTeamScore: number;
   pointsDrawBonus: number;
+  pointsBonus: number;
   lockOffsetMin: number;
 }
 
@@ -17,6 +18,7 @@ const FIELDS: Array<{ key: keyof CompRules; label: string; max: number }> = [
   { key: 'pointsGoalDiff', label: 'Diferencia de goles', max: 100 },
   { key: 'pointsTeamScore', label: 'Goles por equipo', max: 100 },
   { key: 'pointsDrawBonus', label: 'Bonus por empate', max: 100 },
+  { key: 'pointsBonus', label: 'Bonus por acertar el campeón', max: 100 },
   { key: 'lockOffsetMin', label: 'Cierre antes del partido (min)', max: 1440 },
 ];
 

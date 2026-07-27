@@ -15,6 +15,7 @@ import { AddCompetition } from './AddCompetition';
 import { TenantSettings } from './TenantSettings';
 import { SponsorsManager } from './SponsorsManager';
 import { InviteShare } from './InviteShare';
+import { ChampionWinner } from './ChampionWinner';
 import { tenantThemeVars } from '@/lib/saas/theme';
 import { saasSignOut } from '../../actions';
 
@@ -40,7 +41,10 @@ export default async function PanelPage({
     prisma.saasCompetition.findMany({
       where: competitionScope(tenant.id),
       orderBy: { createdAt: 'desc' },
-      include: { _count: { select: { fixtures: true, teams: true } } },
+      include: {
+        _count: { select: { fixtures: true, teams: true } },
+        teams: { orderBy: { name: 'asc' }, select: { id: true, name: true } },
+      },
     }),
     prisma.saasMembership.count({ where: membershipScope(tenant.id) }),
     prisma.saasMembership.count({ where: membershipScope(tenant.id, { hasPaid: true }) }),
@@ -193,10 +197,19 @@ export default async function PanelPage({
                       pointsGoalDiff: c.pointsGoalDiff,
                       pointsTeamScore: c.pointsTeamScore,
                       pointsDrawBonus: c.pointsDrawBonus,
+                      pointsBonus: c.pointsBonus,
                       lockOffsetMin: c.lockOffsetMin,
                     }}
                   />
                 </div>
+                {c.pointsBonus > 0 && c.teams.length >= 2 && (
+                  <ChampionWinner
+                    slug={tenant.slug}
+                    competitionId={c.id}
+                    teams={c.teams}
+                    currentWinnerId={c.championWinnerTeamId}
+                  />
+                )}
                 <FixturesManager slug={tenant.slug} competitionId={c.id} provider={c.provider} />
               </article>
             ))

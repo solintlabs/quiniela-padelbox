@@ -484,8 +484,9 @@ model SaasMembership {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  tenant  Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  entries SaasEntry[]
+  tenant        Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  entries       SaasEntry[]
+  championPicks SaasChampionPick[]
 
   @@unique([tenantId, userId])
   @@index([userId])
@@ -525,14 +526,20 @@ model SaasCompetition {
   pointsBonus     Int @default(0)
   lockOffsetMin   Int @default(15)
 
+  // Equipo campeón del torneo. Lo fija el organizador al terminar; quien lo
+  // acertó en su pick de campeón se lleva pointsBonus. Sin FK dura para no
+  // bloquear el borrado de un equipo.
+  championWinnerTeamId String?
+
   lastSyncedAt DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  tenant   Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  teams    SaasTeam[]
-  fixtures SaasFixture[]
+  tenant        Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  teams         SaasTeam[]
+  fixtures      SaasFixture[]
+  championPicks SaasChampionPick[]
 
   @@index([tenantId, status])
   @@index([status, provider])
@@ -550,12 +557,33 @@ model SaasTeam {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  competition  SaasCompetition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
-  homeFixtures SaasFixture[]   @relation("SaasFixtureHome")
-  awayFixtures SaasFixture[]   @relation("SaasFixtureAway")
+  competition   SaasCompetition    @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  homeFixtures  SaasFixture[]      @relation("SaasFixtureHome")
+  awayFixtures  SaasFixture[]      @relation("SaasFixtureAway")
+  championPicks SaasChampionPick[]
 
   @@unique([competitionId, name])
   @@unique([competitionId, espnId])
+  @@index([competitionId])
+}
+
+// Pick de campeón del torneo por jugador. Se congela cuando arranca el primer
+// partido de la competición. Si el pick coincide con championWinnerTeamId, el
+// jugador suma pointsBonus. Equivalente al +25 de PADELBOX pero por competición.
+model SaasChampionPick {
+  id            String @id @default(cuid())
+  membershipId  String
+  competitionId String
+  teamId        String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  membership  SaasMembership  @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  competition SaasCompetition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  team        SaasTeam        @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([membershipId, competitionId])
   @@index([competitionId])
 }
 

@@ -18,8 +18,12 @@ const patchSchema = z.object({
   pointsGoalDiff: pts.optional(),
   pointsTeamScore: pts.optional(),
   pointsDrawBonus: pts.optional(),
+  // Bonus por acertar el campeón del torneo (equivalente al +25 de PADELBOX).
+  pointsBonus: pts.optional(),
   lockOffsetMin: z.number().int().min(0).max(1440).optional(),
   status: z.enum(['DRAFT', 'OPEN', 'LOCKED', 'FINISHED']).optional(),
+  // Equipo campeón: id de un SaasTeam de esta competición, o null para limpiar.
+  championWinnerTeamId: z.string().min(1).nullable().optional(),
 });
 
 export async function PATCH(
@@ -49,6 +53,17 @@ export async function PATCH(
     );
   }
 
+  // El equipo campeón debe pertenecer a esta competición (o ser null para limpiar).
+  if (parsed.data.championWinnerTeamId) {
+    const team = await prisma.saasTeam.findFirst({
+      where: { id: parsed.data.championWinnerTeamId, competitionId: target.id },
+      select: { id: true },
+    });
+    if (!team) {
+      return Response.json({ error: 'Ese equipo no es de esta competición.' }, { status: 400 });
+    }
+  }
+
   const updated = await prisma.saasCompetition.update({
     where: { id: target.id },
     data: parsed.data,
@@ -60,7 +75,9 @@ export async function PATCH(
       pointsGoalDiff: true,
       pointsTeamScore: true,
       pointsDrawBonus: true,
+      pointsBonus: true,
       lockOffsetMin: true,
+      championWinnerTeamId: true,
     },
   });
 

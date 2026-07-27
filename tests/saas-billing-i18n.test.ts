@@ -87,10 +87,10 @@ describe('límites por plan', () => {
     expect(full.message).toContain('15');
   });
 
-  it('el plan gratuito no llega al catálogo de ligas, pero sí a manual/CSV', () => {
-    const gate = canUseEspnCatalog('FREE');
-    expect(gate.allowed).toBe(false);
-    expect(gate.message).toContain('CSV');
+  it('todos los planes llegan al catálogo de ligas (manual solo no bastaba)', () => {
+    // El catálogo ESPN se habilitó también en FREE: la entrada manual sola no
+    // permitía arrancar una quiniela real.
+    expect(canUseEspnCatalog('FREE').allowed).toBe(true);
     expect(canUseEspnCatalog('PRO').allowed).toBe(true);
   });
 

@@ -10,6 +10,7 @@ import { tenantThemeVars } from '@/lib/saas/theme';
 import { formatDateTime } from '@/lib/format';
 import { TenantFixtures, type FixtureVM } from './TenantFixtures';
 import { TenantPodium } from './TenantPodium';
+import { ChampionPicker } from './ChampionPicker';
 import type { Metadata } from 'next';
 
 export const dynamic = 'force-dynamic';
@@ -93,6 +94,26 @@ export default async function TenantHomePage({ params }: { params: { tenant: str
   });
   const entryByFixture = new Map(myEntries.map((e) => [e.fixtureId, e]));
 
+  // Datos del pick de campeón: equipos, mi pick, y el primer partido (para saber
+  // si ya está cerrado). Solo tiene sentido en torneos (≥ 2 equipos).
+  const [champTeams, myPick, firstFixture] = await Promise.all([
+    prisma.saasTeam.findMany({
+      where: { competitionId: competition.id },
+      orderBy: { name: 'asc' },
+      select: { id: true, name: true, logoUrl: true },
+    }),
+    prisma.saasChampionPick.findFirst({
+      where: { membershipId: membership.id, competitionId: competition.id },
+      select: { teamId: true },
+    }),
+    prisma.saasFixture.findFirst({
+      where: { competitionId: competition.id },
+      orderBy: { kickoff: 'asc' },
+      select: { kickoff: true },
+    }),
+  ]);
+  const championLocked = !!firstFixture && firstFixture.kickoff.getTime() <= now.getTime();
+
   // El organizador (ADMIN/OWNER) siempre puede pronosticar; el jugador, cuando
   // el organizador confirma su inscripción.
   const canPredict = membership.hasPaid || hasAtLeastRole(membership.role, 'ADMIN');
@@ -105,6 +126,8 @@ export default async function TenantHomePage({ params }: { params: { tenant: str
       id: f.id,
       home: f.homeTeam.name,
       away: f.awayTeam.name,
+      homeLogo: f.homeTeam.logoUrl,
+      awayLogo: f.awayTeam.logoUrl,
       kickoff: formatDateTime(f.kickoff),
       round: f.round,
       closed,
@@ -139,6 +162,19 @@ export default async function TenantHomePage({ params }: { params: { tenant: str
 
         <TenantFixtures slug={tenant.slug} canPredict={canPredict} fixtures={fixtureVMs} />
       </section>
+
+      {champTeams.length >= 2 && competition.pointsBonus > 0 && (
+        <ChampionPicker
+          slug={tenant.slug}
+          competitionId={competition.id}
+          bonus={competition.pointsBonus}
+          teams={champTeams}
+          currentTeamId={myPick?.teamId ?? null}
+          locked={championLocked}
+          winnerTeamId={competition.championWinnerTeamId}
+          canPredict={canPredict}
+        />
+      )}
 
       {ranking.length > 0 && (
         <TenantPodium
@@ -175,7 +211,21 @@ export default async function TenantHomePage({ params }: { params: { tenant: str
                 }
               >
                 <span className="w-7 text-sm text-muted tabular-nums">{row.position}</span>
-                <span className="flex-1 min-w-0 truncate text-sm">{row.displayName || 'Jugador'}</span>
+                <span className="flex-1 min-w-0 truncate text-sm flex items-center gap-1.5">
+                  {row.champion?.logoUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={row.champion.logoUrl}
+                      alt={row.champion.name}
+                      title={`Campeón: ${row.champion.name}`}
+                      className={
+                        'h-4 w-4 object-contain shrink-0 ' +
+                        (row.champion.correct ? '' : 'opacity-60')
+                      }
+                    />
+                  )}
+                  <span className="truncate">{row.displayName || 'Jugador'}</span>
+                </span>
                 <span className="text-xs text-muted tabular-nums">{row.exact} exactos</span>
                 <span className="font-display tabular-nums w-12 text-right">{row.points}</span>
               </li>

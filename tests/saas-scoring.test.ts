@@ -172,12 +172,16 @@ describe('describeRules', () => {
 });
 
 describe('rankRows', () => {
-  const base = (over: Partial<{ id: string; points: (number | null)[]; joined: string }>) => ({
+  const base = (
+    over: Partial<{ id: string; points: (number | null)[]; joined: string; bonus: number }>,
+  ) => ({
     membershipId: over.id ?? 'm1',
     userId: `u-${over.id ?? 'm1'}`,
     displayName: over.id ?? 'm1',
     joinedAt: new Date(over.joined ?? '2026-01-01T00:00:00Z'),
     entries: (over.points ?? []).map((p) => ({ points: p })),
+    bonus: over.bonus ?? 0,
+    champion: null,
   });
 
   it('ordena por puntos descendente', () => {
@@ -251,5 +255,21 @@ describe('rankRows', () => {
 
   it('sin participantes devuelve lista vacía', () => {
     expect(rankRows([], [3])).toEqual([]);
+  });
+
+  it('el bonus de campeón suma a los puntos pero no cuenta como jugado ni exacto', () => {
+    // 'campeon' juega igual que 'base' (un exacto de 3) pero acertó el campeón
+    // (+25): debe quedar primero sin inflar played/exact.
+    const rows = rankRows(
+      [
+        base({ id: 'base', points: [3] }),
+        base({ id: 'campeon', points: [3], bonus: 25 }),
+      ],
+      [3],
+    );
+    expect(rows[0].displayName).toBe('campeon');
+    expect(rows[0].points).toBe(28);
+    expect(rows[0].played).toBe(1);
+    expect(rows[0].exact).toBe(1);
   });
 });
