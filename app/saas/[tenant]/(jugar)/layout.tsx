@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db';
 import { tenantThemeVars } from '@/lib/saas/theme';
 import { showsBranding, showsAds } from '@/lib/saas/plans';
 import { SaasLegalFooter } from '@/components/SaasLegalFooter';
+import { AdSlot } from '@/components/AdSlot';
 import { TenantNav } from '../TenantNav';
 import { saasSignOut } from '../../actions';
 import { loadTenantPlayer } from '@/lib/saas/playerView';
@@ -75,6 +76,13 @@ export default async function JugarLayout({
             <h1 className="font-display text-2xl sm:text-3xl truncate">{tenant.name}</h1>
           </div>
           <div className="flex items-center gap-2 shrink-0">
+            <Link
+              href="/mis-quinielas"
+              title="Mis quinielas"
+              className="h-9 px-3 rounded-lg border border-line text-xs flex items-center hover:bg-bg-elev"
+            >
+              Mis quinielas
+            </Link>
             {isAdmin && (
               <Link
                 href={`/saas/${tenant.slug}/panel`}
@@ -124,15 +132,20 @@ export default async function JugarLayout({
         )}
 
         {showsAds(tenant.plan) && (
-          <a
-            href="/"
-            className="block rounded-xl border border-dashed border-line bg-bg-elev p-3 text-center text-xs text-muted hover:border-accent transition-colors"
-          >
-            Publicidad ·{' '}
-            <span className="text-accent font-semibold">
-              Crea tu propia quiniela gratis en QuinielaBOX →
-            </span>
-          </a>
+          <AdSlot
+            slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_TENANT}
+            fallback={
+              <a
+                href="/"
+                className="block rounded-xl border border-dashed border-line bg-bg-elev p-3 text-center text-xs text-muted hover:border-accent transition-colors"
+              >
+                Publicidad ·{' '}
+                <span className="text-accent font-semibold">
+                  Crea tu propia quiniela gratis en QuinielaBOX →
+                </span>
+              </a>
+            }
+          />
         )}
 
         {showsBranding(tenant.plan) && (

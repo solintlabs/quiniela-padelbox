@@ -81,7 +81,13 @@ export default async function PanelPage({
               Plan {plan.name} · {tenant.status === 'TRIAL' ? 'en prueba' : tenant.status.toLowerCase()}
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Link
+              href="/mis-quinielas"
+              className="h-10 px-4 rounded-lg border border-line text-sm flex items-center"
+            >
+              Mis quinielas
+            </Link>
             <Link
               href={`/saas/${tenant.slug}`}
               className="h-10 px-4 rounded-lg border border-line text-sm flex items-center"

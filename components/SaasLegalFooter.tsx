@@ -5,10 +5,21 @@ import Link from 'next/link';
  * (hub, panel del organizador y vista del jugador). Da acceso siempre a los
  * términos, la privacidad y el soporte — requisito para publicar y para la app.
  */
+const APP_STORE_URL =
+  process.env.NEXT_PUBLIC_APP_STORE_URL || 'https://apps.apple.com/app/id6770234104';
+
 export function SaasLegalFooter() {
   return (
     <footer className="mt-10 pt-6 border-t border-line text-center space-y-2">
-      <nav className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-muted">
+      <a
+        href={APP_STORE_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-2 h-9 px-4 rounded-lg border border-line text-xs font-semibold hover:bg-bg-elev"
+      >
+        <span aria-hidden></span> Descargar la app (iOS)
+      </a>
+      <nav className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-muted pt-1">
         <Link href="/terms" className="hover:text-ink underline-offset-4 hover:underline">
           Términos y condiciones
         </Link>
