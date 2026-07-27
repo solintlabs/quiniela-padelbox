@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { saasSignOut } from '../saas/actions';
 
 export const metadata = {
   title: 'Mis quinielas',
@@ -131,6 +132,14 @@ export default async function MisQuinielasPage() {
           >
             Volver al inicio
           </Link>
+          <form action={saasSignOut}>
+            <button
+              type="submit"
+              className="inline-flex items-center h-11 px-5 rounded-lg border border-line text-sm text-muted hover:text-ink"
+            >
+              Cerrar sesión
+            </button>
+          </form>
         </div>
       </div>
     </main>

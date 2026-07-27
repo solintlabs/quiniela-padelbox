@@ -12,6 +12,7 @@ import { CompetitionSettings } from './CompetitionSettings';
 import { FixturesManager } from './FixturesManager';
 import { AddCompetition } from './AddCompetition';
 import { tenantThemeVars } from '@/lib/saas/theme';
+import { saasSignOut } from '../../actions';
 
 export const metadata = { robots: { index: false, follow: false } };
 export const dynamic = 'force-dynamic';
@@ -58,12 +59,22 @@ export default async function PanelPage({
               Plan {plan.name} · {tenant.status === 'TRIAL' ? 'en prueba' : tenant.status.toLowerCase()}
             </p>
           </div>
-          <Link
-            href={`/saas/${tenant.slug}`}
-            className="h-10 px-4 rounded-lg border border-line text-sm flex items-center"
-          >
-            Ver como jugador →
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/saas/${tenant.slug}`}
+              className="h-10 px-4 rounded-lg border border-line text-sm flex items-center"
+            >
+              Ver como jugador →
+            </Link>
+            <form action={saasSignOut}>
+              <button
+                type="submit"
+                className="h-10 px-4 rounded-lg border border-line text-sm text-muted hover:text-ink"
+              >
+                Cerrar sesión
+              </button>
+            </form>
+          </div>
         </header>
 
         {searchParams.upgraded && (
