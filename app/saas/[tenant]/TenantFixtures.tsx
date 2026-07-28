@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 
 export interface FixtureVM {
@@ -136,6 +137,14 @@ function Row({ slug, canPredict, f }: { slug: string; canPredict: boolean; f: Fi
             {f.points !== null && ` · +${f.points} pts`}
           </p>
         )
+      )}
+      {f.closed && (
+        <Link
+          href={`/saas/${slug}/partidos/${f.id}`}
+          className="inline-block text-xs text-accent hover:underline mt-2"
+        >
+          Ver cómo predijeron los demás →
+        </Link>
       )}
       {error && <p className="text-xs text-danger mt-2">{error}</p>}
     </li>

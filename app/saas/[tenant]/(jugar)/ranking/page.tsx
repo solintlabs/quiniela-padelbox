@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { loadTenantPlayer, loadActiveCompetition, loadRanking } from '@/lib/saas/playerView';
 import { NoCompetition } from '../../PlayerBits';
 
@@ -22,31 +23,33 @@ export default async function RankingPage({ params }: { params: { tenant: string
       ) : (
         <ol className="rounded-xl border border-line bg-bg-elev divide-y divide-line overflow-hidden">
           {ranking.map((row) => (
-            <li
-              key={row.membershipId}
-              className={
-                'flex items-center gap-3 px-4 py-2.5 ' +
-                (row.membershipId === membershipId ? 'bg-accent/5' : '')
-              }
-            >
-              <span className="w-7 text-sm text-muted tabular-nums">{row.position}</span>
-              <span className="flex-1 min-w-0 truncate text-sm flex items-center gap-1.5">
-                {row.champion?.logoUrl && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={row.champion.logoUrl}
-                    alt={row.champion.name}
-                    title={`Campeón: ${row.champion.name}`}
-                    className={
-                      'h-4 w-4 object-contain shrink-0 ' +
-                      (row.champion.correct ? '' : 'opacity-60')
-                    }
-                  />
-                )}
-                <span className="truncate">{row.displayName || 'Jugador'}</span>
-              </span>
-              <span className="text-xs text-muted tabular-nums">{row.exact} exactos</span>
-              <span className="font-display tabular-nums w-12 text-right">{row.points}</span>
+            <li key={row.membershipId}>
+              <Link
+                href={`/saas/${tenant.slug}/jugador/${row.membershipId}`}
+                className={
+                  'flex items-center gap-3 px-4 py-2.5 hover:bg-bg transition-colors ' +
+                  (row.membershipId === membershipId ? 'bg-accent/5' : '')
+                }
+              >
+                <span className="w-7 text-sm text-muted tabular-nums">{row.position}</span>
+                <span className="flex-1 min-w-0 truncate text-sm flex items-center gap-1.5">
+                  {row.champion?.logoUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={row.champion.logoUrl}
+                      alt={row.champion.name}
+                      title={`Campeón: ${row.champion.name}`}
+                      className={
+                        'h-4 w-4 object-contain shrink-0 ' +
+                        (row.champion.correct ? '' : 'opacity-60')
+                      }
+                    />
+                  )}
+                  <span className="truncate">{row.displayName || 'Jugador'}</span>
+                </span>
+                <span className="text-xs text-muted tabular-nums">{row.exact} exactos</span>
+                <span className="font-display tabular-nums w-12 text-right">{row.points}</span>
+              </Link>
             </li>
           ))}
         </ol>
