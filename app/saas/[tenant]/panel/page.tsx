@@ -15,6 +15,7 @@ import { FixturesManager } from './FixturesManager';
 import { AddCompetition } from './AddCompetition';
 import { TenantSettings } from './TenantSettings';
 import { SponsorsManager } from './SponsorsManager';
+import { PaymentMethodsManager } from './PaymentMethodsManager';
 import { InviteShare } from './InviteShare';
 import { ChampionWinner } from './ChampionWinner';
 import { SaasLegalFooter } from '@/components/SaasLegalFooter';
@@ -40,7 +41,7 @@ export default async function PanelPage({
   const { tenant } = ctx;
   const isOwner = ctx.membership.role === 'OWNER';
 
-  const [competitions, players, paidCount, sponsors] = await Promise.all([
+  const [competitions, players, paidCount, sponsors, paymentRows] = await Promise.all([
     prisma.saasCompetition.findMany({
       where: competitionScope(tenant.id),
       orderBy: { createdAt: 'desc' },
@@ -56,7 +57,20 @@ export default async function PanelPage({
       orderBy: { sortOrder: 'asc' },
       select: { id: true, name: true, logoUrl: true, url: true },
     }),
+    prisma.paymentMethod.findMany({
+      where: { tenantId: tenant.id },
+      orderBy: { sortOrder: 'asc' },
+      select: { id: true, title: true, subtitle: true, icon: true, fields: true },
+    }),
   ]);
+
+  const paymentMethods = paymentRows.map((m) => ({
+    id: m.id,
+    title: m.title,
+    subtitle: m.subtitle,
+    icon: m.icon,
+    fields: Array.isArray(m.fields) ? (m.fields as Array<{ label: string; value: string }>) : [],
+  }));
 
   const plan = PLANS[tenant.plan];
   const limits = limitsFor(tenant.plan);
@@ -244,6 +258,8 @@ export default async function PanelPage({
           )}
           {competitions.length < limits.maxCompetitions && <AddCompetition slug={tenant.slug} />}
         </section>
+
+        <PaymentMethodsManager slug={tenant.slug} initial={paymentMethods} />
 
         <SponsorsManager slug={tenant.slug} isPro={isPro} initial={sponsors} />
 
