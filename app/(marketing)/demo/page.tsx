@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { BrandMark } from '@/components/BrandMark';
 import { DemoQuiniela } from './DemoQuiniela';
 import './demo.css';
 
@@ -29,11 +30,7 @@ export default function DemoPage() {
       {/* Cabecera propia: sin ella no había forma de volver al inicio. */}
       <header className="dm__top">
         <Link href="/" className="dm__brand">
-          <svg viewBox="0 0 100 100" width="26" height="26" aria-hidden>
-            <circle cx="50" cy="49" r="27" fill="none" stroke="currentColor" strokeWidth="10" />
-            <line x1="62" y1="61" x2="78" y2="77" stroke="currentColor" strokeWidth="10" strokeLinecap="round" />
-            <circle cx="50" cy="49" r="14" fill="currentColor" />
-          </svg>
+          <BrandMark className="dm__mark" />
           <span>QUINIELA<i>BOX</i></span>
         </Link>
         <div className="dm__topcta">

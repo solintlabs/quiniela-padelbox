@@ -190,3 +190,4 @@
 .dq__rules ul { margin: 0; padding-left: 1.1rem; color: var(--muted); }
 .dq__rules p { margin: 0; }
 .dq__muted { color: var(--muted); font-size: .7rem; }
+.dm__mark { width: 1.6rem; height: 1.6rem; color: var(--lime); flex: none; }

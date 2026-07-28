@@ -6,6 +6,7 @@ import { auth } from '@/lib/auth';
 import './landing.css';
 import { PLANS } from '@/lib/saas/plans';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { BrandMark } from '@/components/BrandMark';
 import { LandingFX } from './LandingFX';
 import { ScoringDemo } from './ScoringDemo';
 import { Assistant } from './Assistant';
@@ -56,23 +57,13 @@ const jsonLdProduct = {
   provider: { '@type': 'Organization', name: 'Solint', url: 'https://solint.cloud' },
 };
 
-/** Marca: pala de pádel con un balón de fútbol dentro. */
+/**
+ * Marca de la landing. Delega en BrandMark (fuente única) para que el logo sea
+ * el mismo en la web, el favicon y la app; antes era una pala de pádel que en
+ * pequeño se leía como un asterisco.
+ */
 function Mark() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <line x1="14.1" y1="14.1" x2="20.6" y2="20.6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-      <circle cx="9" cy="9" r="7.1" stroke="currentColor" strokeWidth="1.8" />
-      <circle cx="9" cy="9" r="4.9" fill="var(--lime)" />
-      <polygon points="9,6.75 11.14,8.30 10.32,10.82 7.68,10.82 6.86,8.30" fill="var(--paper)" />
-      <g stroke="var(--paper)" strokeWidth="0.9" strokeLinecap="round">
-        <line x1="9" y1="6.75" x2="9" y2="4.49" />
-        <line x1="11.14" y1="8.30" x2="13.29" y2="7.61" />
-        <line x1="10.32" y1="10.82" x2="11.65" y2="12.65" />
-        <line x1="7.68" y1="10.82" x2="6.35" y2="12.65" />
-        <line x1="6.86" y1="8.30" x2="4.71" y2="7.61" />
-      </g>
-    </svg>
-  );
+  return <BrandMark className="w-full h-full" ball="var(--lime)" seam="var(--paper)" />;
 }
 
 /** Balón pequeño (una tinta) para los eyebrow. */
