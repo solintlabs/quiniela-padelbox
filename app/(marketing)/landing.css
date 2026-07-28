@@ -408,3 +408,47 @@
   line-height: 1.4;
 }
 .plan__season strong { color: hsl(var(--ink)); }
+
+/* ============================================================
+   MÓVIL: la cabecera quedaba apretada (marca + tema + Entrar +
+   CTA en una sola línea) y la navegación se ocultaba del todo
+   bajo 960px, así que "Demo" no existía en el móvil.
+   ============================================================ */
+@media (max-width: 959px) {
+  /* La barra pasa a dos filas: marca+acciones arriba, enlaces debajo. */
+  .lz-top__in { flex-wrap: wrap; gap: .5rem .75rem; padding-block: .65rem; }
+
+  /* Navegación como fila deslizable, sin apelotonar. */
+  .lz-top nav {
+    display: flex;
+    order: 3;
+    width: 100%;
+    gap: 1.1rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: .15rem;
+    -webkit-overflow-scrolling: touch;
+  }
+  .lz-top nav::-webkit-scrollbar { display: none; }
+  .lz-top nav a { white-space: nowrap; }
+
+  .lz-top__cta { gap: .5rem; }
+  /* "Entrar" ocupaba sitio al lado del CTA principal. */
+  .lz-top__enter { font-size: var(--s--1); }
+  .lz .btn--sm { padding-inline: .8rem; }
+}
+
+@media (max-width: 30rem) {
+  /* Titulares algo más contenidos: a 2.7rem el hero comía la pantalla. */
+  .lz { --s-3: clamp(2.1rem, 11vw, 3rem); --s-2: clamp(1.55rem, 7.5vw, 2.2rem); }
+
+  /* Botones del hero a ancho completo: alineados y con buen área táctil. */
+  .lz .hero__cta { flex-direction: column; align-items: stretch; gap: .6rem; }
+  .lz .hero__cta .btn { justify-content: center; width: 100%; }
+
+  /* Un poco más de aire entre secciones para que no se vea aglomerado. */
+  .lz .band { padding-block: clamp(2.6rem, 11vw, 4rem); }
+  .lz .stats, .lz .feats, .lz .games, .lz .rules, .lz .steps, .lz .prize, .lz .plans {
+    gap: .85rem;
+  }
+}
