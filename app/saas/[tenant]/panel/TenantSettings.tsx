@@ -167,7 +167,7 @@ export function TenantSettings({
           onChange={(e) => setPaymentInfo(e.target.value)}
           maxLength={2000}
           rows={3}
-          placeholder={'Pago Móvil: 0412-…\nZelle: correo@…\nBinance: …'}
+          placeholder={'Instrucciones libres. Los datos de cobro (cuenta, IBAN…) se añaden abajo en «Cómo cobras el bote».'}
           className="mt-1 w-full rounded-lg border border-line bg-bg px-3 py-2 resize-y"
         />
       </label>

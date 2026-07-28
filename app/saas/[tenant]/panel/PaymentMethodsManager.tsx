@@ -12,9 +12,18 @@ export interface PaymentMethodVM {
 }
 
 /**
- * Métodos de pago del tenant (Pago Móvil, Zelle, Binance…). El jugador los ve
- * al inscribirse con botón de copiar, como en PADELBOX.
+ * Métodos de cobro del tenant. Deliberadamente genéricos: el organizador puede
+ * estar en cualquier país, así que el modelo es "título + icono + pares
+ * etiqueta/valor" y no una lista cerrada de bancos. Las plantillas de abajo son
+ * solo atajos para no escribir desde cero.
  */
+const PRESETS: Array<{ icon: string; title: string; fields: string[] }> = [
+  { icon: '🏦', title: 'Transferencia bancaria', fields: ['Titular', 'IBAN / Nº de cuenta', 'Banco'] },
+  { icon: '📱', title: 'Pago con móvil', fields: ['Titular', 'Teléfono'] },
+  { icon: '💳', title: 'PayPal', fields: ['Correo / enlace'] },
+  { icon: '🪙', title: 'Cripto', fields: ['Red', 'Dirección'] },
+  { icon: '💵', title: 'Efectivo', fields: ['Dónde entregarlo'] },
+];
 export function PaymentMethodsManager({
   slug,
   initial,
@@ -76,10 +85,10 @@ export function PaymentMethodsManager({
   return (
     <section className="rounded-2xl border border-line bg-bg-elev p-5 sm:p-6 space-y-4">
       <div>
-        <h2 className="font-display text-xl">Métodos de pago</h2>
+        <h2 className="font-display text-xl">Cómo cobras el bote</h2>
         <p className="text-sm text-muted mt-1">
-          Cómo te pagan el bote tus jugadores. Los verán al inscribirse, con botón
-          de copiar.
+          Añade los datos que tus jugadores necesitan para pagarte, sea cual sea
+          tu país. Los verán al inscribirse, con botón de copiar.
         </p>
       </div>
 
@@ -115,24 +124,42 @@ export function PaymentMethodsManager({
       )}
 
       <div className="space-y-2 border-t border-line pt-4">
+        <div className="flex flex-wrap gap-1.5">
+          <span className="text-xs text-muted self-center mr-1">Plantillas:</span>
+          {PRESETS.map((p) => (
+            <button
+              key={p.title}
+              type="button"
+              onClick={() => {
+                setIcon(p.icon);
+                setTitle(p.title);
+                setFields(p.fields.map((label) => ({ label, value: '' })));
+              }}
+              className="text-xs rounded-full border border-line px-2.5 py-1 hover:border-accent"
+            >
+              {p.icon} {p.title}
+            </button>
+          ))}
+        </div>
+
         <div className="grid sm:grid-cols-3 gap-2">
           <input
             value={icon}
             onChange={(e) => setIcon(e.target.value)}
-            placeholder="📲"
+            placeholder="🏦"
             maxLength={8}
             className="h-10 rounded-lg border border-line bg-bg px-3 text-sm"
           />
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Pago Móvil"
+            placeholder="Transferencia bancaria"
             className="h-10 rounded-lg border border-line bg-bg px-3 text-sm"
           />
           <input
             value={subtitle}
             onChange={(e) => setSubtitle(e.target.value)}
-            placeholder="Banesco (opcional)"
+            placeholder="Nombre del banco (opcional)"
             className="h-10 rounded-lg border border-line bg-bg px-3 text-sm"
           />
         </div>
@@ -144,7 +171,7 @@ export function PaymentMethodsManager({
               onChange={(e) =>
                 setFields((prev) => prev.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)))
               }
-              placeholder="Teléfono"
+              placeholder="Titular"
               className="h-10 rounded-lg border border-line bg-bg px-3 text-sm"
             />
             <input
@@ -152,7 +179,7 @@ export function PaymentMethodsManager({
               onChange={(e) =>
                 setFields((prev) => prev.map((x, j) => (j === i ? { ...x, value: e.target.value } : x)))
               }
-              placeholder="0412-1234567"
+              placeholder="IBAN / Nº de cuenta"
               className="h-10 rounded-lg border border-line bg-bg px-3 text-sm font-mono"
             />
           </div>

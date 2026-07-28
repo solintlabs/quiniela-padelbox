@@ -44,10 +44,7 @@ export const PLANS: Record<TenantPlan, Plan> = {
     period: null,
     tagline: 'Para probar con tu grupo de amigos.',
     limits: {
-      // 25 y no 15: un club típico son 30-50 socios. Con 15 el gratis no da ni
-      // para probar de verdad, así que no engancha. El salto a Pro se justifica
-      // por competiciones, anuncios y marca, no por dejar gente fuera.
-      maxPlayers: 25,
+      maxPlayers: 15,
       maxCompetitions: 1,
       // Catálogo ESPN habilitado también en FREE: sin él, y sin la entrada
       // manual de partidos aún construida, el plan gratis sería inservible.
