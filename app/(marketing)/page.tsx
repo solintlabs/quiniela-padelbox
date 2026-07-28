@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import './landing.css';
 import { PLANS } from '@/lib/saas/plans';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { LandingFX } from './LandingFX';
 import { ScoringDemo } from './ScoringDemo';
 import { Assistant } from './Assistant';
@@ -230,6 +231,7 @@ export default async function LandingPage() {
             </span>
           </a>
           <nav>
+            <Link href="/demo">Demo</Link>
             <a href="#juegos">Juegos</a>
             <a href="#reglas">Reglas</a>
             <a href="#app">La app</a>
@@ -237,6 +239,7 @@ export default async function LandingPage() {
             <a href="#contacto">Contacto</a>
           </nav>
           <div className="lz-top__cta">
+            <ThemeToggle />
             <Link className="lz-top__enter" href="/login">Entrar</Link>
             <Link className="btn btn--solid btn--sm" href="/saas/nueva">Crea tu quiniela</Link>
           </div>

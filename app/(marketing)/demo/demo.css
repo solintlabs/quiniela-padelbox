@@ -15,6 +15,28 @@
   padding: 3rem 1.25rem 4rem;
 }
 
+/* Cabecera del demo */
+.dm__top {
+  max-width: 62rem; margin: -1.5rem auto 2rem; display: flex; align-items: center;
+  gap: 1rem; flex-wrap: wrap; padding-bottom: 1rem; border-bottom: 1px solid var(--line);
+}
+.dm__brand {
+  display: inline-flex; align-items: center; gap: .5rem; color: var(--ink);
+  text-decoration: none; font-family: var(--font-display, inherit);
+  font-size: 1.05rem; letter-spacing: -.03em;
+}
+.dm__brand svg { color: var(--lime); flex: none; }
+.dm__brand i { font-style: normal; color: var(--lime); }
+.dm__topcta { margin-left: auto; display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
+.dm__toplink { color: var(--muted); text-decoration: none; font-size: .85rem; }
+.dm__toplink:hover { color: var(--ink); }
+.dm__topbtn {
+  display: inline-flex; align-items: center; height: 2.25rem; padding: 0 .9rem;
+  border-radius: .55rem; background: var(--lime); color: var(--lime-ink);
+  font-weight: 700; font-size: .82rem; text-decoration: none;
+}
+.dm__topbtn:hover { filter: brightness(.95); }
+
 .dm__hero { max-width: 46rem; margin: 0 auto; text-align: center; }
 .dm__eyebrow {
   font-size: .7rem; letter-spacing: .28em; text-transform: uppercase;

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { DemoQuiniela } from './DemoQuiniela';
 import './demo.css';
 
@@ -25,6 +26,23 @@ export const metadata: Metadata = {
 export default function DemoPage() {
   return (
     <main className="dm">
+      {/* Cabecera propia: sin ella no había forma de volver al inicio. */}
+      <header className="dm__top">
+        <Link href="/" className="dm__brand">
+          <svg viewBox="0 0 100 100" width="26" height="26" aria-hidden>
+            <circle cx="50" cy="49" r="27" fill="none" stroke="currentColor" strokeWidth="10" />
+            <line x1="62" y1="61" x2="78" y2="77" stroke="currentColor" strokeWidth="10" strokeLinecap="round" />
+            <circle cx="50" cy="49" r="14" fill="currentColor" />
+          </svg>
+          <span>QUINIELA<i>BOX</i></span>
+        </Link>
+        <div className="dm__topcta">
+          <ThemeToggle />
+          <Link href="/" className="dm__toplink">← Volver al inicio</Link>
+          <Link href="/saas/nueva" className="dm__topbtn">Crea la tuya</Link>
+        </div>
+      </header>
+
       <section className="dm__hero">
         <p className="dm__eyebrow">Demo en vivo</p>
         <h1 className="dm__title">
