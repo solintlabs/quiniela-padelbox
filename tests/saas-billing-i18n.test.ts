@@ -10,6 +10,7 @@ import {
   formatCurrencyIn,
 } from '@/lib/saas/i18n';
 import {
+  PLANS,
   canAddPlayer,
   canAddCompetition,
   canUseEspnCatalog,
@@ -83,10 +84,13 @@ describe('periodo de prueba', () => {
 
 describe('límites por plan', () => {
   it('el plan gratuito tiene tope de jugadores', () => {
-    expect(canAddPlayer('FREE', 14).allowed).toBe(true);
-    const full = canAddPlayer('FREE', 15);
+    // El tope se lee del plan, no se fija en el test: así subirlo (15 → 25) no
+    // obliga a tocar el aserto.
+    const max = PLANS.FREE.limits.maxPlayers;
+    expect(canAddPlayer('FREE', max - 1).allowed).toBe(true);
+    const full = canAddPlayer('FREE', max);
     expect(full.allowed).toBe(false);
-    expect(full.message).toContain('15');
+    expect(full.message).toContain(String(max));
   });
 
   it('todos los planes llegan al catálogo de ligas (manual solo no bastaba)', () => {
