@@ -5,6 +5,25 @@
 
 ---
 
+## 🟢 Sesión 4 — camino al lanzamiento (paridad PRO, retención, demo)
+
+**Todo live en producción:**
+- **Recordatorios por tenant** (`lib/saas/reminders.ts`, en el cron SaaS): avisa por **push + email con la marca del cliente** a quien le falta pronosticar un partido que cierra en <3 h. Idempotente vía `SaasFixture.reminderSentAt` (migración). *Era el mayor agujero: sin avisos la quiniela muere y el club no renueva.*
+- **Capa social** (el gancho de PADELBOX): `/saas/[t]/partidos/[fixtureId]` (tendencia 1X2 + todos los pronósticos, revelados SOLO al cerrar) y `/saas/[t]/jugador/[membershipId]` (perfil con stats y pronósticos de partidos cerrados). El ranking enlaza a los perfiles. Sin migración.
+- **Métodos de cobro por tenant** (`PaymentMethod.tenantId`, sin migración): el organizador define cómo le pagan el bote con plantillas **genéricas y globales** (transferencia/IBAN, pago con móvil, PayPal, cripto, efectivo — NO específicas de Venezuela); el jugador los ve con botón de copiar. Expuestos también en `/play` para la app.
+- **Demo público en `/demo`**: quiniela jugable sin cuenta (pestañas, steppers, podio, ranking, reglas), indexable y enlazada desde el hero + sitemap. *Nadie paga sin ver.*
+- **Icono corregido**: el balón se leía como asterisco/rueda; ahora esfera blanca con pentágono y costuras, legible a 64px. Sincronizado con el favicon web.
+
+**Decisiones del dueño:** el plan gratuito se queda en **15 jugadores** (se probó 25 y se revirtió).
+
+**Recomendación de monetización dada (pendiente de decidir):** los ads son calderilla (RPM $1–3 → ~$5–15/mes con 500 usuarios); el negocio es Pro. Sugerido pasar de $9/mes a **"por torneo" $19–29** o **anual $79**, porque el mensual choca con la estacionalidad. `AdSlot` (AdSense) ya cableado: falta que el dueño cree la cuenta y ponga `NEXT_PUBLIC_ADSENSE_CLIENT` + `NEXT_PUBLIC_ADSENSE_SLOT_TENANT`. **Ojo:** AdSense exige contenido público con tráfico y casi todo el sitio está tras login/`noindex` → hará falta contenido SEO real.
+
+**Gaps de paridad conscientes (NO hechos, por orden de valor):** perfil editable por el jugador (hoy solo el organizador cambia su nombre), recalcular puntos y pausar sync desde el panel, flechas de movimiento en el ranking, bote calculado, premios semanales/gift cards, y bracket/cuadro PDF (grande y específico del Mundial).
+
+**App:** v1.1.x en TestFlight — icono nuevo, selector "Mis quinielas", pantalla de quiniela con pestañas (Inicio/Partidos/Ranking/Reglas), podio, escudos y métodos de cobro con copiar. **Apple cerró el tren 1.0.9**: hay que subir `version` en `app.json` en cada envío (ITMS-90186/90062).
+
+---
+
 ## 🟢 Sesión 3 — personalización del organizador, logout, app en TestFlight
 
 **Web (todo live en producción):**
