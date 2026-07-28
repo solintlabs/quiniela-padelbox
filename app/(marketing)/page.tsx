@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import './landing.css';
-import { DemoTour } from '@/components/DemoTour';
 import { PLANS } from '@/lib/saas/plans';
 import { LandingFX } from './LandingFX';
 import { ScoringDemo } from './ScoringDemo';
@@ -262,10 +261,11 @@ export default async function LandingPage() {
                 Crea tu quiniela gratis
                 <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
               </Link>
+              {/* Una sola llamada a "ver el producto": la demo jugable. El tour
+                  de capturas (DemoTour) confundía al estar al lado. */}
               <Link className="btn" href="/demo">
-                Ver demo en vivo
+                Probar demo en vivo
               </Link>
-              <DemoTour variant="pill" />
             </div>
             <div className="hero__stores rise">
               <span className="hero__stores-label">O descárgala en tu móvil:</span>

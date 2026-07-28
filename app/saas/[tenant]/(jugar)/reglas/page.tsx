@@ -3,12 +3,17 @@ import { describeRules, rulesOf } from '@/lib/saas/scoring';
 import { loadTenantPlayer, loadActiveCompetition } from '@/lib/saas/playerView';
 import { TenantRules } from '../../TenantRules';
 import { PaymentMethods, type PlayerPaymentMethod } from '../../PaymentMethods';
+import { MyNameCard } from '../../MyNameCard';
 
 export const dynamic = 'force-dynamic';
 
-/** Reglas e inscripción de la quiniela + cómo pagar + premios. */
+/** Reglas e inscripción de la quiniela + cómo pagar + premios + tu perfil. */
 export default async function ReglasPage({ params }: { params: { tenant: string } }) {
-  const { tenant } = await loadTenantPlayer(params.tenant);
+  const { tenant, membershipId } = await loadTenantPlayer(params.tenant);
+  const me = await prisma.saasMembership.findUnique({
+    where: { id: membershipId },
+    select: { displayName: true },
+  });
   const [competition, methodRows] = await Promise.all([
     loadActiveCompetition(tenant.id),
     prisma.paymentMethod.findMany({
@@ -40,6 +45,8 @@ export default async function ReglasPage({ params }: { params: { tenant: string 
       />
 
       <PaymentMethods methods={methods} />
+
+      <MyNameCard slug={tenant.slug} initial={me?.displayName ?? ''} />
 
       {tenant.prizesText && (
         <section className="rounded-xl border border-line bg-bg-elev p-5">

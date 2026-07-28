@@ -42,6 +42,27 @@ export function CompetitionSettings({
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [recomputing, setRecomputing] = useState(false);
+  const [recomputed, setRecomputed] = useState<number | null>(null);
+
+  /** Recalcula todos los puntos con las reglas actuales. */
+  async function recompute() {
+    setRecomputing(true);
+    setRecomputed(null);
+    setError(null);
+    try {
+      const res = await fetch(`/api/saas/${slug}/competitions/${competitionId}/recompute`, {
+        method: 'POST',
+      });
+      const d = (await res.json().catch(() => ({}))) as { entriesScored?: number; error?: string };
+      if (!res.ok) throw new Error(d.error ?? 'No se pudo recalcular');
+      setRecomputed(d.entriesScored ?? 0);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error');
+    } finally {
+      setRecomputing(false);
+    }
+  }
 
   async function patch(body: Partial<CompRules> & { status?: string }) {
     setSaving(true);
@@ -122,10 +143,22 @@ export function CompetitionSettings({
                 Reabrir quiniela
               </button>
             )}
+            <button
+              type="button"
+              onClick={recompute}
+              disabled={recomputing}
+              className="h-9 px-4 rounded-lg border border-line text-sm hover:bg-bg disabled:opacity-50"
+            >
+              {recomputing ? 'Recalculando…' : '↻ Recalcular puntos'}
+            </button>
             {saved && <span className="text-xs text-success">✓ Guardado</span>}
+            {recomputed !== null && (
+              <span className="text-xs text-success">✓ {recomputed} pronósticos recalculados</span>
+            )}
           </div>
           <p className="text-[11px] text-muted">
-            Recalcula los puntos ya asignados con «Actualizar partidos y puntos» tras cambiar las reglas.
+            Tras cambiar las reglas, pulsa «Recalcular puntos» para aplicarlas a los
+            pronósticos ya puntuados.
           </p>
           {error && <p className="text-xs text-danger">{error}</p>}
         </div>
