@@ -4,7 +4,7 @@ import { requireTenantRoleApi } from '@/lib/saas/permissions';
 import { competitionScope } from '@/lib/saas/scope';
 import { canAddCompetition, canUseEspnCatalog } from '@/lib/saas/plans';
 import { isKnownLeague } from '@/lib/saas/providers/espn';
-import { importCompetitionFixtures } from '@/lib/saas/sync';
+import { importCompetitionFixtures, initialImportWindow } from '@/lib/saas/sync';
 
 /**
  * Competiciones de un tenant.
@@ -131,15 +131,19 @@ export async function POST(
     },
   });
 
-  // Import inicial opcional. Un fallo aquí no tumba el alta: la competición
-  // ya existe y el organizador puede reintentar desde el panel.
+  // Import inicial. Un fallo aquí no tumba el alta: la competición ya existe y
+  // el organizador puede reintentar desde el panel.
+  //
+  // Siempre se importa (antes solo si el cliente mandaba fechas) y con ventana
+  // AMPLIA: crear una quiniela de una liga en descanso dejaba cero partidos.
   let imported = null;
-  if (data.provider === 'ESPN' && data.importFrom && data.importTo) {
+  if (data.provider === 'ESPN') {
+    const win =
+      data.importFrom && data.importTo
+        ? { start: new Date(data.importFrom), end: new Date(data.importTo) }
+        : initialImportWindow(new Date());
     try {
-      imported = await importCompetitionFixtures(competition.id, {
-        start: new Date(data.importFrom),
-        end: new Date(data.importTo),
-      });
+      imported = await importCompetitionFixtures(competition.id, win);
     } catch (e) {
       console.error('[saas/competitions] import inicial fallido:', e);
       imported = { error: 'La competición se creó, pero la importación falló. Reinténtala desde el panel.' };

@@ -247,17 +247,35 @@ export async function importCompetitionFixtures(
   };
 }
 
-/** Días hacia atrás y hacia delante que mira el cron en cada pasada. */
+/**
+ * Días hacia atrás y hacia delante que mira el cron en cada pasada.
+ *
+ * El "hacia delante" era de 10 días y dejaba quinielas VACÍAS: si la liga está
+ * en descanso (p. ej. crear una quiniela de LALIGA en julio, que arranca en
+ * agosto) ESPN no devuelve nada en esa ventana y el organizador veía cero
+ * partidos. 45 días cubre el parón entre temporadas sin descargar el año entero
+ * en cada pasada.
+ */
 export const SYNC_WINDOW_DAYS_BACK = 3;
-export const SYNC_WINDOW_DAYS_AHEAD = 10;
+export const SYNC_WINDOW_DAYS_AHEAD = 45;
+
+/** Ventana de la PRIMERA importación: trae el calendario ya publicado. */
+export const INITIAL_IMPORT_DAYS_AHEAD = 210;
 
 /**
- * Ventana corta alrededor de ahora. El cron no re-descarga la temporada
- * entera cada vez: solo lo que puede haber cambiado.
+ * Ventana alrededor de ahora. El cron no re-descarga la temporada entera cada
+ * vez: solo lo que puede haber cambiado o está por venir.
  */
 export function syncWindow(now: Date): { start: Date; end: Date } {
   const start = new Date(now.getTime() - SYNC_WINDOW_DAYS_BACK * 86_400_000);
   const end = new Date(now.getTime() + SYNC_WINDOW_DAYS_AHEAD * 86_400_000);
+  return { start, end };
+}
+
+/** Ventana amplia para el alta de una competición (o un resync manual). */
+export function initialImportWindow(now: Date): { start: Date; end: Date } {
+  const start = new Date(now.getTime() - SYNC_WINDOW_DAYS_BACK * 86_400_000);
+  const end = new Date(now.getTime() + INITIAL_IMPORT_DAYS_AHEAD * 86_400_000);
   return { start, end };
 }
 

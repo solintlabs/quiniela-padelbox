@@ -1,6 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { parseFixturesCsv, csvTemplate, CSV_MAX_ROWS } from '@/lib/saas/csv';
-import { fixturePatchFor, syncWindow } from '@/lib/saas/sync';
+import {
+  fixturePatchFor,
+  syncWindow,
+  SYNC_WINDOW_DAYS_BACK,
+  SYNC_WINDOW_DAYS_AHEAD,
+} from '@/lib/saas/sync';
 
 describe('parseFixturesCsv', () => {
   it('parsea el caso normal y deduplica equipos en orden de aparición', () => {
@@ -169,6 +174,12 @@ describe('syncWindow', () => {
     expect(w.start.getTime()).toBeLessThan(now.getTime());
     expect(w.end.getTime()).toBeGreaterThan(now.getTime());
     const days = (w.end.getTime() - w.start.getTime()) / 86_400_000;
-    expect(days).toBe(13);
+    expect(days).toBe(SYNC_WINDOW_DAYS_BACK + SYNC_WINDOW_DAYS_AHEAD);
+  });
+
+  it('mira bastante hacia delante, para que una liga en descanso no deje la quiniela vacía', () => {
+    // Con 10 días, crear una quiniela de LALIGA en julio (arranca en agosto)
+    // importaba CERO partidos y el organizador no veía nada.
+    expect(SYNC_WINDOW_DAYS_AHEAD).toBeGreaterThanOrEqual(30);
   });
 });

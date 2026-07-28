@@ -52,8 +52,12 @@ const RANKING = [
 export function DemoQuiniela() {
   const [tab, setTab] = useState<Tab>('inicio');
   const [picks, setPicks] = useState<Record<string, { h: number; a: number; saved: boolean }>>({});
+  // A simple vista la demo parecía una captura: el aviso y la animación del
+  // primer stepper dicen que se puede tocar. Desaparece al primer toque.
+  const [touched, setTouched] = useState(false);
 
   function set(id: string, side: 'h' | 'a', delta: number) {
+    setTouched(true);
     setPicks((prev) => {
       const cur = prev[id] ?? { h: 0, a: 0, saved: false };
       const next = { ...cur, saved: false };
@@ -63,6 +67,7 @@ export function DemoQuiniela() {
   }
 
   function save(id: string) {
+    setTouched(true);
     setPicks((prev) => ({ ...prev, [id]: { ...(prev[id] ?? { h: 0, a: 0 }), saved: true } }));
   }
 
@@ -79,6 +84,12 @@ export function DemoQuiniela() {
         </div>
         <span className="dq__badge">Demo</span>
       </div>
+
+      {!touched && (
+        <p className="dq__hint">
+          <span aria-hidden>👆</span> Tócalo: funciona de verdad. Cambia el marcador y guarda.
+        </p>
+      )}
 
       <div className="dq__tabs" role="tablist">
         {TABS.map((t) => (
@@ -117,8 +128,16 @@ export function DemoQuiniela() {
           </div>
 
           <h4 className="dq__section">Próximos partidos</h4>
-          {open.slice(0, 2).map((f) => (
-            <Fixture key={f.id} f={f} pick={picks[f.id]} onStep={set} onSave={save} />
+          {open.slice(0, 2).map((f, i) => (
+            <Fixture
+              key={f.id}
+              f={f}
+              pick={picks[f.id]}
+              onStep={set}
+              onSave={save}
+              /* El primero late hasta que tocas algo, para que se note que es jugable. */
+              nudge={!touched && i === 0}
+            />
           ))}
         </>
       )}
@@ -176,17 +195,20 @@ function Fixture({
   pick,
   onStep,
   onSave,
+  nudge = false,
 }: {
   f: DemoFixture;
   pick?: { h: number; a: number; saved: boolean };
   onStep: (id: string, side: 'h' | 'a', d: number) => void;
   onSave: (id: string) => void;
+  /** Resalta este partido como invitación a tocarlo. */
+  nudge?: boolean;
 }) {
   const h = pick?.h ?? f.myHome ?? 0;
   const a = pick?.a ?? f.myAway ?? 0;
 
   return (
-    <div className="dq__fx">
+    <div className={'dq__fx' + (nudge ? ' is-nudge' : '')}>
       <div className="dq__fxtop">
         <span className="dq__teams">
           <span aria-hidden>{f.homeFlag}</span> {f.home} <em>vs</em>{' '}
@@ -208,7 +230,7 @@ function Fixture({
         </p>
       ) : (
         <div className="dq__pickrow">
-          <Stepper value={h} onDown={() => onStep(f.id, 'h', -1)} onUp={() => onStep(f.id, 'h', 1)} />
+          <Stepper value={h} onDown={() => onStep(f.id, 'h', -1)} onUp={() => onStep(f.id, 'h', 1)} nudge={nudge} />
           <span className="dq__dash">–</span>
           <Stepper value={a} onDown={() => onStep(f.id, 'a', -1)} onUp={() => onStep(f.id, 'a', 1)} />
           <button
@@ -224,9 +246,19 @@ function Fixture({
   );
 }
 
-function Stepper({ value, onDown, onUp }: { value: number; onDown: () => void; onUp: () => void }) {
+function Stepper({
+  value,
+  onDown,
+  onUp,
+  nudge = false,
+}: {
+  value: number;
+  onDown: () => void;
+  onUp: () => void;
+  nudge?: boolean;
+}) {
   return (
-    <span className="dq__stepper">
+    <span className={'dq__stepper' + (nudge ? ' is-nudge' : '')}>
       <button type="button" onClick={onDown} aria-label="Restar gol">−</button>
       <span>{value}</span>
       <button type="button" onClick={onUp} aria-label="Sumar gol">+</button>

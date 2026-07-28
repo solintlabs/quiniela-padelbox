@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/db';
 import { requireTenantRoleApi } from '@/lib/saas/permissions';
-import { importCompetitionFixtures, syncWindow } from '@/lib/saas/sync';
+import { importCompetitionFixtures, initialImportWindow } from '@/lib/saas/sync';
 import { lockDueFixtures, scoreCompetition } from '@/lib/saas/scoring';
 
 /**
@@ -30,7 +30,9 @@ export async function POST(
 
   let imported = null;
   if (competition.provider === 'ESPN') {
-    imported = await importCompetitionFixtures(competition.id, syncWindow(new Date()));
+    // Ventana amplia: el organizador pulsa esto justamente cuando NO ve
+    // partidos (liga en descanso, calendario recién publicado).
+    imported = await importCompetitionFixtures(competition.id, initialImportWindow(new Date()));
   }
   const locked = await lockDueFixtures(competition);
   const { entriesScored } = await scoreCompetition(competition.id);
