@@ -40,6 +40,11 @@ export function NuevaQuinielaForm() {
   const [pointsTeamScore, setPointsTeamScore] = useState(0);
   const [pointsDrawBonus, setPointsDrawBonus] = useState(0);
 
+  // Cuota y premios: opcionales aquí, editables después en Ajustes. Se piden
+  // en el alta porque es cuando el organizador los tiene en la cabeza.
+  const [entryFee, setEntryFee] = useState('');
+  const [prizesText, setPrizesText] = useState('');
+
   async function searchLeagues(q: string) {
     setQuery(q);
     if (q.trim().length < 2) {
@@ -84,6 +89,20 @@ export function NuevaQuinielaForm() {
         }),
       });
       const comp = await compRes.json();
+
+      // Cuota y premios: opcionales, se guardan aparte para no complicar el
+      // alta. Si fallan no se pierde nada — se editan luego en Ajustes.
+      if (entryFee.trim() || prizesText.trim()) {
+        await fetch(`/api/saas/${slug}`, {
+          method: 'PATCH',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            entryFee: entryFee.trim() || null,
+            prizesText: prizesText.trim() || null,
+          }),
+        }).catch(() => null);
+      }
+
       // Si falla la competición, el comercio ya existe: se manda igual al
       // panel en vez de perder el trabajo hecho.
       if (!compRes.ok) {
@@ -228,6 +247,34 @@ export function NuevaQuinielaForm() {
               El marcador exacto no puede valer menos que acertar el ganador.
             </p>
           )}
+
+          <div className="pt-4 border-t border-line space-y-3">
+            <p className="text-sm font-semibold">Bote y premios (opcional)</p>
+            <label className="block text-sm">
+              <span className="text-muted">Cuota por jugador</span>
+              <input
+                value={entryFee}
+                onChange={(e) => setEntryFee(e.target.value)}
+                maxLength={120}
+                placeholder="p. ej. 10 €"
+                className="mt-1 w-full h-11 rounded-lg border border-line bg-bg px-3"
+              />
+            </label>
+            <label className="block text-sm">
+              <span className="text-muted">Premios</span>
+              <textarea
+                value={prizesText}
+                onChange={(e) => setPrizesText(e.target.value)}
+                maxLength={4000}
+                rows={3}
+                placeholder={'🥇 1º: 60% del bote\n🥈 2º: 30%\n🥉 3º: 10%'}
+                className="mt-1 w-full rounded-lg border border-line bg-bg px-3 py-2 resize-y"
+              />
+              <span className="text-[11px] text-muted">
+                Lo verán tus jugadores. Puedes dejarlo en blanco y ponerlo luego.
+              </span>
+            </label>
+          </div>
         </section>
       )}
 
