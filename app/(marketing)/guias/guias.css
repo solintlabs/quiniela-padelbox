@@ -1,0 +1,100 @@
+/* Guías públicas. Contenido indexable: es lo que trae tráfico orgánico y lo
+   que AdSense exige para aprobar el sitio (el resto está tras login). */
+
+.gu {
+  --paper: hsl(var(--bg));
+  --ink: hsl(var(--ink));
+  --muted: hsl(var(--muted));
+  --line: hsl(var(--line));
+  --elev: hsl(var(--bg-elev));
+  --lime: hsl(var(--accent));
+  --lime-ink: hsl(var(--accent-fg));
+  background: var(--paper);
+  color: var(--ink);
+  min-height: 100vh;
+  padding: 2.5rem 1.25rem 4rem;
+}
+
+.gu__top {
+  max-width: 46rem; margin: 0 auto 2rem; display: flex; align-items: center;
+  gap: 1rem; flex-wrap: wrap; padding-bottom: 1rem; border-bottom: 1px solid var(--line);
+}
+.gu__brand {
+  display: inline-flex; align-items: center; gap: .5rem; color: var(--ink);
+  text-decoration: none; font-family: var(--font-display, inherit);
+  font-size: 1.05rem; letter-spacing: -.03em;
+}
+.gu__brand svg { width: 1.6rem; height: 1.6rem; color: var(--lime); flex: none; }
+.gu__brand i { font-style: normal; color: var(--lime); }
+.gu__topcta { margin-left: auto; display: flex; align-items: center; gap: .75rem; }
+.gu__topbtn {
+  display: inline-flex; align-items: center; height: 2.25rem; padding: 0 .9rem;
+  border-radius: .55rem; background: var(--lime); color: var(--lime-ink);
+  font-weight: 700; font-size: .82rem; text-decoration: none;
+}
+
+.gu__wrap { max-width: 46rem; margin: 0 auto; }
+.gu__eyebrow {
+  font-size: .7rem; letter-spacing: .28em; text-transform: uppercase;
+  font-weight: 700; color: var(--lime); margin: 0;
+}
+.gu__h1 {
+  font-family: var(--font-display, inherit);
+  font-size: clamp(1.9rem, 6vw, 2.9rem); line-height: 1.08; margin: .5rem 0 0;
+  text-wrap: balance;
+}
+.gu__lede { margin: 1rem 0 0; color: var(--muted); font-size: 1.05rem; line-height: 1.6; }
+
+/* Cuerpo del artículo */
+.gu__body { margin-top: 2.25rem; }
+.gu__body h2 {
+  font-family: var(--font-display, inherit);
+  font-size: clamp(1.3rem, 3.6vw, 1.7rem); margin: 2.25rem 0 .6rem; line-height: 1.2;
+}
+.gu__body h3 { font-size: 1.05rem; margin: 1.5rem 0 .4rem; }
+.gu__body p { margin: 0 0 1rem; line-height: 1.7; max-width: 65ch; }
+.gu__body ul, .gu__body ol { margin: 0 0 1rem; padding-left: 1.35rem; line-height: 1.7; }
+.gu__body li { margin-bottom: .4rem; }
+.gu__body strong { font-weight: 700; }
+.gu__body a { color: var(--lime); }
+
+.gu__note {
+  border-left: 3px solid var(--lime); background: color-mix(in srgb, var(--lime) 7%, transparent);
+  padding: .85rem 1rem; border-radius: 0 .5rem .5rem 0; margin: 1.5rem 0;
+}
+.gu__note p { margin: 0; }
+
+.gu__table { width: 100%; border-collapse: collapse; margin: 1rem 0 1.5rem; font-size: .95rem; }
+.gu__table th, .gu__table td { text-align: left; padding: .6rem .7rem; border-bottom: 1px solid var(--line); }
+.gu__table th { font-weight: 700; }
+.gu__table td:last-child, .gu__table th:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+.gu__tableWrap { overflow-x: auto; }
+
+/* CTA de cierre */
+.gu__cta {
+  margin-top: 3rem; border: 1px solid var(--line); background: var(--elev);
+  border-radius: 1rem; padding: 1.5rem; text-align: center;
+}
+.gu__cta h2 { margin: 0 0 .5rem; font-family: var(--font-display, inherit); font-size: 1.35rem; }
+.gu__cta p { margin: 0 auto 1.1rem; color: var(--muted); max-width: 34rem; }
+.gu__btn {
+  display: inline-flex; align-items: center; height: 2.9rem; padding: 0 1.5rem;
+  border-radius: .7rem; background: var(--lime); color: var(--lime-ink);
+  font-weight: 700; text-decoration: none;
+}
+.gu__btn:hover { filter: brightness(.95); }
+.gu__alt { display: block; margin-top: .75rem; color: var(--muted); font-size: .88rem; }
+
+/* Índice de guías */
+.gu__list { display: grid; gap: 1rem; margin-top: 2rem; }
+.gu__card {
+  display: block; border: 1px solid var(--line); background: var(--elev);
+  border-radius: 1rem; padding: 1.25rem; text-decoration: none; color: var(--ink);
+  transition: border-color .2s;
+}
+.gu__card:hover { border-color: var(--lime); }
+.gu__card h2 { margin: 0 0 .35rem; font-size: 1.1rem; font-family: var(--font-display, inherit); }
+.gu__card p { margin: 0; color: var(--muted); font-size: .92rem; line-height: 1.5; }
+
+.gu__back { display: inline-block; margin-bottom: 1.25rem; color: var(--muted); text-decoration: none; font-size: .88rem; }
+.gu__back:hover { color: var(--ink); }

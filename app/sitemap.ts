@@ -17,6 +17,23 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly',
       priority: 0.9,
     },
+    // Guías públicas: es el contenido indexable que trae tráfico orgánico.
+    {
+      url: `${siteUrl}/guias`,
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.8,
+    },
+    ...[
+      'como-organizar-una-quiniela',
+      'sistemas-de-puntos',
+      'quiniela-mundial-2026',
+    ].map((slug) => ({
+      url: `${siteUrl}/guias/${slug}`,
+      lastModified: now,
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
+    })),
     {
       url: `${siteUrl}/login`,
       lastModified: now,

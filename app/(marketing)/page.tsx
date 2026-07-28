@@ -230,6 +230,7 @@ export default async function LandingPage() {
           </a>
           <nav>
             <Link href="/demo">Demo</Link>
+            <Link href="/guias">Guías</Link>
             <a href="#juegos">Juegos</a>
             <a href="#reglas">Reglas</a>
             <a href="#app">La app</a>
