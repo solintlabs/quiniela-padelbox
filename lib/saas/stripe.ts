@@ -19,10 +19,17 @@ export function stripe(): Stripe {
   return client;
 }
 
-/** Price ID del plan Pro (env, no secreto). */
+/** Price ID del plan Pro mensual (env, no secreto). */
 export function proPriceId(): string {
   const id = process.env.STRIPE_PRICE_PRO;
   if (!id) throw new Error('STRIPE_PRICE_PRO no configurada');
+  return id;
+}
+
+/** Price ID del Pro por temporada: pago ÚNICO, no recurrente. */
+export function seasonPriceId(): string {
+  const id = process.env.STRIPE_PRICE_PRO_SEASON;
+  if (!id) throw new Error('STRIPE_PRICE_PRO_SEASON no configurada');
   return id;
 }
 

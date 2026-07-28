@@ -169,6 +169,9 @@ model Tenant {
   trialEndsAt     DateTime?
   stripeCustomerId String?
   stripeSubId     String?
+  // Pro comprado por TEMPORADA (pago único): hasta cuándo dura. Null = plan
+  // mensual por suscripción o sin Pro. Un cron lo baja a FREE al vencer.
+  proUntil        DateTime?
   // Idioma por defecto del comercio. El usuario puede sobreescribirlo;
   // prioridad final: usuario > tenant > dispositivo (Fase 6).
   defaultLocale   String       @default("es")

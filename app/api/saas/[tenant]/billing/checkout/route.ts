@@ -2,7 +2,7 @@ import Stripe from 'stripe';
 import { prisma } from '@/lib/db';
 import { requireTenantRoleApi } from '@/lib/saas/permissions';
 import { isBillingConfigured } from '@/lib/saas/billing';
-import { stripe, proPriceId } from '@/lib/saas/stripe';
+import { stripe, proPriceId, seasonPriceId } from '@/lib/saas/stripe';
 
 /**
  * POST /api/saas/[tenant]/billing/checkout
@@ -43,13 +43,21 @@ export async function POST(
       });
     }
 
-    const origin = new URL(req.url).origin;
+    // ?plan=season → pago único por temporada; por defecto, suscripción mensual.
+    const url = new URL(req.url);
+    const season = url.searchParams.get('plan') === 'season';
+    const price = season ? seasonPriceId() : proPriceId();
+
+    const origin = url.origin;
     const session = await stripe().checkout.sessions.create({
-      mode: 'subscription',
+      mode: season ? 'payment' : 'subscription',
       customer: customerId,
-      line_items: [{ price: proPriceId(), quantity: 1 }],
+      line_items: [{ price, quantity: 1 }],
       client_reference_id: tenant.id,
-      subscription_data: { metadata: { tenantId: tenant.id } },
+      // La metadata del tenant tiene que viajar en el objeto que llega al
+      // webhook: en pago único no hay subscription_data.
+      metadata: { tenantId: tenant.id, kind: season ? 'season' : 'monthly' },
+      ...(season ? {} : { subscription_data: { metadata: { tenantId: tenant.id } } }),
       // Permite cupones (p. ej. el 100% para la compra de verificación).
       allow_promotion_codes: true,
       // Managed Payments viene activado por defecto en esta cuenta y exige un

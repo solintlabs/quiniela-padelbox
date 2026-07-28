@@ -399,3 +399,12 @@
   .lz *, .lz *::before, .lz *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
   .lz .rise { opacity: 1; transform: none; } .lz .phone { transform: none !important; }
 }
+
+/* Alternativa de pago por temporada dentro de la tarjeta de plan. */
+.plan__season {
+  margin: -.35rem 0 .6rem;
+  font-size: .8rem;
+  color: hsl(var(--muted));
+  line-height: 1.4;
+}
+.plan__season strong { color: hsl(var(--ink)); }

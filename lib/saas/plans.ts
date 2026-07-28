@@ -25,9 +25,20 @@ export interface PlanLimits {
   showsAds: boolean;
 }
 
+/** Alternativa de pago único por temporada (además del mensual). */
+export interface SeasonOption {
+  priceUsd: number;
+  /** Cuántos meses de Pro concede el pago único. */
+  months: number;
+  label: string;
+  note: string;
+}
+
 export interface Plan {
   id: TenantPlan;
   name: string;
+  /** Solo en PRO: opción de pago único por torneo/temporada. */
+  season?: SeasonOption;
   /** Precio en USD. 0 = gratis. null = a medida. */
   priceUsd: number | null;
   /** "mes" | "torneo" | null */
@@ -60,6 +71,15 @@ export const PLANS: Record<TenantPlan, Plan> = {
     priceUsd: 9,
     period: 'mes',
     tagline: 'Para clubes y comercios que lo hacen en serio.',
+    // Alternativa de pago único por torneo/temporada. Convierte mejor que el
+    // mensual en eventos estacionales (un Mundial dura un mes: con el mensual
+    // el club paga uno y cancela). Se muestra como la opción recomendada.
+    season: {
+      priceUsd: 29,
+      months: 6,
+      label: 'por temporada',
+      note: 'Pago único. Cubre el torneo entero.',
+    },
     limits: {
       maxPlayers: 500,
       maxCompetitions: 5,

@@ -1,6 +1,7 @@
 import type Stripe from 'stripe';
 import { prisma } from '@/lib/db';
 import { applyStripeEvent } from '@/lib/saas/billing';
+import { PLANS } from '@/lib/saas/plans';
 import { stripe, mapStripeEvent } from '@/lib/saas/stripe';
 
 /**
@@ -42,11 +43,29 @@ export async function POST(req: Request): Promise<Response> {
   const next = applyStripeEvent({ status: tenant.status, plan: tenant.plan }, mapped, 'PRO');
   const subId = subscriptionIdFromEvent(event);
 
+  // Compra por TEMPORADA: es un pago único, no genera suscripción. Se concede
+  // Pro hasta `proUntil`; un cron lo baja a FREE al vencer.
+  const obj = event.data.object as unknown as Record<string, unknown>;
+  const isSeason =
+    mapped === 'checkout.session.completed' &&
+    obj.mode === 'payment' &&
+    (obj.metadata as Record<string, string> | undefined)?.kind === 'season';
+
+  let proUntil: Date | undefined;
+  if (isSeason) {
+    const months = PLANS.PRO.season?.months ?? 6;
+    const from =
+      tenant.proUntil && tenant.proUntil.getTime() > Date.now() ? tenant.proUntil : new Date();
+    proUntil = new Date(from);
+    proUntil.setMonth(proUntil.getMonth() + months);
+  }
+
   await prisma.tenant.update({
     where: { id: tenant.id },
     data: {
       status: next.status,
       plan: next.plan,
+      ...(proUntil ? { proUntil } : {}),
       ...(mapped === 'customer.subscription.deleted'
         ? { stripeSubId: null }
         : subId

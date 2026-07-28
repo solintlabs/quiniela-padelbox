@@ -45,6 +45,13 @@ async function handle(req: Request): Promise<Response> {
       scored += s.entriesScored;
     }
 
+    // El Pro comprado por temporada es un pago único: al vencer, vuelve a FREE.
+    // La quiniela sigue abierta (status ACTIVE), solo pierde las ventajas.
+    const expired = await prisma.tenant.updateMany({
+      where: { plan: 'PRO', proUntil: { not: null, lt: new Date() } },
+      data: { plan: 'FREE', proUntil: null },
+    });
+
     // Avisar a quien le falta pronosticar antes de que cierre. No debe tumbar
     // el cron si el envío falla.
     let reminders: unknown = null;
@@ -61,6 +68,7 @@ async function handle(req: Request): Promise<Response> {
       ...result,
       locked,
       scored,
+      expiredPro: expired.count,
       reminders,
     });
   } catch (e) {

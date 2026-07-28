@@ -177,6 +177,13 @@ function Plans() {
               <span className="plan__n">{price.big}</span>
               <span className="small">{price.sub}</span>
             </div>
+            {/* En Pro, la temporada es la opción que mejor convierte: un torneo
+                dura semanas, así que el pago único evita el "pago un mes y cancelo". */}
+            {plan.season && (
+              <p className="plan__season">
+                o <strong>${plan.season.priceUsd}</strong> {plan.season.label} · {plan.season.note}
+              </p>
+            )}
             <p className="plan__desc">{plan.tagline}</p>
             <ul className="plan__feats">
               {planFeatures(plan.limits).map((f) => (
