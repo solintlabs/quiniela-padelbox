@@ -37,13 +37,27 @@ export async function GET(
   const me = { role: membership.role, hasPaid: membership.hasPaid };
   const canPredict = membership.hasPaid || hasAtLeastRole(membership.role, 'ADMIN');
 
+  // Cómo se paga el bote: la app lo muestra en Reglas, igual que la web.
+  const methodRows = await prisma.paymentMethod.findMany({
+    where: { tenantId: tenant.id, enabled: true },
+    orderBy: { sortOrder: 'asc' },
+    select: { id: true, title: true, subtitle: true, icon: true, fields: true },
+  });
+  const paymentMethods = methodRows.map((m) => ({
+    id: m.id,
+    title: m.title,
+    subtitle: m.subtitle,
+    icon: m.icon,
+    fields: Array.isArray(m.fields) ? (m.fields as Array<{ label: string; value: string }>) : [],
+  }));
+
   const competition = await prisma.saasCompetition.findFirst({
     where: competitionScope(tenant.id, { status: { in: ['OPEN', 'LOCKED', 'FINISHED'] } }),
     orderBy: { createdAt: 'desc' },
   });
 
   if (!competition) {
-    return Response.json({ tenant: brand, me, canPredict, competition: null });
+    return Response.json({ tenant: brand, me, canPredict, paymentMethods, competition: null });
   }
 
   const now = new Date();
@@ -108,6 +122,7 @@ export async function GET(
     tenant: brand,
     me,
     canPredict,
+    paymentMethods,
     competition: {
       id: competition.id,
       name: competition.name,
