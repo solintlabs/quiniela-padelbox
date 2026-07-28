@@ -3,6 +3,7 @@ import { verifyCronSecret } from '@/lib/permissions';
 import { requireSaasEnabled } from '@/lib/saas/flags';
 import { syncOpenCompetitions } from '@/lib/saas/sync';
 import { lockDueFixtures, scoreCompetition } from '@/lib/saas/scoring';
+import { sendDueTenantReminders } from '@/lib/saas/reminders';
 
 /**
  * POST /api/saas/cron/sync — sincroniza las competiciones ESPN abiertas.
@@ -44,12 +45,23 @@ async function handle(req: Request): Promise<Response> {
       scored += s.entriesScored;
     }
 
+    // Avisar a quien le falta pronosticar antes de que cierre. No debe tumbar
+    // el cron si el envío falla.
+    let reminders: unknown = null;
+    try {
+      const origin = new URL(req.url).origin;
+      reminders = await sendDueTenantReminders(origin);
+    } catch (e) {
+      console.error('[saas/cron/sync] recordatorios:', e);
+    }
+
     return Response.json({
       ok: true,
       ms: Date.now() - startedAt,
       ...result,
       locked,
       scored,
+      reminders,
     });
   } catch (e) {
     const error = e instanceof Error ? e.message : String(e);

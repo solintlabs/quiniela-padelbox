@@ -607,6 +607,9 @@ model SaasFixture {
 
   lockedAt DateTime?
   scoredAt DateTime?
+  // Recordatorio "cierra pronto" ya enviado (evita duplicados entre pasadas
+  // del cron). Equivalente a Match.reminderSentAt de PADELBOX.
+  reminderSentAt DateTime?
 
   source     SaasProvider @default(MANUAL)
   externalId String?      // ESPN event.id
