@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
+import { rateLimit, tooManyRequests } from '@/lib/ratelimit';
 import { requireTenantMemberApi } from '@/lib/saas/permissions';
 import { entryScope, fixtureScope } from '@/lib/saas/scope';
 import { canSubmitEntry } from '@/lib/saas/scoring';
@@ -52,6 +53,10 @@ export async function POST(
 ): Promise<Response> {
   const ctx = await requireTenantMemberApi(params.tenant, req);
   if (ctx instanceof Response) return ctx;
+
+  // Generoso para jugar (una jornada entera de golpe cabe), corta el spam.
+  const rl = await rateLimit(`saas-entry:${ctx.userId}`, 60, 60);
+  if (!rl.allowed) return tooManyRequests(rl.resetAt);
 
   // Igual que en PADELBOX: sin pagar la entrada al bote no se pronostica.
   // Lo marca el organizador a mano; el dinero nunca pasa por la app.

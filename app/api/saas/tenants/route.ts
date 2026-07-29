@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { requireUserApi } from '@/lib/permissions';
+import { rateLimit, tooManyRequests } from '@/lib/ratelimit';
 import { requireSaasEnabled } from '@/lib/saas/flags';
 import {
   createTenantWithOwner,
@@ -8,6 +9,14 @@ import {
   SlugTakenError,
   InvalidSlugError,
 } from '@/lib/saas/tenants';
+
+/**
+ * Tope de quinielas que un mismo usuario puede TENER creadas (como OWNER).
+ * Sin esto, cualquier cuenta podría inflar la base de datos con miles de
+ * tenants (y desde la app ahora se crea en dos toques). Quien de verdad
+ * necesite más, que escriba: es señal de cliente CUSTOM, no de spam.
+ */
+const MAX_OWNED_TENANTS = 5;
 
 /**
  * POST /api/saas/tenants — alta de un comercio nuevo.
@@ -69,6 +78,22 @@ export async function POST(req: Request): Promise<Response> {
 
   const user = await requireUserApi(req);
   if (user instanceof Response) return user;
+
+  // Anti-abuso: ráfagas cortas fuera, y un tope total de quinielas por dueño.
+  const rl = await rateLimit(`saas-create:${user.id}`, 3, 600);
+  if (!rl.allowed) return tooManyRequests(rl.resetAt);
+
+  const owned = await prisma.saasMembership.count({
+    where: { userId: user.id, role: 'OWNER' },
+  });
+  if (owned >= MAX_OWNED_TENANTS) {
+    return Response.json(
+      {
+        error: `Ya tienes ${MAX_OWNED_TENANTS} quinielas creadas. Si necesitas más, escríbenos a info@solint.cloud.`,
+      },
+      { status: 403 },
+    );
+  }
 
   let json: unknown;
   try {
