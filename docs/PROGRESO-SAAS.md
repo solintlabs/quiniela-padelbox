@@ -5,6 +5,32 @@
 
 ---
 
+## 🟢 Sesión 5 (2026-07-29, Windows) — base web para la paridad de la app
+
+Diseño aprobado en `docs/superpowers/specs/2026-07-29-paridad-app-movil-design.md`.
+**Live en producción y verificado:**
+
+- **`/saas/[tenant]/inscripcion`** — página pública (sin login, noindex): cuota +
+  métodos de pago del organizador. Es adonde enlazará la app para que el bote se
+  pague FUERA de ella (regla Apple). Slug inexistente → 404 uniforme.
+- **`GET /api/saas/config`** — planes para la pantalla de precios de la app +
+  interruptor remoto del botón "Subir a Pro" (`MOBILE_UPGRADE_ENABLED=false` en
+  Vercel + redeploy lo apaga sin build nuevo) + plantillas de URL.
+- Verificado: `/api/saas/*` ya acepta el JWT móvil y `GET/POST /api/saas/tenants`
+  existen → la app puede listar y CREAR quinielas nativas.
+
+**Decisiones del dueño (2026-07-29):** Pro en la app = link externo al checkout
+web (sin IAP, con kill switch); ads solo en quinielas FREE (fase 1 auto-promo,
+fase 2 AdMob); inscripción/bote fuera de la app vía la página pública; la app
+abre en el hub "Mis quinielas" con marca QuinielaBOX; crear quiniela nativo.
+
+**⚠️ BLOQUEANTE app: el código v1.2.0 SOLO existe en el Mac.** GitHub está en
+v1.0.9. Los builds v1.1.x/v1.2.0 de TestFlight salieron del Mac sin push (EAS no
+guarda el código descargable — verificado contra su API). Antes de tocar la app:
+`cd ~/Dev/quiniela-padelbox-app && git push`.
+
+---
+
 ## 🟢 Sesión 4 — camino al lanzamiento (paridad PRO, retención, demo)
 
 **Todo live en producción:**
