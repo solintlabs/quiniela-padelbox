@@ -24,10 +24,28 @@ web (sin IAP, con kill switch); ads solo en quinielas FREE (fase 1 auto-promo,
 fase 2 AdMob); inscripción/bote fuera de la app vía la página pública; la app
 abre en el hub "Mis quinielas" con marca QuinielaBOX; crear quiniela nativo.
 
-**⚠️ BLOQUEANTE app: el código v1.2.0 SOLO existe en el Mac.** GitHub está en
-v1.0.9. Los builds v1.1.x/v1.2.0 de TestFlight salieron del Mac sin push (EAS no
-guarda el código descargable — verificado contra su API). Antes de tocar la app:
-`cd ~/Dev/quiniela-padelbox-app && git push`.
+**Bloqueo del Mac RESUELTO por reconstrucción:** el código v1.1-1.2 era
+irrecuperable (EAS no permite descargar el tarball); la capa multi-tenant se
+reescribió desde cero sobre GitHub como **v1.3.0** (build 33, subida a
+TestFlight el 29/07). El working tree del Mac queda obsoleto: gana GitHub.
+
+**Segunda tanda del 29/07 (live en prod + OTA a la 1.3.0):**
+- App: hub como inicio, crear quiniela nativa, planes (temporada $29 como
+  titular + badge Recomendado), "Subir a Pro" con kill switch, inscripción
+  solo-link, ad slot FREE, **"✓ Guardado / ● Sin guardar" por partido**
+  (como PADELBOX), **pestaña "Mi perfil"** (stats, pronósticos, renombre),
+  banner upsell Pro al organizador FREE.
+- Web: **`SaasCompetition.showTrendPreClose`** (migración additiva, toggle en
+  CompetitionSettings) — el organizador decide si los % 1X2 se ven antes del
+  cierre (marcadores individuales nunca); el cierre anticipado (lockOffsetMin)
+  YA existía en "Editar puntos y cierre". Landing: $29/temporada como precio
+  principal del Pro. Guías: "← Inicio" + CTA demo. `/play me` expone
+  membershipId/displayName. **Anti-abuso**: máx 5 quinielas por dueño + rate
+  limit en alta (3/10min) y pronósticos (60/min).
+- Pendientes anotados: sistema de "props" (pichichi, 1º/2º puesto — necesita
+  diseño: tabla SaasQuestion/SaasAnswer), video en guías (falta el video),
+  multiidioma (lib/saas/i18n.ts existe pero NINGUNA página lo consume aún),
+  AdMob en app (cuenta pendiente), AdSense web (cuenta pendiente).
 
 ---
 
