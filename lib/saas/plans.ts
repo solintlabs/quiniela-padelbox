@@ -5,8 +5,11 @@ import type { TenantPlan } from '@prisma/client';
  * no debe exigir tocar lógica repartida por el código.
  *
  * El cobro es SIEMPRE en la web, con Stripe, y solo al organizador. La app
- * iOS no vende nada ni enlaza a comprar: mantenerlo así es lo que deja la
- * app fuera de la clasificación de concursos con premio de Apple.
+ * móvil no vende dentro (sin IAP): enseña los planes y "Subir a Pro" abre el
+ * checkout web en el navegador — permitido en el storefront de EEUU y con
+ * interruptor remoto (MOBILE_UPGRADE_ENABLED, ver lib/saas/mobileConfig.ts)
+ * para apagar el botón sin build nuevo si un revisor lo objeta. El bote en
+ * dinero real sigue completamente fuera de la app.
  *
  * Los precios son informativos para la landing; la verdad de lo que se cobra
  * vive en Stripe.
