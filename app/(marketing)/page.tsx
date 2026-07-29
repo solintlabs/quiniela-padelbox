@@ -158,21 +158,25 @@ function Plans() {
     <div className="plans rise">
       {PLAN_ORDER.map((id) => {
         const plan = PLANS[id];
-        const price = priceLabel(plan.priceUsd, plan.period);
         const highlighted = id === 'PRO';
+        // En Pro, la temporada es la opción que mejor convierte (un torneo dura
+        // semanas; el mensual invita a "pago un mes y cancelo"), así que el
+        // pago único ES el titular y el mensual queda como alternativa.
+        const price =
+          highlighted && plan.season
+            ? { big: `$${plan.season.priceUsd}`, sub: 'USD · pago único / temporada' }
+            : priceLabel(plan.priceUsd, plan.period);
         return (
           <article key={id} className={`plan${highlighted ? ' plan--on' : ''}`}>
-            {highlighted && <span className="plan__tag">El de casi todos</span>}
+            {highlighted && <span className="plan__tag">Recomendado</span>}
             <h3>{plan.name}</h3>
             <div className="plan__price">
               <span className="plan__n">{price.big}</span>
               <span className="small">{price.sub}</span>
             </div>
-            {/* En Pro, la temporada es la opción que mejor convierte: un torneo
-                dura semanas, así que el pago único evita el "pago un mes y cancelo". */}
-            {plan.season && (
+            {highlighted && plan.season && (
               <p className="plan__season">
-                o <strong>${plan.season.priceUsd}</strong> {plan.season.label} · {plan.season.note}
+                <strong>{plan.season.note}</strong> · o ${plan.priceUsd}/mes si lo prefieres
               </p>
             )}
             <p className="plan__desc">{plan.tagline}</p>

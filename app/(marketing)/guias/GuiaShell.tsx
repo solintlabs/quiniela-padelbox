@@ -23,16 +23,19 @@ export function GuiaShell({
   return (
     <main className="gu">
       <header className="gu__top">
-        <Link href="/" className="gu__brand">
+        <Link href="/" className="gu__brand" title="Volver al inicio">
           <BrandMark />
           <span>
             QUINIELA<i>BOX</i>
           </span>
         </Link>
+        <Link href="/" className="gu__back">
+          ← Inicio
+        </Link>
         <div className="gu__topcta">
           <ThemeToggle />
           <Link href="/demo" className="gu__topbtn">
-            Ver demo
+            🎮 Probar la demo
           </Link>
         </div>
       </header>
