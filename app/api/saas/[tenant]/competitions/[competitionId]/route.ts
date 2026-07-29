@@ -21,6 +21,8 @@ const patchSchema = z.object({
   // Bonus por acertar el campeón del torneo (equivalente al +25 de PADELBOX).
   pointsBonus: pts.optional(),
   lockOffsetMin: z.number().int().min(0).max(1440).optional(),
+  // Tendencia 1X2 visible antes del cierre (solo %; los marcadores, nunca).
+  showTrendPreClose: z.boolean().optional(),
   status: z.enum(['DRAFT', 'OPEN', 'LOCKED', 'FINISHED']).optional(),
   // Equipo campeón: id de un SaasTeam de esta competición, o null para limpiar.
   championWinnerTeamId: z.string().min(1).nullable().optional(),
@@ -77,6 +79,7 @@ export async function PATCH(
       pointsDrawBonus: true,
       pointsBonus: true,
       lockOffsetMin: true,
+      showTrendPreClose: true,
       championWinnerTeamId: true,
     },
   });

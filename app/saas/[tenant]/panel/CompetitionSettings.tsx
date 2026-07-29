@@ -10,9 +10,13 @@ export interface CompRules {
   pointsDrawBonus: number;
   pointsBonus: number;
   lockOffsetMin: number;
+  /** Enseñar la tendencia 1X2 (% de pronósticos) antes del cierre. */
+  showTrendPreClose: boolean;
 }
 
-const FIELDS: Array<{ key: keyof CompRules; label: string; max: number }> = [
+type NumericRuleKey = Exclude<keyof CompRules, 'showTrendPreClose'>;
+
+const FIELDS: Array<{ key: NumericRuleKey; label: string; max: number }> = [
   { key: 'pointsExact', label: 'Marcador exacto', max: 100 },
   { key: 'pointsWinner', label: 'Acertar el ganador', max: 100 },
   { key: 'pointsGoalDiff', label: 'Diferencia de goles', max: 100 },
@@ -115,6 +119,20 @@ export function CompetitionSettings({
               </label>
             ))}
           </div>
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              checked={r.showTrendPreClose}
+              onChange={(e) =>
+                setR((prev) => ({ ...prev, showTrendPreClose: e.target.checked }))
+              }
+              className="h-4 w-4 accent-[hsl(var(--accent))]"
+            />
+            <span className="text-muted">
+              Mostrar % de pronósticos (1X2) antes del cierre — los marcadores de cada
+              jugador siguen ocultos hasta que cierre el partido
+            </span>
+          </label>
           <div className="flex items-center gap-2 flex-wrap">
             <button
               type="button"

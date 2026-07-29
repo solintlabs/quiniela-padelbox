@@ -24,7 +24,7 @@ export async function GET(
     include: {
       homeTeam: { select: { name: true, logoUrl: true } },
       awayTeam: { select: { name: true, logoUrl: true } },
-      competition: { select: { lockOffsetMin: true } },
+      competition: { select: { lockOffsetMin: true, showTrendPreClose: true } },
     },
   });
   if (!fixture) return Response.json({ error: 'Partido no encontrado.' }, { status: 404 });
@@ -48,7 +48,28 @@ export async function GET(
   };
 
   if (!closed) {
-    return Response.json({ ...base, revealed: false, entries: [], trend: null });
+    // Si el organizador lo activó, la tendencia (solo %) se enseña ya antes
+    // del cierre. Los marcadores individuales nunca: sería copiar.
+    if (!fixture.competition.showTrendPreClose) {
+      return Response.json({ ...base, revealed: false, entries: [], trend: null });
+    }
+    const open = await prisma.saasEntry.findMany({
+      where: { fixtureId: fixture.id, membership: { tenantId: ctx.tenant.id } },
+      select: { homeScore: true, awayScore: true },
+    });
+    const totalOpen = open.length;
+    const homeOpen = open.filter((e) => e.homeScore > e.awayScore).length;
+    const drawOpen = open.filter((e) => e.homeScore === e.awayScore).length;
+    const pctOpen = (n: number) => (totalOpen > 0 ? Math.round((n / totalOpen) * 100) : 0);
+    return Response.json({
+      ...base,
+      revealed: false,
+      entries: [],
+      trend:
+        totalOpen >= 3
+          ? { home: pctOpen(homeOpen), draw: pctOpen(drawOpen), away: pctOpen(totalOpen - homeOpen - drawOpen) }
+          : null,
+    });
   }
 
   const entries = await prisma.saasEntry.findMany({

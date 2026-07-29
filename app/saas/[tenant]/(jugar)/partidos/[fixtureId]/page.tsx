@@ -25,7 +25,9 @@ export default async function FixtureDetailPage({
     include: {
       homeTeam: true,
       awayTeam: true,
-      competition: { select: { id: true, name: true, lockOffsetMin: true } },
+      competition: {
+        select: { id: true, name: true, lockOffsetMin: true, showTrendPreClose: true },
+      },
     },
   });
   if (!fixture) notFound();
@@ -83,12 +85,23 @@ export default async function FixtureDetailPage({
     })
     .sort((a, b) => (b.points ?? -1) - (a.points ?? -1));
 
-  // Tendencia 1X2 sobre los pronósticos revelados.
-  const total = rows.length;
-  const homeWins = rows.filter((r) => r.home > r.away).length;
-  const draws = rows.filter((r) => r.home === r.away).length;
+  // Tendencia 1X2. Cerrado: sobre los pronósticos revelados. Abierto: solo si
+  // el organizador activó showTrendPreClose (y con ≥3 pronósticos), contando
+  // TODOS los pronósticos pero sin revelar ningún marcador individual.
+  const trendSource = closed
+    ? rows.map((r) => ({ home: r.home, away: r.away }))
+    : fixture.competition.showTrendPreClose
+      ? await prisma.saasEntry.findMany({
+          where: { fixtureId: fixture.id, membership: { tenantId: tenant.id } },
+          select: { homeScore: true, awayScore: true },
+        }).then((es) => es.map((e) => ({ home: e.homeScore, away: e.awayScore })))
+      : [];
+  const total = trendSource.length;
+  const homeWins = trendSource.filter((r) => r.home > r.away).length;
+  const draws = trendSource.filter((r) => r.home === r.away).length;
   const awayWins = total - homeWins - draws;
   const pct = (n: number) => (total > 0 ? Math.round((n / total) * 100) : 0);
+  const showTrend = closed ? total > 0 : total >= 3;
 
   return (
     <div className="space-y-5">
@@ -122,26 +135,34 @@ export default async function FixtureDetailPage({
         </div>
       </section>
 
+      {showTrend && (
+        <section className="rounded-xl border border-line bg-bg-elev p-5">
+          <h2 className="font-display text-lg mb-3">Cómo predijeron</h2>
+          <div className="flex h-3 rounded-full overflow-hidden border border-line">
+            <span className="bg-accent" style={{ width: `${pct(homeWins)}%` }} />
+            <span className="bg-zinc-500" style={{ width: `${pct(draws)}%` }} />
+            <span className="bg-orange-400" style={{ width: `${pct(awayWins)}%` }} />
+          </div>
+          <div className="flex justify-between text-xs text-muted mt-2 tabular-nums">
+            <span>Gana {fixture.homeTeam.name}: {pct(homeWins)}%</span>
+            <span>Empate: {pct(draws)}%</span>
+            <span>Gana {fixture.awayTeam.name}: {pct(awayWins)}%</span>
+          </div>
+          {!closed && (
+            <p className="text-[11px] text-muted mt-2">
+              Porcentajes en vivo sobre {total} pronósticos — los marcadores de cada jugador
+              se revelan al cierre.
+            </p>
+          )}
+        </section>
+      )}
+
       {!closed ? (
         <p className="rounded-xl border border-line bg-bg-elev p-5 text-sm text-muted">
           Los pronósticos de los demás se muestran cuando cierre el partido.
         </p>
       ) : (
         <>
-          <section className="rounded-xl border border-line bg-bg-elev p-5">
-            <h2 className="font-display text-lg mb-3">Cómo predijeron</h2>
-            <div className="flex h-3 rounded-full overflow-hidden border border-line">
-              <span className="bg-accent" style={{ width: `${pct(homeWins)}%` }} />
-              <span className="bg-zinc-500" style={{ width: `${pct(draws)}%` }} />
-              <span className="bg-orange-400" style={{ width: `${pct(awayWins)}%` }} />
-            </div>
-            <div className="flex justify-between text-xs text-muted mt-2 tabular-nums">
-              <span>Gana {fixture.homeTeam.name}: {pct(homeWins)}%</span>
-              <span>Empate: {pct(draws)}%</span>
-              <span>Gana {fixture.awayTeam.name}: {pct(awayWins)}%</span>
-            </div>
-          </section>
-
           <section className="space-y-2">
             <h2 className="font-display text-lg">Pronósticos ({total})</h2>
             {total === 0 ? (

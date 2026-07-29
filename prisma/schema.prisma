@@ -531,6 +531,9 @@ model SaasCompetition {
   // PADELBOX). Se aplicará en el panel del organizador, aún sin usar.
   pointsBonus     Int @default(0)
   lockOffsetMin   Int @default(15)
+  // ¿Se enseña la tendencia 1X2 (% de pronósticos) ANTES del cierre? Los
+  // marcadores individuales nunca se revelan antes: solo los porcentajes.
+  showTrendPreClose Boolean @default(false)
 
   // Equipo campeón del torneo. Lo fija el organizador al terminar; quien lo
   // acertó en su pick de campeón se lleva pointsBonus. Sin FK dura para no

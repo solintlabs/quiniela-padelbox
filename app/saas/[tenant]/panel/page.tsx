@@ -241,6 +241,7 @@ export default async function PanelPage({
                       pointsDrawBonus: c.pointsDrawBonus,
                       pointsBonus: c.pointsBonus,
                       lockOffsetMin: c.lockOffsetMin,
+                      showTrendPreClose: c.showTrendPreClose,
                     }}
                   />
                 </div>

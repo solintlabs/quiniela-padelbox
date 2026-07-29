@@ -34,7 +34,13 @@ export async function GET(
     entryFee: tenant.entryFee,
     paymentInfo: tenant.paymentInfo,
   };
-  const me = { role: membership.role, hasPaid: membership.hasPaid };
+  const me = {
+    role: membership.role,
+    hasPaid: membership.hasPaid,
+    // Para la pestaña "Mi perfil" del móvil: su membresía y su nombre aquí.
+    membershipId: membership.id,
+    displayName: membership.displayName,
+  };
   const canPredict = membership.hasPaid || hasAtLeastRole(membership.role, 'ADMIN');
 
   // Cómo se paga el bote: la app lo muestra en Reglas, igual que la web.
