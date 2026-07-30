@@ -160,13 +160,10 @@ function Plans() {
       {PLAN_ORDER.map((id) => {
         const plan = PLANS[id];
         const highlighted = id === 'PRO';
-        // En Pro, la temporada es la opción que mejor convierte (un torneo dura
-        // semanas; el mensual invita a "pago un mes y cancelo"), así que el
-        // pago único ES el titular y el mensual queda como alternativa.
-        const price =
-          highlighted && plan.season
-            ? { big: `$${plan.season.priceUsd}`, sub: 'USD · pago único / temporada' }
-            : priceLabel(plan.priceUsd, plan.period);
+        // El número GRANDE es el barato ($9/mes): ancla la percepción de
+        // precio. La temporada ($29 pago único) va justo debajo como "mejor
+        // precio" — es la que mejor convierte en torneos, pero sin asustar.
+        const price = priceLabel(plan.priceUsd, plan.period);
         return (
           <article key={id} className={`plan${highlighted ? ' plan--on' : ''}`}>
             {highlighted && <span className="plan__tag">Recomendado</span>}
@@ -177,7 +174,8 @@ function Plans() {
             </div>
             {highlighted && plan.season && (
               <p className="plan__season">
-                <strong>{plan.season.note}</strong> · o ${plan.priceUsd}/mes si lo prefieres
+                ⭐ <strong>Mejor precio: ${plan.season.priceUsd} por temporada</strong> — pago
+                único, cubre el torneo entero
               </p>
             )}
             <p className="plan__desc">{plan.tagline}</p>
