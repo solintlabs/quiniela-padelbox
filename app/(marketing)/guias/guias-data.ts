@@ -7,6 +7,12 @@
  */
 export const GUIAS = [
   {
+    slug: 'aplicacion-para-quinielas',
+    title: 'Aplicación para quinielas: qué debe tener y cuál usar',
+    excerpt:
+      'Excel y WhatsApp se quedan cortos a la segunda jornada. Lo que tiene que hacer por ti una app de quinielas de verdad, y cómo elegirla.',
+  },
+  {
     slug: 'como-organizar-una-quiniela',
     title: 'Cómo organizar una quiniela de fútbol paso a paso',
     excerpt:

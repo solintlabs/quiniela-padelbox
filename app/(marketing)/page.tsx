@@ -14,9 +14,9 @@ import { Assistant } from './Assistant';
 import { LeadForm } from './LeadForm';
 
 export const metadata: Metadata = {
-  title: 'Crea tu quiniela, prode, penca o polla de fútbol — para tu comunidad',
+  title: 'La aplicación para quinielas de fútbol — crea la de tu grupo gratis',
   description:
-    'Monta la quiniela, prode, penca, polla o porra de tu comunidad en minutos. Del Mundial a tu liga de siempre, con app iOS + Android, ranking en vivo, puntuación a tu medida y premios. Gratis para empezar. Por Solint.',
+    'Aplicación para quinielas de fútbol (web + iOS + Android): crea la quiniela, prode, penca o polla de tu comunidad en minutos. Resultados y puntos automáticos, ranking en vivo y reglas a tu medida. Gratis para empezar.',
   keywords: [
     'quiniela', 'prode', 'penca', 'polla de fútbol', 'porra de fútbol', 'boliche',
     'quiniela de fútbol', 'crear quiniela', 'quiniela entre amigos', 'quiniela del club',
@@ -53,7 +53,7 @@ const jsonLdProduct = {
     price: '0',
     priceCurrency: 'USD',
     availability: 'https://schema.org/InStock',
-    url: 'https://www.quinielabox.com/lanza-tu-quiniela',
+    url: 'https://www.quinielabox.com/',
   },
   provider: { '@type': 'Organization', name: 'Solint', url: 'https://solint.cloud' },
 };

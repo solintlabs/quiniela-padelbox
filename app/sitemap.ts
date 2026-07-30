@@ -1,4 +1,5 @@
 import type { MetadataRoute } from 'next';
+import { GUIAS } from '@/app/(marketing)/guias/guias-data';
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.quinielabox.com';
 
@@ -24,12 +25,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'weekly',
       priority: 0.8,
     },
-    ...[
-      'como-organizar-una-quiniela',
-      'sistemas-de-puntos',
-      'quiniela-mundial-2026',
-    ].map((slug) => ({
-      url: `${siteUrl}/guias/${slug}`,
+    // La lista viene de guias-data: añadir una guía allí la mete aquí sola.
+    ...GUIAS.map((g) => ({
+      url: `${siteUrl}/guias/${g.slug}`,
       lastModified: now,
       changeFrequency: 'monthly' as const,
       priority: 0.7,
