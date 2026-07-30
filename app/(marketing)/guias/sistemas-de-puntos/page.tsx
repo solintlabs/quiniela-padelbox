@@ -4,7 +4,7 @@ import { GuiaShell } from '../GuiaShell';
 import '../guias.css';
 
 export const metadata: Metadata = {
-  title: 'Sistemas de puntos para una quiniela: cuál elegir | QuinielaBOX',
+  title: 'Sistemas de puntos para una quiniela: cuál elegir',
   description:
     'Comparativa de sistemas de puntuación para quinielas de fútbol: 3/1/0, diferencia de goles, bonus por empate y pick de campeón. Cuál usar según tu grupo.',
   alternates: { canonical: '/guias/sistemas-de-puntos' },

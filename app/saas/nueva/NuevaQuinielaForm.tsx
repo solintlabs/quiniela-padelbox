@@ -25,6 +25,35 @@ export function NuevaQuinielaForm() {
   // Paso 1 — marca
   const [name, setName] = useState('');
   const [accentColor, setAccentColor] = useState('#B6FF3C');
+  const [logoDataUrl, setLogoDataUrl] = useState<string | null>(null);
+  const [logoError, setLogoError] = useState<string | null>(null);
+
+  /** Reduce el logo en el navegador (≤256px) y lo convierte a data URL:
+   *  sin almacenamiento externo ni subida aparte — viaja con el alta. */
+  async function onLogoFile(file: File | undefined) {
+    setLogoError(null);
+    if (!file) return;
+    try {
+      const bitmap = await createImageBitmap(file);
+      const scale = Math.min(1, 256 / Math.max(bitmap.width, bitmap.height));
+      const w = Math.max(1, Math.round(bitmap.width * scale));
+      const h = Math.max(1, Math.round(bitmap.height * scale));
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      canvas.getContext('2d')!.drawImage(bitmap, 0, 0, w, h);
+      // webp pesa menos; Safari viejo devuelve png en su lugar y también vale.
+      let dataUrl = canvas.toDataURL('image/webp', 0.9);
+      if (!dataUrl.startsWith('data:image/webp')) dataUrl = canvas.toDataURL('image/png');
+      if (dataUrl.length > 200_000) {
+        setLogoError('La imagen es demasiado compleja. Prueba con un logo más simple.');
+        return;
+      }
+      setLogoDataUrl(dataUrl);
+    } catch {
+      setLogoError('No se pudo leer la imagen. Usa un PNG o JPG.');
+    }
+  }
 
   // Paso 2 — competición
   const [mode, setMode] = useState<'ESPN' | 'MANUAL'>('ESPN');
@@ -67,7 +96,11 @@ export function NuevaQuinielaForm() {
       const tenantRes = await fetch('/api/saas/tenants', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ name, accentColor }),
+        body: JSON.stringify({
+          name,
+          accentColor,
+          ...(logoDataUrl ? { logoDataUrl } : {}),
+        }),
       });
       const tenant = await tenantRes.json();
       if (!tenantRes.ok) throw new Error(tenant.error ?? 'No se pudo crear tu quiniela.');
@@ -149,6 +182,50 @@ export function NuevaQuinielaForm() {
               />
               <span className="font-mono text-sm text-muted">{accentColor}</span>
             </div>
+          </Field>
+          <Field label="Logo (opcional)">
+            <div className="flex items-center gap-3">
+              {logoDataUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={logoDataUrl}
+                  alt="Tu logo"
+                  className="h-14 w-14 rounded-xl object-contain border border-line bg-bg"
+                />
+              ) : (
+                <div
+                  className="h-14 w-14 rounded-xl border border-dashed border-line grid place-items-center text-lg font-display"
+                  style={{ color: accentColor }}
+                >
+                  {name.trim().slice(0, 1).toUpperCase() || '?'}
+                </div>
+              )}
+              <div className="space-y-1">
+                <label className="inline-flex items-center h-9 px-3 rounded-lg border border-line text-sm cursor-pointer hover:bg-bg-elev">
+                  {logoDataUrl ? 'Cambiar logo' : 'Subir logo'}
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    className="hidden"
+                    onChange={(e) => onLogoFile(e.target.files?.[0])}
+                  />
+                </label>
+                {logoDataUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setLogoDataUrl(null)}
+                    className="block text-xs text-muted hover:text-danger"
+                  >
+                    Quitar
+                  </button>
+                )}
+                <p className="text-[11px] text-muted">
+                  El escudo de tu club, tu negocio o tu peña. Tus jugadores lo verán en la
+                  quiniela.
+                </p>
+              </div>
+            </div>
+            {logoError && <p className="text-xs text-danger mt-1">{logoError}</p>}
           </Field>
         </section>
       )}

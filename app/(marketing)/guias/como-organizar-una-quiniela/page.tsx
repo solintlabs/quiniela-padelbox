@@ -4,7 +4,7 @@ import { GuiaShell } from '../GuiaShell';
 import '../guias.css';
 
 export const metadata: Metadata = {
-  title: 'Cómo organizar una quiniela de fútbol paso a paso | QuinielaBOX',
+  title: 'Cómo organizar una quiniela de fútbol paso a paso',
   description:
     'Guía práctica para organizar una quiniela de fútbol: cuánta gente, qué cuota poner, cómo cobrar el bote, qué reglas fijar y cómo repartir los premios sin discusiones.',
   alternates: { canonical: '/guias/como-organizar-una-quiniela' },

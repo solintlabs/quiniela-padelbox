@@ -4,7 +4,7 @@ import { GuiaShell } from '../GuiaShell';
 import '../guias.css';
 
 export const metadata: Metadata = {
-  title: 'Quiniela del Mundial 2026: cómo montarla | QuinielaBOX',
+  title: 'Quiniela del Mundial 2026: cómo montarla',
   description:
     'Cómo organizar la quiniela del Mundial 2026: 48 selecciones, fase de grupos y eliminatorias. Reglas, puntos, calendario y reparto del bote.',
   alternates: { canonical: '/guias/quiniela-mundial-2026' },

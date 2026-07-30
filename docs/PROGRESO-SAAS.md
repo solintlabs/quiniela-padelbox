@@ -1,7 +1,42 @@
 # Progreso pivote SaaS — estado y próximos pasos
 
 > Notas de trabajo para retomar desde cualquier máquina. Rama: **`feat/saas`**.
-> Última actualización: sesión de puesta en producción de la landing + Google login + Stripe (código).
+> Última actualización: 2026-07-29 noche (sesión 5 completa, ver abajo).
+
+---
+
+## 📍 RETOMAR AQUÍ (2026-07-30, oficina)
+
+**Estado app** (repo `quiniela-padelbox-app`, `main`, TODO pusheado):
+- **v1.3.2 (build 37) en camino a TestFlight** con: hub multi-quiniela como
+  inicio, crear quiniela nativa, planes ($9/mes ancla + $29/temporada), Subir
+  a Pro por link con kill switch, Mi perfil, guardado visible, login
+  QuinielaBOX + **Sign in with Apple + Google** (client ID iOS
+  `4316983371-…oal3`), créditos solo Solintlabs. Historial: `git log` de hoy.
+- Probar en TestFlight: login con Apple y con Google, crear quiniela,
+  pronosticar (✓ Guardado), Mi perfil, Subir a Pro.
+
+**Estado web** (rama `feat/saas`, TODO en producción y pusheado):
+- AdSense `ca-pub-8865902294098638`: sitio VERIFICADO, CMP 3 botones, ads.txt,
+  metaetiqueta, slot FREE `5961753164` cableado. **Falta solo el email de
+  aprobación de Google** → los anuncios se encienden solos. AdMob (app) queda
+  para después de la aprobación de Apple.
+- Stripe VERIFICADO completo: claves + `STRIPE_PRICE_PRO` (mensual) +
+  `STRIPE_PRICE_PRO_SEASON` ($29 único, webhook suma meses a `proUntil`) +
+  webhook + cupones. Checkout `?plan=season`.
+- Logo al crear la quiniela (wizard web): se sube, se reduce en el navegador
+  y viaja como data URL a `Tenant.logoUrl`. En la APP el picker necesita
+  expo-image-picker (build nuevo) → pendiente.
+- Guías: arreglado el botón invisible del final (regla `.gu__body a` pisaba
+  al CTA) y títulos duplicados "· QuinielaBOX".
+- SEO: guía objetivo `/guias/aplicacion-para-quinielas` (FAQPage), título de
+  portada con la keyword. **Pedir indexación en GSC** (acción del dueño).
+
+**Pendientes priorizados:**
+1. Probar 1.3.2 + mandar a revisión de Apple (release notes + submit).
+2. Email de AdSense → nada que hacer, se activa solo. Después: AdMob en app.
+3. Props/pichichi (diseño SaasQuestion/Answer), multiidioma, video guías,
+   logo picker en la app, Android/Play Console.
 
 ---
 

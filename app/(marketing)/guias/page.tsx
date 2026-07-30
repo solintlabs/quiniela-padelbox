@@ -5,7 +5,7 @@ import { GUIAS } from './guias-data';
 import './guias.css';
 
 export const metadata: Metadata = {
-  title: 'Guías para organizar tu quiniela de fútbol | QuinielaBOX',
+  title: 'Guías para organizar tu quiniela de fútbol',
   description:
     'Cómo organizar una quiniela de fútbol: sistemas de puntos, reglas, cómo cobrar el bote y repartir premios. Guías prácticas para clubes, peñas y grupos de amigos.',
   alternates: { canonical: '/guias' },

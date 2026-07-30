@@ -88,6 +88,9 @@
   font-weight: 700; text-decoration: none;
 }
 .gu__btn:hover { filter: brightness(.95); }
+/* El índice mete su CTA dentro de .gu__body, cuya regla de enlaces (lima)
+   pisaba al botón: texto lima sobre fondo lima = invisible. */
+.gu__body a.gu__btn { color: var(--lime-ink); }
 .gu__alt { display: block; margin-top: .75rem; color: var(--muted); font-size: .88rem; }
 
 /* Índice de guías */

@@ -9,7 +9,7 @@ import '../guias.css';
  * debe posicionar para esa intención de compra; por eso lleva FAQPage.
  */
 export const metadata: Metadata = {
-  title: 'Aplicación para quinielas de fútbol: qué debe tener y cuál usar | QuinielaBOX',
+  title: 'Aplicación para quinielas de fútbol: qué debe tener y cuál usar',
   description:
     'Buscas una aplicación para quinielas? Qué debe tener una buena app: resultados automáticos, ranking en vivo, puntos configurables y bote fuera de la app. Compara Excel, WhatsApp y QuinielaBOX.',
   alternates: { canonical: '/guias/aplicacion-para-quinielas' },
