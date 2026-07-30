@@ -1,6 +1,12 @@
 import Link from 'next/link';
+import Script from 'next/script';
 import { BrandMark } from '@/components/BrandMark';
 import { ThemeToggle } from '@/components/ThemeToggle';
+
+/** Con la cuenta de AdSense activa, las guías (contenido público con tráfico
+ * orgánico) cargan el loader para que Auto ads pueda servir aquí. Las zonas
+ * tras login no lo cargan: los anuncios de las quinielas FREE van por AdSlot. */
+const ADSENSE_CLIENT = process.env.NEXT_PUBLIC_ADSENSE_CLIENT;
 
 /**
  * Marco de las guías públicas: cabecera con marca, contenido y CTA de cierre.
@@ -22,6 +28,14 @@ export function GuiaShell({
 }) {
   return (
     <main className="gu">
+      {ADSENSE_CLIENT && (
+        <Script
+          id="adsense-loader"
+          strategy="afterInteractive"
+          crossOrigin="anonymous"
+          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`}
+        />
+      )}
       <header className="gu__top">
         <Link href="/" className="gu__brand" title="Volver al inicio">
           <BrandMark />
