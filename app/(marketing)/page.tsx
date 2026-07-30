@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
+import Script from 'next/script';
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import './landing.css';
@@ -220,6 +221,15 @@ export default async function LandingPage() {
   return (
     <main className="lz">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdProduct) }} />
+      {/* El verificador de AdSense busca su script en la PORTADA del dominio. */}
+      {process.env.NEXT_PUBLIC_ADSENSE_CLIENT && (
+        <Script
+          id="adsense-loader"
+          strategy="afterInteractive"
+          crossOrigin="anonymous"
+          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${process.env.NEXT_PUBLIC_ADSENSE_CLIENT}`}
+        />
+      )}
       <noscript>
         <style>{`.lz .rise{opacity:1;transform:none}`}</style>
       </noscript>
