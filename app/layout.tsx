@@ -38,6 +38,11 @@ export const metadata: Metadata = {
   authors: [{ name: 'Solintlabs', url: 'https://solint.cloud' }],
   creator: 'Solintlabs',
   publisher: 'Solintlabs',
+  // Verificación de propiedad de AdSense: metaetiqueta oficial en el <head>
+  // de TODAS las páginas (el comprobador de Google no siempre ve el script).
+  ...(process.env.NEXT_PUBLIC_ADSENSE_CLIENT
+    ? { other: { 'google-adsense-account': process.env.NEXT_PUBLIC_ADSENSE_CLIENT } }
+    : {}),
   alternates: {
     canonical: '/',
   },
