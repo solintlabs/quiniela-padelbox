@@ -38,11 +38,6 @@ export const metadata: Metadata = {
   authors: [{ name: 'Solintlabs', url: 'https://solint.cloud' }],
   creator: 'Solintlabs',
   publisher: 'Solintlabs',
-  // Verificación de propiedad de AdSense: metaetiqueta oficial en el <head>
-  // de TODAS las páginas (el comprobador de Google no siempre ve el script).
-  ...(process.env.NEXT_PUBLIC_ADSENSE_CLIENT
-    ? { other: { 'google-adsense-account': process.env.NEXT_PUBLIC_ADSENSE_CLIENT } }
-    : {}),
   alternates: {
     canonical: '/',
   },
@@ -97,6 +92,11 @@ export const metadata: Metadata = {
   // https://developer.apple.com/documentation/webkit/promoting_apps_with_smart_app_banners
   other: {
     'apple-itunes-app': 'app-id=6770234104',
+    // Verificación de propiedad de AdSense (metaetiqueta oficial, en el
+    // <head> de todas las páginas — el comprobador no siempre ve el script).
+    ...(process.env.NEXT_PUBLIC_ADSENSE_CLIENT
+      ? { 'google-adsense-account': process.env.NEXT_PUBLIC_ADSENSE_CLIENT }
+      : {}),
   },
 };
 
