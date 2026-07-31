@@ -137,6 +137,13 @@ export async function GET(
       // Para la pestaña Admin del móvil: controles rápidos del organizador.
       lockOffsetMin: competition.lockOffsetMin,
       showTrendPreClose: competition.showTrendPreClose,
+      points: {
+        exact: competition.pointsExact,
+        winner: competition.pointsWinner,
+        goalDiff: competition.pointsGoalDiff,
+        teamScore: competition.pointsTeamScore,
+        drawBonus: competition.pointsDrawBonus,
+      },
     },
     fixtures: fixtureVMs,
     ranking: ranking.map((r) => ({
