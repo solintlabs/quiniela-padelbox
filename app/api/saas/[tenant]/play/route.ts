@@ -135,6 +135,9 @@ export async function GET(
       status: competition.status,
       pointsSummary: describeRules(rulesOf(competition)),
       pointsBonus: competition.pointsBonus,
+      // Para la pestaña Admin del móvil: controles rápidos del organizador.
+      lockOffsetMin: competition.lockOffsetMin,
+      showTrendPreClose: competition.showTrendPreClose,
     },
     fixtures: fixtureVMs,
     ranking: ranking.map((r) => ({
