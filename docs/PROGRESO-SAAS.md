@@ -32,11 +32,26 @@
 - SEO: guía objetivo `/guias/aplicacion-para-quinielas` (FAQPage), título de
   portada con la keyword. **Pedir indexación en GSC** (acción del dueño).
 
+**Ronda 2026-07-30 (v1.3.3 + web):**
+- **Puente de sesión app→web** (`POST /api/auth/bridge` + `/entrar-app/[token]`,
+  token 1 uso/2 min): "Subir a Pro"/"Panel" abren el navegador YA logueado
+  (arregla el 404). La app usa `lib/web-bridge.ts`.
+- Quiniela SaaS con **tab bar nativa** (Inicio/Partidos/Ranking/Reglas/Perfil
+  + **Admin** para el organizador) y dashboard con podio de barras y medallas.
+- Admin nativo: sync, recalcular, % 1X2 pre-cierre, minutos de cierre,
+  **editor de puntos completo**, jugadores con switch de pagado, **subir logo**
+  (expo-image-picker, PATCH tenant con logoDataUrl — logo para TODOS los planes).
+- Partidos: filtros Por jugar/Resultados/Todos + agrupación por jornada
+  (/play ahora devuelve TODOS los partidos, tope 250).
+- Ranking: sin displayName cae al nombre real del User (no más "Jugador").
+- Pre-login: mini-landing con tabs Entrar/Descubre/Planes.
+- Ads FREE mencionan "el plan Pro quita los anuncios" (web y app).
+
 **Pendientes priorizados:**
-1. Probar 1.3.2 + mandar a revisión de Apple (release notes + submit).
-2. Email de AdSense → nada que hacer, se activa solo. Después: AdMob en app.
-3. Props/pichichi (diseño SaasQuestion/Answer), multiidioma, video guías,
-   logo picker en la app, Android/Play Console.
+1. Probar 1.3.3 + mandar a revisión de Apple (release notes + submit).
+2. Email de AdSense → se activa solo. Después: AdMob en app.
+3. Props/pichichi (diseño SaasQuestion/Answer — pedido por el dueño),
+   multiidioma, video guías, Android/Play Console.
 
 ---
 
