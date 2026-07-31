@@ -17,6 +17,12 @@ const patchSchema = z.object({
   name: z.string().trim().min(2).max(60).optional(),
   accentColor: z.string().regex(hex, 'Color inválido').optional(),
   logoUrl: z.string().trim().url('URL inválida').max(500).nullable().optional(),
+  // Logo subido (web o app): imagen ya reducida por el cliente, como data URL.
+  logoDataUrl: z
+    .string()
+    .regex(/^data:image\/(png|jpe?g|webp);base64,[A-Za-z0-9+/=]+$/, 'Imagen inválida.')
+    .max(200_000, 'La imagen es demasiado grande.')
+    .optional(),
   prizesText: z.string().trim().max(4000).nullable().optional(),
   rulesText: z.string().trim().max(4000).nullable().optional(),
   entryFee: z.string().trim().max(120).nullable().optional(),
@@ -35,12 +41,11 @@ export async function PATCH(
   if (!parsed.success) {
     return Response.json({ error: 'Datos inválidos' }, { status: 400 });
   }
-  const data = parsed.data;
-
-  // El logo es un beneficio Pro: en FREE se ignora para no dar branding propio.
-  if (ctx.tenant.plan === 'FREE') {
-    delete data.logoUrl;
-  }
+  const { logoDataUrl, ...data } = parsed.data;
+  // El logo subido pisa al de URL. Disponible en TODOS los planes: la marca
+  // propia del organizador es parte del gancho; Pro se diferencia por
+  // límites, sin anuncios y white-label.
+  if (logoDataUrl) data.logoUrl = logoDataUrl;
 
   const updated = await prisma.tenant.update({
     where: { id: ctx.tenant.id },

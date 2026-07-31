@@ -142,6 +142,9 @@ export default async function JugarLayout({
                 Publicidad ·{' '}
                 <span className="text-accent font-semibold">
                   Crea tu propia quiniela gratis en QuinielaBOX →
+                </span>{' '}
+                <span className="block mt-0.5">
+                  ¿Organizas esta quiniela? El plan Pro quita los anuncios.
                 </span>
               </a>
             }

@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/db';
+import { publicDisplayName } from '@/lib/display';
 import { entryScope } from '@/lib/saas/scope';
 
 /**
@@ -145,18 +146,27 @@ export async function computeCompetitionRanking(
   const pickByMembership = new Map(picks.map((p) => [p.membershipId, p]));
   const winner = competition.championWinnerTeamId;
 
+  // Sin displayName propio, el nombre real del User (o su email enmascarado):
+  // un ranking lleno de "Jugador" no le sirve a nadie.
+  const users = await prisma.user.findMany({
+    where: { id: { in: memberships.map((m) => m.userId) } },
+    select: { id: true, name: true, email: true },
+  });
+  const userById = new Map(users.map((u) => [u.id, u]));
+
   return rankRows(
     memberships.map((m) => {
       const pick = pickByMembership.get(m.id);
       // El bonus solo se otorga cuando el organizador ya fijó el campeón y el
       // pick coincide. Antes de eso el pick se muestra pero no puntúa.
       const correct = !!pick && !!winner && pick.teamId === winner;
+      const user = userById.get(m.userId);
       return {
         membershipId: m.id,
         userId: m.userId,
-        // El nombre real del User se resuelve en la capa de presentación; aquí
-        // no se toca la tabla User.
-        displayName: m.displayName ?? '',
+        displayName:
+          m.displayName ||
+          (user ? publicDisplayName({ name: user.name, email: user.email }) : ''),
         joinedAt: m.createdAt,
         entries: byMembership.get(m.id) ?? [],
         bonus: correct ? competition.pointsBonus : 0,

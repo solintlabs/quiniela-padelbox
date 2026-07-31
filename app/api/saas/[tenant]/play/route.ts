@@ -68,13 +68,12 @@ export async function GET(
 
   const now = new Date();
   const [fixtures, ranking, champTeams, myPick, firstFixture] = await Promise.all([
+    // TODOS los partidos de la competición (con tope de cordura): la app
+    // filtra por jugar / resultados / jornada en el cliente, como PADELBOX.
     prisma.saasFixture.findMany({
-      where: fixtureScope(tenant.id, {
-        competitionId: competition.id,
-        kickoff: { gte: new Date(now.getTime() - 3 * 86_400_000) },
-      }),
+      where: fixtureScope(tenant.id, { competitionId: competition.id }),
       orderBy: { kickoff: 'asc' },
-      take: 30,
+      take: 250,
       include: { homeTeam: true, awayTeam: true },
     }),
     computeCompetitionRanking(tenant.id, competition.id),
