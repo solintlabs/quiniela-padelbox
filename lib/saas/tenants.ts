@@ -59,6 +59,7 @@ export interface CreateTenantInput {
   logoUrl?: string | null;
   accentColor?: string;
   defaultLocale?: string;
+  description?: string | null;
 }
 
 /**
@@ -87,6 +88,7 @@ export async function createTenantWithOwner(
           logoUrl: input.logoUrl ?? null,
           accentColor: input.accentColor ?? '#B6FF3C',
           defaultLocale: input.defaultLocale ?? 'es',
+          description: input.description?.trim() || null,
           status: 'TRIAL',
           plan: 'FREE',
           trialEndsAt: new Date(Date.now() + 30 * 86_400_000),

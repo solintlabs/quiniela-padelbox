@@ -96,9 +96,10 @@ export default async function InscripcionPublicaPage({
 
         {!tenant.entryFee && !tenant.paymentInfo && methods.length === 0 && (
           <section className="rounded-xl border border-dashed border-line p-6 text-center">
-            <p className="text-sm text-muted">
-              El organizador aún no ha configurado la inscripción. Pregúntale directamente cómo
-              participar.
+            <p className="text-2xl mb-2">🎉</p>
+            <p className="text-sm">
+              Esta quiniela es <strong>por diversión</strong>: no hay cuota de inscripción.
+              Únete y a pronosticar.
             </p>
           </section>
         )}

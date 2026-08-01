@@ -27,6 +27,7 @@ const patchSchema = z.object({
   rulesText: z.string().trim().max(4000).nullable().optional(),
   entryFee: z.string().trim().max(120).nullable().optional(),
   paymentInfo: z.string().trim().max(2000).nullable().optional(),
+  description: z.string().trim().max(500).nullable().optional(),
 });
 
 export async function PATCH(
@@ -58,6 +59,7 @@ export async function PATCH(
       rulesText: true,
       entryFee: true,
       paymentInfo: true,
+      description: true,
     },
   });
 

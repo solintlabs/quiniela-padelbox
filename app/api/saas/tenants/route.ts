@@ -43,6 +43,7 @@ const bodySchema = z.object({
     .regex(/^data:image\/(png|jpe?g|webp);base64,[A-Za-z0-9+/=]+$/, 'Imagen inválida.')
     .max(200_000, 'La imagen es demasiado grande.')
     .optional(),
+  description: z.string().trim().max(500).optional(),
   defaultLocale: z.enum(['es', 'en', 'pt']).optional(),
 });
 
@@ -117,7 +118,7 @@ export async function POST(req: Request): Promise<Response> {
       { status: 400 },
     );
   }
-  const { name, accentColor, logoUrl, logoDataUrl, defaultLocale } = parsed.data;
+  const { name, accentColor, logoUrl, logoDataUrl, defaultLocale, description } = parsed.data;
   const logo = logoDataUrl ?? logoUrl ?? null;
 
   // Si no manda slug, se propone uno a partir del nombre.
@@ -138,6 +139,7 @@ export async function POST(req: Request): Promise<Response> {
       accentColor,
       logoUrl: logo,
       defaultLocale,
+      description,
     });
 
     return Response.json(

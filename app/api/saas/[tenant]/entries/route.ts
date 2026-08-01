@@ -58,10 +58,15 @@ export async function POST(
   const rl = await rateLimit(`saas-entry:${ctx.userId}`, 60, 60);
   if (!rl.allowed) return tooManyRequests(rl.resetAt);
 
-  // Igual que en PADELBOX: sin pagar la entrada al bote no se pronostica.
-  // Lo marca el organizador a mano; el dinero nunca pasa por la app.
-  // Excepción: el organizador (ADMIN/OWNER) siempre puede — no se paga a sí mismo.
-  if (!ctx.membership.hasPaid && !hasAtLeastRole(ctx.membership.role, 'ADMIN')) {
+  // Con cuota: sin pagar la entrada al bote no se pronostica (lo marca el
+  // organizador a mano; el dinero nunca pasa por la app). SIN cuota la
+  // quiniela es "por diversión" y juega todo el mundo. El organizador
+  // (ADMIN/OWNER) siempre puede — no se paga a sí mismo.
+  if (
+    ctx.tenant.entryFee &&
+    !ctx.membership.hasPaid &&
+    !hasAtLeastRole(ctx.membership.role, 'ADMIN')
+  ) {
     return Response.json(
       {
         error: 'Inscripción pendiente',

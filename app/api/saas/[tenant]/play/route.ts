@@ -29,6 +29,7 @@ export async function GET(
     accentColor: tenant.accentColor,
     logoUrl: tenant.logoUrl,
     plan: tenant.plan,
+    description: tenant.description,
     prizesText: tenant.prizesText,
     rulesText: tenant.rulesText,
     entryFee: tenant.entryFee,
@@ -41,7 +42,10 @@ export async function GET(
     membershipId: membership.id,
     displayName: membership.displayName,
   };
-  const canPredict = membership.hasPaid || hasAtLeastRole(membership.role, 'ADMIN');
+  // Sin cuota de inscripción la quiniela es "por diversión": juega todo el
+  // mundo sin que el organizador tenga que marcar pagos.
+  const forFun = !tenant.entryFee;
+  const canPredict = forFun || membership.hasPaid || hasAtLeastRole(membership.role, 'ADMIN');
 
   // Cómo se paga el bote: la app lo muestra en Reglas, igual que la web.
   const methodRows = await prisma.paymentMethod.findMany({

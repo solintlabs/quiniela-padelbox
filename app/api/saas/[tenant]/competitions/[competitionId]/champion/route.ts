@@ -21,9 +21,13 @@ export async function POST(
   const ctx = await requireTenantRoleApi(params.tenant, 'PLAYER', req);
   if (ctx instanceof Response) return ctx;
 
-  // Solo participan quienes el organizador confirmó como pagados (o el propio
-  // organizador). Mismo criterio que los pronósticos.
-  if (!ctx.membership.hasPaid && !hasAtLeastRole(ctx.membership.role, 'ADMIN')) {
+  // Mismo criterio que los pronósticos: con cuota, solo pagados (o el
+  // organizador); sin cuota ("por diversión"), todos.
+  if (
+    ctx.tenant.entryFee &&
+    !ctx.membership.hasPaid &&
+    !hasAtLeastRole(ctx.membership.role, 'ADMIN')
+  ) {
     return Response.json(
       { error: 'Tu inscripción está pendiente de confirmar.' },
       { status: 403 },

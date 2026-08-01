@@ -25,6 +25,7 @@ export function NuevaQuinielaForm() {
   // Paso 1 — marca
   const [name, setName] = useState('');
   const [accentColor, setAccentColor] = useState('#B6FF3C');
+  const [description, setDescription] = useState('');
   const [logoDataUrl, setLogoDataUrl] = useState<string | null>(null);
   const [logoError, setLogoError] = useState<string | null>(null);
 
@@ -99,6 +100,7 @@ export function NuevaQuinielaForm() {
         body: JSON.stringify({
           name,
           accentColor,
+          ...(description.trim() ? { description: description.trim() } : {}),
           ...(logoDataUrl ? { logoDataUrl } : {}),
         }),
       });
@@ -226,6 +228,17 @@ export function NuevaQuinielaForm() {
               </div>
             </div>
             {logoError && <p className="text-xs text-danger mt-1">{logoError}</p>}
+          </Field>
+          <Field label="Descripción (opcional)">
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              maxLength={500}
+              rows={2}
+              placeholder={'Qué es y cuánto dura. Ej: "La quiniela del Mundial 2026 del club — de junio a julio."'}
+              className="w-full rounded-lg border border-line bg-bg px-3 py-2 resize-y text-sm"
+            />
+            <p className="text-[11px] text-muted">La verán tus jugadores al unirse.</p>
           </Field>
         </section>
       )}
