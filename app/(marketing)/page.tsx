@@ -131,15 +131,6 @@ function Stores() {
   );
 }
 
-const PLAN_ORDER = ['FREE', 'PRO', 'CUSTOM'] as const;
-
-/** Precio legible de un plan. */
-function priceLabel(priceUsd: number | null, period: string | null) {
-  if (priceUsd === 0) return { big: 'Gratis', sub: 'para siempre' };
-  if (priceUsd === null) return { big: 'A medida', sub: 'hablamos' };
-  return { big: `$${priceUsd}`, sub: `USD / ${period ?? 'mes'}` };
-}
-
 /** Lista de features de un plan, derivada de sus límites reales. */
 function planFeatures(limits: (typeof PLANS)['FREE']['limits']): string[] {
   const players = limits.maxPlayers === Number.POSITIVE_INFINITY
@@ -155,45 +146,76 @@ function planFeatures(limits: (typeof PLANS)['FREE']['limits']): string[] {
 }
 
 function Plans() {
+  // Pro Temporada y Pro Mensual son DOS tarjetas: el pago único convierte
+  // mejor en torneos y el mensual queda como alternativa clara, sin letra
+  // pequeña. CUSTOM baja a una línea de contacto para no robar foco.
+  const season = PLANS.PRO.season!;
+  const cards = [
+    {
+      key: 'free',
+      name: PLANS.FREE.name,
+      tag: null as string | null,
+      big: 'Gratis',
+      sub: 'para siempre',
+      desc: PLANS.FREE.tagline,
+      feats: planFeatures(PLANS.FREE.limits),
+      cta: 'Empezar gratis',
+      href: '/saas/nueva',
+      on: false,
+    },
+    {
+      key: 'pro-temporada',
+      name: 'Pro Temporada',
+      tag: 'Recomendado',
+      big: `$${season.priceUsd}`,
+      sub: 'pago único · todo el torneo',
+      desc: 'Un pago y listo: cubre el Mundial (o tu liga) de principio a fin.',
+      feats: planFeatures(PLANS.PRO.limits),
+      cta: 'Elegir Temporada',
+      href: '/saas/nueva',
+      on: true,
+    },
+    {
+      key: 'pro-mensual',
+      name: 'Pro Mensual',
+      tag: null,
+      big: `$${PLANS.PRO.priceUsd}`,
+      sub: 'al mes · cancela cuando quieras',
+      desc: 'Para quinielas que no paran en todo el año.',
+      feats: planFeatures(PLANS.PRO.limits),
+      cta: 'Elegir Mensual',
+      href: '/saas/nueva',
+      on: false,
+    },
+  ];
   return (
-    <div className="plans rise">
-      {PLAN_ORDER.map((id) => {
-        const plan = PLANS[id];
-        const highlighted = id === 'PRO';
-        // El número GRANDE es el barato ($9/mes): ancla la percepción de
-        // precio. La temporada ($29 pago único) va justo debajo como "mejor
-        // precio" — es la que mejor convierte en torneos, pero sin asustar.
-        const price = priceLabel(plan.priceUsd, plan.period);
-        return (
-          <article key={id} className={`plan${highlighted ? ' plan--on' : ''}`}>
-            {highlighted && <span className="plan__tag">Recomendado</span>}
-            <h3>{plan.name}</h3>
+    <>
+      <div className="plans rise">
+        {cards.map((c) => (
+          <article key={c.key} className={`plan${c.on ? ' plan--on' : ''}`}>
+            {c.tag && <span className="plan__tag">{c.tag}</span>}
+            <h3>{c.name}</h3>
             <div className="plan__price">
-              <span className="plan__n">{price.big}</span>
-              <span className="small">{price.sub}</span>
+              <span className="plan__n">{c.big}</span>
+              <span className="small">{c.sub}</span>
             </div>
-            {highlighted && plan.season && (
-              <p className="plan__season">
-                ⭐ <strong>Mejor precio: ${plan.season.priceUsd} por temporada</strong> — pago
-                único, cubre el torneo entero
-              </p>
-            )}
-            <p className="plan__desc">{plan.tagline}</p>
+            <p className="plan__desc">{c.desc}</p>
             <ul className="plan__feats">
-              {planFeatures(plan.limits).map((f) => (
+              {c.feats.map((f) => (
                 <li key={f}>{f}</li>
               ))}
             </ul>
-            <Link
-              className={`btn ${highlighted ? 'btn--solid' : ''}`}
-              href={plan.priceUsd === null ? '#contacto' : '/saas/nueva'}
-            >
-              {plan.priceUsd === null ? 'Contactar' : plan.priceUsd === 0 ? 'Empezar gratis' : 'Elegir Pro'}
+            <Link className={`btn ${c.on ? 'btn--solid' : ''}`} href={c.href}>
+              {c.cta}
             </Link>
           </article>
-        );
-      })}
-    </div>
+        ))}
+      </div>
+      <p className="small rise" style={{ marginTop: '1rem', textAlign: 'center' }}>
+        ¿Club grande o marca propia? El plan <strong>A medida</strong> incluye white-label y
+        soporte directo — <a href="#contacto">hablemos</a>.
+      </p>
+    </>
   );
 }
 

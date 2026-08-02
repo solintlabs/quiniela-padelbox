@@ -95,11 +95,12 @@ export default async function InscripcionPublicaPage({
         <PaymentMethods methods={methods} />
 
         {!tenant.entryFee && !tenant.paymentInfo && methods.length === 0 && (
-          <section className="rounded-xl border border-dashed border-line p-6 text-center">
-            <p className="text-2xl mb-2">🎉</p>
-            <p className="text-sm">
-              Esta quiniela es <strong>por diversión</strong>: no hay cuota de inscripción.
-              Únete y a pronosticar.
+          <section className="rounded-xl border border-line bg-bg-elev p-6 text-center">
+            <span className="inline-block rounded-full border border-accent/50 bg-accent/10 px-3 py-1 text-xs font-semibold text-accent uppercase tracking-wide">
+              Por diversión
+            </span>
+            <p className="text-sm text-muted mt-3">
+              Esta quiniela no tiene cuota de inscripción. Únete y a pronosticar.
             </p>
           </section>
         )}

@@ -163,7 +163,7 @@ model Tenant {
   description     String?                       // descripción/duración que ve quien se une ("Mundial 2026, junio-julio…")
   prizesText      String?                       // premios de la quiniela (texto libre, multilínea)
   rulesText       String?                       // reglas propias del organizador (además del resumen automático)
-  entryFee        String?                       // cuota/bote de inscripción (texto libre: "$10", "10 USDT"…)
+  entryFee        String?                       // cuota/bote de inscripción (texto libre: "$10", "10 €"…)
   paymentInfo     String?                       // cómo pagar el bote (pago móvil, Zelle…), texto libre
   status          TenantStatus @default(LEAD)
   plan            TenantPlan   @default(FREE)
