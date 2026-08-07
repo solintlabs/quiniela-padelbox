@@ -7,6 +7,18 @@
  */
 export const GUIAS = [
   {
+    slug: 'penca-de-futbol',
+    title: 'Penca de fútbol: cómo organizarla',
+    excerpt:
+      'La penca uruguaya, paso a paso: puntaje, cierre de pronósticos, cobro del pozo y cómo evitar que muera a mitad de torneo.',
+  },
+  {
+    slug: 'quiniela-de-laliga',
+    title: 'La quiniela de LaLiga entre amigos, para toda la temporada',
+    excerpt:
+      'Una liga son 38 jornadas. Premios por jornada, recordatorios y reglas para que en noviembre siga jugando todo el mundo.',
+  },
+  {
     slug: 'polla-futbolera',
     title: 'Polla futbolera: cómo armarla con tu grupo',
     excerpt:
