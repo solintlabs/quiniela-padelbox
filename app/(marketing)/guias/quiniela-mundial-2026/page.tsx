@@ -22,6 +22,8 @@ export default function Page() {
       eyebrow="Guía"
       title="Quiniela del Mundial 2026: cómo montarla"
       lede="El Mundial de 2026 trae 48 selecciones y más partidos que nunca. Eso cambia cómo hay que plantear la quiniela."
+      slug="quiniela-mundial-2026"
+      description="Cómo montar la quiniela del Mundial 2026: reglas para 48 selecciones, puntos recomendados y cómo evitar que se decida demasiado pronto."
     >
       <Link href="/guias" className="gu__back">
         ← Todas las guías

@@ -7,6 +7,24 @@
  */
 export const GUIAS = [
   {
+    slug: 'polla-futbolera',
+    title: 'Polla futbolera: cómo armarla con tu grupo',
+    excerpt:
+      'Así se llama la quiniela en Venezuela y Colombia. Reglas, cuota, reparto del bote y los errores que la matan a mitad de torneo.',
+  },
+  {
+    slug: 'prode-como-armarlo',
+    title: 'Prode: cómo armarlo con tus amigos',
+    excerpt:
+      'El prode argentino, paso a paso: puntaje, cierre de pronósticos, cobro del pozo y cómo evitar que muera en la planilla.',
+  },
+  {
+    slug: 'porra-de-futbol-oficina',
+    title: 'La porra de fútbol de la oficina: cómo montarla',
+    excerpt:
+      'Cuánto poner, qué reglas fijar y cómo repartir para que la porra del trabajo aguante las 38 jornadas.',
+  },
+  {
     slug: 'aplicacion-para-quinielas',
     title: 'Aplicación para quinielas: qué debe tener y cuál usar',
     excerpt:

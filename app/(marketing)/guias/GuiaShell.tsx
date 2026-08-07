@@ -2,6 +2,7 @@ import Link from 'next/link';
 import Script from 'next/script';
 import { BrandMark } from '@/components/BrandMark';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { articleJsonLd, breadcrumbJsonLd, faqJsonLd, type FaqItem } from '@/lib/seo';
 
 /** Con la cuenta de AdSense activa, las guías (contenido público con tráfico
  * orgánico) cargan el loader para que Auto ads pueda servir aquí. Las zonas
@@ -19,15 +20,43 @@ export function GuiaShell({
   lede,
   children,
   cta = true,
+  slug,
+  description,
+  published = '2026-08-07',
+  faq,
 }: {
   eyebrow: string;
   title: string;
   lede?: string;
   children: React.ReactNode;
   cta?: boolean;
+  /** Slug del artículo. Si se pasa, emite Article + BreadcrumbList. */
+  slug?: string;
+  description?: string;
+  published?: string;
+  /** Preguntas frecuentes → desplegables en Google. */
+  faq?: FaqItem[];
 }) {
+  // Datos estructurados centralizados: así toda guía los lleva sin repetirlos.
+  const schemas = [
+    ...(slug && description
+      ? [
+          articleJsonLd({ slug, title, description, published }),
+          breadcrumbJsonLd(slug, title),
+        ]
+      : []),
+    ...(faq && faq.length > 0 ? [faqJsonLd(faq)] : []),
+  ];
+
   return (
     <main className="gu">
+      {schemas.map((s, i) => (
+        <script
+          key={i}
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(s) }}
+        />
+      ))}
       {ADSENSE_CLIENT && (
         <Script
           id="adsense-loader"

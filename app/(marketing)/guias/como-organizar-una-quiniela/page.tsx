@@ -22,6 +22,8 @@ export default function Page() {
       eyebrow="Guía"
       title="Cómo organizar una quiniela de fútbol paso a paso"
       lede="Organizar una quiniela es fácil; que aguante hasta la final, no tanto. Esto es lo que marca la diferencia."
+      slug="como-organizar-una-quiniela"
+      description="Guía paso a paso para organizar una quiniela de fútbol: cuota, reglas, cierre de pronósticos, cobro del bote y reparto de premios."
     >
       <Link href="/guias" className="gu__back">
         ← Todas las guías

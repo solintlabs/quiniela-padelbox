@@ -66,6 +66,8 @@ export default function Page() {
       eyebrow="Guía"
       title="Aplicación para quinielas: qué debe tener y cuál usar"
       lede="Una quiniela en Excel funciona… hasta la segunda jornada. Esto es lo que tiene que hacer por ti una aplicación de quinielas de verdad."
+      slug="aplicacion-para-quinielas"
+      description="Qué debe tener una buena aplicación para quinielas: resultados automáticos, ranking en vivo, puntos configurables y el bote fuera de la app."
     >
       <script
         type="application/ld+json"

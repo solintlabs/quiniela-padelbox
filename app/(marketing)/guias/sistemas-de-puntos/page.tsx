@@ -22,6 +22,8 @@ export default function Page() {
       eyebrow="Guía"
       title="Sistemas de puntos: cuál elegir para tu quiniela"
       lede="El sistema de puntos decide qué tipo de juego tendrás: uno conservador, uno arriesgado, o uno que se decide en el último partido."
+      slug="sistemas-de-puntos"
+      description="Comparativa de sistemas de puntuación para quinielas: 3/1/0, diferencia de goles, bonus por empate y pick de campeón."
     >
       <Link href="/guias" className="gu__back">
         ← Todas las guías
