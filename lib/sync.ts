@@ -3,7 +3,7 @@ import { prisma } from '@/lib/db';
 import { calcPoints } from '@/lib/scoring';
 import { computeRanking } from '@/lib/ranking';
 import { fetchWorldCupFixtures, fetchRegulationScore, type NormalizedFixture } from '@/lib/providers/espn';
-import { sendPushToUsers } from '@/lib/push';
+import { sendPushToUsers, usersWithoutPush } from '@/lib/push';
 import { sendBulkEmail } from '@/lib/email';
 import { buildKnockoutReminderEmail } from '@/lib/emails/ko-reminder';
 
@@ -140,14 +140,21 @@ async function notifyKnockoutRounds(now: number, offsetMs: number): Promise<void
           body: 'En eliminatorias NO hay 0-0 automático: si no rellenas, no sumas. Ve pronosticando los cruces conforme salen. ⏱️ Cuentan los 90 min (sin prórroga).',
           data: { type: 'ko-unlock', stage },
         })).catch((e) => console.error('[push] ko-unlock:', e));
-        // Email (una vez por ronda) recordando rellenar — solo a pagados.
-        const { subject, html, text } = buildKnockoutReminderEmail({ label, origin: APP_ORIGIN });
-        await sendBulkEmail(
-          paid.map((u) => u.email).filter((e): e is string => !!e),
-          subject,
-          html,
-          text,
-        ).catch((e) => console.error('[email] ko-unlock:', e));
+        // Email (una vez por ronda) SOLO a quien no tiene la app: quien ya
+        // recibió el push de arriba no necesita además un correo, y así no se
+        // quema la cuota de Resend con 140 envíos de golpe.
+        const noPush = await usersWithoutPush(paid.map((u) => u.id));
+        const noPushSet = new Set(noPush);
+        const emails = paid
+          .filter((u) => noPushSet.has(u.id))
+          .map((u) => u.email)
+          .filter((e): e is string => !!e);
+        if (emails.length > 0) {
+          const { subject, html, text } = buildKnockoutReminderEmail({ label, origin: APP_ORIGIN });
+          await sendBulkEmail(emails, subject, html, text).catch((e) =>
+            console.error('[email] ko-unlock:', e),
+          );
+        }
         continue; // ya avisamos esta ronda en este ciclo
       }
     }

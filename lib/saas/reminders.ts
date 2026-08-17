@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/db';
-import { sendPushToUsers } from '@/lib/push';
+import { sendPushToUsers, usersWithoutPush } from '@/lib/push';
 import { sendBulkEmail } from '@/lib/email';
 import { buildTenantReminderEmail } from '@/lib/emails/tenant-reminder';
 import { lockTimeFor } from '@/lib/saas/scoring-core';
@@ -114,9 +114,12 @@ export async function sendDueTenantReminders(origin: string): Promise<ReminderRe
       }));
       result.pushed += push.sent;
 
-      // Email a todos los pendientes (mucha gente no instala la app).
+      // El email es RESPALDO, no duplicado: solo a quien no tiene la app. Antes
+      // se mandaba a todos y el que ya había recibido el push se llevaba
+      // además un correo — el doble de molestia y cuota de Resend quemada.
+      const noPush = await usersWithoutPush(userIds);
       const users = await prisma.user.findMany({
-        where: { id: { in: userIds } },
+        where: { id: { in: noPush } },
         select: { email: true },
       });
       const emails = users.map((u) => u.email).filter((e): e is string => !!e);
