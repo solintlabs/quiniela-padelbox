@@ -13,6 +13,9 @@ export function SaasLegalFooter() {
           un enlace de texto: es la forma que la gente reconoce. */}
       <AppStoreBadges variant="compact" />
       <nav className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-muted pt-1">
+        <Link href="/acerca" className="hover:text-ink underline-offset-4 hover:underline">
+          Acerca de
+        </Link>
         <Link href="/terms" className="hover:text-ink underline-offset-4 hover:underline">
           Términos y condiciones
         </Link>

@@ -4,7 +4,6 @@ import { prisma } from '@/lib/db';
 import { tenantThemeVars } from '@/lib/saas/theme';
 import { showsBranding, showsAds } from '@/lib/saas/plans';
 import { SaasLegalFooter } from '@/components/SaasLegalFooter';
-import { AdSlot } from '@/components/AdSlot';
 import { TenantNav } from '../TenantNav';
 import { saasSignOut } from '../../actions';
 import { loadTenantPlayer } from '@/lib/saas/playerView';
@@ -131,24 +130,25 @@ export default async function JugarLayout({
           </section>
         )}
 
+        {/* Autopromo, NO anuncios de red.
+            Estas páginas exigen login y van con noindex, así que Googlebot no
+            puede rastrearlas ni revisar lo que se sirve aquí: colocar anuncios
+            de AdSense en zona no rastreable incumple las políticas del
+            programa. Los anuncios se sirven solo en las páginas públicas
+            (portada y guías). Cuando la cuenta esté aprobada se puede revisar
+            esta decisión con la documentación de Google en la mano. */}
         {showsAds(tenant.plan) && (
-          <AdSlot
-            slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_TENANT}
-            fallback={
-              <a
-                href="/"
-                className="block rounded-xl border border-dashed border-line bg-bg-elev p-3 text-center text-xs text-muted hover:border-accent transition-colors"
-              >
-                Publicidad ·{' '}
-                <span className="text-accent font-semibold">
-                  Crea tu propia quiniela gratis en QuinielaBOX →
-                </span>{' '}
-                <span className="block mt-0.5">
-                  ¿Organizas esta quiniela? El plan Pro quita los anuncios.
-                </span>
-              </a>
-            }
-          />
+          <a
+            href="/"
+            className="block rounded-xl border border-dashed border-line bg-bg-elev p-3 text-center text-xs text-muted hover:border-accent transition-colors"
+          >
+            <span className="text-accent font-semibold">
+              Crea tu propia quiniela gratis en QuinielaBOX →
+            </span>{' '}
+            <span className="block mt-0.5">
+              ¿Organizas esta quiniela? El plan Pro quita esta franja.
+            </span>
+          </a>
         )}
 
         {showsBranding(tenant.plan) && (

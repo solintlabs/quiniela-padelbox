@@ -265,6 +265,7 @@ export default async function LandingPage() {
           <nav>
             <Link href="/demo">Demo</Link>
             <Link href="/guias">Guías</Link>
+            <Link href="/acerca">Acerca de</Link>
             <a href="#juegos">Juegos</a>
             <a href="#reglas">Reglas</a>
             <a href="#app">La app</a>
@@ -568,6 +569,7 @@ export default async function LandingPage() {
           <p className="small mono">es · en · pt</p>
         </div>
         <div className="wrap lz-foot__legal">
+          <Link href="/acerca">Acerca de</Link>
           <Link href="/privacy">Política de Privacidad</Link>
           <Link href="/terms">Términos de Uso</Link>
           <Link href="/soporte">Soporte</Link>
