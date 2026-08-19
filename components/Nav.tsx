@@ -33,7 +33,7 @@ export function Nav({ isAdmin, userEmail }: NavProps) {
             zona como "atajo a home" (antes abria Instagram, ahora va al
             dashboard). El link a Instagram esta en el footer / sponsors. */}
         <Link
-          href="/"
+          href="/mi-quiniela"
           aria-label="Volver al inicio"
           title="Inicio"
           className="flex items-center gap-2 sm:gap-3 shrink-0"

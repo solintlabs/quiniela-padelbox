@@ -20,16 +20,14 @@ const PALETTE = {
 } as const;
 
 export function buildLoginCodeEmail({ code, origin }: LoginCodeParams) {
-  const padelboxLogo = `${origin}/logos/completo-negro.png`;
-  const delishLogo = `${origin}/partners/delish.png`;
   const solintLogo = `${origin}/partners/solint.png`;
   const year = new Date().getFullYear();
   const formatted = code.replace(/(\d{3})(\d{3})/, '$1 $2'); // "123 456"
 
-  const subject = `Tu código: ${code} · Quiniela PADELBOX`;
+  const subject = `Tu código: ${code} · QuinielaBOX`;
 
   const text = [
-    'Quiniela Mundial 2026 — PADELBOX',
+    'QuinielaBOX',
     '',
     `Tu código de acceso es: ${code}`,
     '',
@@ -38,7 +36,7 @@ export function buildLoginCodeEmail({ code, origin }: LoginCodeParams) {
     '',
     'Si no fuiste tú, ignora este email — nadie podrá entrar sin este código.',
     '',
-    `© ${year} PADELBOX Sports Club`,
+    `© ${year} QuinielaBOX · hecho por Solintlabs`,
   ].join('\n');
 
   const html = `<!doctype html>
@@ -47,11 +45,11 @@ export function buildLoginCodeEmail({ code, origin }: LoginCodeParams) {
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="color-scheme" content="light only" />
-  <title>${code} · Quiniela PADELBOX</title>
+  <title>${code} · QuinielaBOX</title>
 </head>
 <body style="margin:0;padding:0;background:${PALETTE.bg};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;color:${PALETTE.ink};">
   <div style="display:none;font-size:1px;color:${PALETTE.bg};line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">
-    Tu código de acceso a la Quiniela PADELBOX. Caduca en 10 min.
+    Tu código de acceso a QuinielaBOX. Caduca en 10 min.
   </div>
 
   <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:${PALETTE.bg};padding:32px 16px;">
@@ -60,20 +58,9 @@ export function buildLoginCodeEmail({ code, origin }: LoginCodeParams) {
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="560" style="max-width:560px;width:100%;background:${PALETTE.card};border:1px solid ${PALETTE.border};border-radius:14px;overflow:hidden;">
           <tr>
             <td align="center" style="padding:40px 32px 16px;">
-              <!-- Co-branding header: PADELBOX x DELISH -->
-              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
-                <tr>
-                  <td valign="middle" style="padding-right:14px;">
-                    <img src="${padelboxLogo}" alt="PADELBOX" width="150" style="display:block;height:auto;max-width:150px;" />
-                  </td>
-                  <td valign="middle" style="font-size:22px;color:${PALETTE.muted};padding:0 8px;">×</td>
-                  <td valign="middle" style="padding-left:14px;">
-                    <img src="${delishLogo}" alt="DELISH" width="80" style="display:block;height:auto;max-width:80px;" />
-                  </td>
-                </tr>
-              </table>
-              <p style="margin:12px 0 0;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:${PALETTE.muted};">
-                Presentan la quiniela
+              <!-- Marca QuinielaBOX (genérica: vale para cualquier cliente) -->
+              <p style="margin:0;font-size:26px;font-weight:900;letter-spacing:-0.03em;color:${PALETTE.ink};">
+                QUINIELA<span style="color:#7BB800;">BOX</span>
               </p>
             </td>
           </tr>
@@ -137,7 +124,7 @@ export function buildLoginCodeEmail({ code, origin }: LoginCodeParams) {
           <tr>
             <td align="center" style="padding:0 32px 24px;">
               <p style="margin:0;font-size:11px;line-height:1.5;color:${PALETTE.muted};letter-spacing:0.04em;">
-                © ${year} PADELBOX · Quiniela patrocinada
+                © ${year} QuinielaBOX
               </p>
             </td>
           </tr>
