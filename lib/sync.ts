@@ -5,6 +5,7 @@ import { computeRanking } from '@/lib/ranking';
 import { fetchWorldCupFixtures, fetchRegulationScore, type NormalizedFixture } from '@/lib/providers/espn';
 import { sendPushToUsers, usersWithoutPush } from '@/lib/push';
 import { sendBulkEmail } from '@/lib/email';
+import { recipientsForBulk } from '@/lib/unsubscribe';
 import { buildKnockoutReminderEmail } from '@/lib/emails/ko-reminder';
 
 // Base URL para enlaces/imagenes en emails enviados desde el cron (sin request).
@@ -144,14 +145,16 @@ async function notifyKnockoutRounds(now: number, offsetMs: number): Promise<void
         // recibió el push de arriba no necesita además un correo, y así no se
         // quema la cuota de Resend con 140 envíos de golpe.
         const noPush = await usersWithoutPush(paid.map((u) => u.id));
-        const noPushSet = new Set(noPush);
-        const emails = paid
-          .filter((u) => noPushSet.has(u.id))
-          .map((u) => u.email)
-          .filter((e): e is string => !!e);
-        if (emails.length > 0) {
-          const { subject, html, text } = buildKnockoutReminderEmail({ label, origin: APP_ORIGIN });
-          await sendBulkEmail(emails, subject, html, text).catch((e) =>
+        // recipientsForBulk descarta a quien se dio de baja y trae su enlace
+        // personal de baja, obligatorio en cualquier envío masivo.
+        const recipients = await recipientsForBulk(noPush);
+        for (const r of recipients) {
+          const { subject, html, text } = buildKnockoutReminderEmail({
+            label,
+            origin: APP_ORIGIN,
+            unsubUrl: r.unsubUrl,
+          });
+          await sendBulkEmail([r.email], subject, html, text).catch((e) =>
             console.error('[email] ko-unlock:', e),
           );
         }

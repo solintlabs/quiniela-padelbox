@@ -11,6 +11,8 @@ interface TenantReminderParams {
   fixtures: string[];
   /** URL absoluta a la quiniela del jugador. */
   url: string;
+  /** Enlace para dejar de recibir estos avisos (obligatorio en envíos masivos). */
+  unsubUrl?: string;
 }
 
 const PALETTE = {
@@ -26,6 +28,7 @@ export function buildTenantReminderEmail({
   accentColor,
   fixtures,
   url,
+  unsubUrl,
 }: TenantReminderParams) {
   const count = fixtures.length;
   const subject =
@@ -58,6 +61,9 @@ export function buildTenantReminderEmail({
     </td></tr>
     <tr><td style="padding:0 24px 22px" align="center">
       <p style="margin:0;font-size:11px;color:${PALETTE.muted}">Quiniela gestionada con QuinielaBOX</p>
+      ${unsubUrl ? `<p style="margin:6px 0 0;font-size:11px;color:${PALETTE.muted}">
+        <a href="${unsubUrl}" style="color:${PALETTE.muted};">Dejar de recibir estos avisos</a>
+      </p>` : ''}
     </td></tr>
   </table>
 </body></html>`;
@@ -67,7 +73,8 @@ export function buildTenantReminderEmail({
 Todavía no has pronosticado:
 ${fixtures.map((f) => `- ${f}`).join('\n')}
 
-Pronostica aquí: ${url}`;
+Pronostica aquí: ${url}
+${unsubUrl ? `\nDejar de recibir estos avisos: ${unsubUrl}` : ''}`;
 
   return { subject, html, text };
 }

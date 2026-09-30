@@ -35,8 +35,10 @@ async function main() {
   const { subject, html, text } = buildPadelboxPromoEmail({ origin: ORIGIN });
 
   // Destinatarios: usuarios de PADELBOX con email.
+  // emailOptOut: quien se dio de baja NO recibe promociones. Es el motivo de
+  // que exista la baja; saltárselo aquí sería lo mismo que no tenerla.
   const users = await prisma.user.findMany({
-    where: isTest ? { role: 'ADMIN' } : {},
+    where: isTest ? { role: 'ADMIN' } : { emailOptOut: false },
     select: { email: true },
     orderBy: { createdAt: 'asc' },
   });

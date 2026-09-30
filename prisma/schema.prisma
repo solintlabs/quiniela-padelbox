@@ -100,6 +100,15 @@ model User {
   championPick     String?
   championLockedAt DateTime?
 
+  // Baja de correos NO imprescindibles (recordatorios, avisos, promociones).
+  // El magic link y el codigo de acceso se siguen enviando siempre: sin ellos
+  // la persona no puede entrar. Se da de baja desde el enlace del pie de cada
+  // correo, sin necesidad de iniciar sesion.
+  emailOptOut      Boolean   @default(false)
+  emailOptOutAt    DateTime?
+  // Token del enlace de baja: va en la URL, asi que no hace falta login.
+  unsubToken       String?   @unique
+
   // Enlace de acceso permanente (para gente sin email / poco tecnologica).
   // El admin lo genera; quien tenga el link entra directo a ESTA cuenta.
   // Revocable regenerandolo. Null = sin link activo.
@@ -487,6 +496,11 @@ model SaasMembership {
 
   // Nombre elegido para ESTE tenant. Null = se usa el del User.
   displayName String?
+
+  // Último recordatorio enviado a ESTA persona. Evita que reciba un aviso por
+  // cada tanda de partidos que cierra: se le avisa una vez y no se le vuelve a
+  // molestar hasta pasado el periodo de espera.
+  lastRemindedAt DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

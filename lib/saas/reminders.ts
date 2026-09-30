@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/db';
 import { sendPushToUsers, usersWithoutPush } from '@/lib/push';
 import { sendBulkEmail } from '@/lib/email';
+import { recipientsForBulk } from '@/lib/unsubscribe';
 import { buildTenantReminderEmail } from '@/lib/emails/tenant-reminder';
 import { lockTimeFor } from '@/lib/saas/scoring-core';
 import { formatDateTime } from '@/lib/format';
@@ -19,6 +20,14 @@ import { formatDateTime } from '@/lib/format';
 
 /** Cuánto antes del CIERRE se avisa. */
 const REMIND_WINDOW_MS = 3 * 60 * 60 * 1000; // 3 h
+
+/**
+ * Espera mínima entre dos avisos a la MISMA persona. Sin esto, alguien que no
+ * pronostica recibe un aviso por cada tanda de partidos que cierra: en una
+ * liga con partidos repartidos por la semana eso son varios correos al día.
+ * Con 20 h se le avisa como mucho una vez al día.
+ */
+const PER_PLAYER_COOLDOWN_MS = 20 * 60 * 60 * 1000;
 
 export interface ReminderResult {
   fixtures: number;
@@ -80,7 +89,7 @@ export async function sendDueTenantReminders(origin: string): Promise<ReminderRe
       // ni siquiera puede pronosticar.
       const memberships = await prisma.saasMembership.findMany({
         where: { tenantId, hasPaid: true },
-        select: { id: true, userId: true },
+        select: { id: true, userId: true, lastRemindedAt: true },
       });
       if (memberships.length === 0) continue;
 
@@ -91,9 +100,14 @@ export async function sendDueTenantReminders(origin: string): Promise<ReminderRe
       });
       const done = new Set(entries.map((e) => `${e.membershipId}:${e.fixtureId}`));
 
-      // Quien no ha pronosticado AL MENOS uno de los partidos que cierran.
-      const pending = memberships.filter((m) =>
-        fixtureIds.some((fid) => !done.has(`${m.id}:${fid}`)),
+      // Quien no ha pronosticado AL MENOS uno de los partidos que cierran y a
+      // quien no se ha avisado hace poco: un aviso por persona, no uno por
+      // tanda de partidos.
+      const cooldownFrom = new Date(now.getTime() - PER_PLAYER_COOLDOWN_MS);
+      const pending = memberships.filter(
+        (m) =>
+          fixtureIds.some((fid) => !done.has(`${m.id}:${fid}`)) &&
+          (!m.lastRemindedAt || m.lastRemindedAt < cooldownFrom),
       );
       if (pending.length === 0) continue;
 
@@ -114,26 +128,30 @@ export async function sendDueTenantReminders(origin: string): Promise<ReminderRe
       }));
       result.pushed += push.sent;
 
-      // El email es RESPALDO, no duplicado: solo a quien no tiene la app. Antes
-      // se mandaba a todos y el que ya había recibido el push se llevaba
-      // además un correo — el doble de molestia y cuota de Resend quemada.
+      // El email es RESPALDO, no duplicado: solo a quien no tiene la app, y
+      // solo a quien no se ha dado de baja. Un único correo por persona con
+      // TODOS los partidos que le faltan, no uno por partido.
       const noPush = await usersWithoutPush(userIds);
-      const users = await prisma.user.findMany({
-        where: { id: { in: noPush } },
-        select: { email: true },
-      });
-      const emails = users.map((u) => u.email).filter((e): e is string => !!e);
-      if (emails.length > 0) {
+      const recipients = await recipientsForBulk(noPush);
+      for (const r of recipients) {
         const { subject, html, text } = buildTenantReminderEmail({
           tenantName: tenant.name,
           accentColor: tenant.accentColor,
           fixtures: labels,
           url,
+          unsubUrl: r.unsubUrl,
         });
-        const sent = await sendBulkEmail(emails, subject, html, text);
+        // De uno en uno porque el enlace de baja es personal.
+        const sent = await sendBulkEmail([r.email], subject, html, text);
         result.emailed += sent.sent;
       }
 
+      // Marca a quién se avisó (para el periodo de espera) y los partidos ya
+      // notificados (para no repetir la tanda).
+      await prisma.saasMembership.updateMany({
+        where: { id: { in: pending.map((m) => m.id) } },
+        data: { lastRemindedAt: new Date() },
+      });
       await prisma.saasFixture.updateMany({
         where: { id: { in: fixtureIds } },
         data: { reminderSentAt: new Date() },
