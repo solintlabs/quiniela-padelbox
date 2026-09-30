@@ -214,7 +214,7 @@ export default async function DashboardPage() {
       {/* Cross-sell: "quiero mi quiniela" — link discreto */}
       <p className="text-center text-[11px] text-muted">
         ¿Conoces un club que quiera su quiniela?{' '}
-        <Link href="/lanza-tu-quiniela" className="text-accent hover:underline">
+        <Link href="/" className="text-accent hover:underline">
           Recomiéndanos →
         </Link>
       </p>

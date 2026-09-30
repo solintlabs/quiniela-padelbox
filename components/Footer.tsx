@@ -47,7 +47,7 @@ export function Footer({ variant = 'app' }: FooterProps) {
       </p>
       <p className="text-[11px] text-muted">
         ¿Quieres tu propia quiniela del club o peña?{' '}
-        <Link href="/lanza-tu-quiniela" className="text-accent hover:underline">
+        <Link href="/" className="text-accent hover:underline">
           Mira cómo →
         </Link>
       </p>
