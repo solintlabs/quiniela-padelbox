@@ -170,6 +170,12 @@ model Tenant {
   accentColor     String       @default("#B6FF3C")
   contactWhatsapp String?
   description     String?                       // descripción/duración que ve quien se une ("Mundial 2026, junio-julio…")
+  // Portada de la quiniela (banner). Parte del paquete de marca del plan Pro:
+  // es lo que convierte la pantalla en "la quiniela del club" y no en una
+  // página genérica. Se guarda como data URL igual que el logo.
+  coverUrl        String?
+  // Lema que acompaña al nombre en la portada y al compartir (Pro).
+  tagline         String?
   prizesText      String?                       // premios de la quiniela (texto libre, multilínea)
   rulesText       String?                       // reglas propias del organizador (además del resumen automático)
   entryFee        String?                       // cuota/bote de inscripción (texto libre: "$10", "10 €"…)

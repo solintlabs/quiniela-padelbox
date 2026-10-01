@@ -26,6 +26,8 @@ export interface PlanLimits {
   removeBranding: boolean;
   /** Se muestran anuncios a sus jugadores. */
   showsAds: boolean;
+  /** Paquete de marca: portada, lema, marca en correos y al compartir. */
+  branding: boolean;
 }
 
 /** Alternativa de pago único por temporada (además del mensual). */
@@ -66,6 +68,7 @@ export const PLANS: Record<TenantPlan, Plan> = {
       espnCatalog: true,
       removeBranding: false,
       showsAds: true,
+      branding: false,
     },
   },
   PRO: {
@@ -89,6 +92,7 @@ export const PLANS: Record<TenantPlan, Plan> = {
       espnCatalog: true,
       removeBranding: true,
       showsAds: false,
+      branding: true,
     },
   },
   CUSTOM: {
@@ -103,6 +107,7 @@ export const PLANS: Record<TenantPlan, Plan> = {
       espnCatalog: true,
       removeBranding: true,
       showsAds: false,
+      branding: true,
     },
   },
 };
@@ -169,4 +174,13 @@ export function showsBranding(plan: TenantPlan): boolean {
 
 export function showsAds(plan: TenantPlan): boolean {
   return limitsFor(plan).showsAds;
+}
+
+/**
+ * ¿Puede personalizar la marca de su quiniela (portada, lema, marca en los
+ * correos y al compartir)? Es la diferencia visible entre "una quiniela más" y
+ * "la quiniela del club", y por eso va en el plan de pago.
+ */
+export function canBrand(plan: TenantPlan): boolean {
+  return limitsFor(plan).branding;
 }

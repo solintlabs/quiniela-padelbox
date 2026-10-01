@@ -14,6 +14,7 @@ import { CompetitionSettings } from './CompetitionSettings';
 import { FixturesManager } from './FixturesManager';
 import { AddCompetition } from './AddCompetition';
 import { TenantSettings } from './TenantSettings';
+import { BrandingCard } from './BrandingCard';
 import { SponsorsManager } from './SponsorsManager';
 import { PaymentMethodsManager } from './PaymentMethodsManager';
 import { InviteShare } from './InviteShare';
@@ -185,6 +186,14 @@ export default async function PanelPage({
               entryFee: tenant.entryFee ?? '',
               paymentInfo: tenant.paymentInfo ?? '',
             }}
+          />
+        )}
+
+        {isOwner && (
+          <BrandingCard
+            slug={tenant.slug}
+            isPro={isPro}
+            initial={{ coverUrl: tenant.coverUrl, tagline: tenant.tagline ?? '' }}
           />
         )}
 

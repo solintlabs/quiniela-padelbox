@@ -56,6 +56,19 @@ export default async function JugarLayout({
       style={tenantThemeVars(tenant.accentColor)}
     >
       <div className="max-w-3xl mx-auto px-6 py-8 space-y-6">
+        {/* Portada del club (paquete de marca, plan Pro). Es lo que convierte
+            la pantalla en "la quiniela del club" en vez de una página genérica. */}
+        {tenant.coverUrl && (
+          <div className="-mx-6 -mt-8 mb-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={tenant.coverUrl}
+              alt=""
+              className="w-full h-36 sm:h-48 object-cover"
+            />
+          </div>
+        )}
+
         <header className="flex items-center gap-4">
           {tenant.logoUrl && (
             // eslint-disable-next-line @next/next/no-img-element
@@ -73,6 +86,9 @@ export default async function JugarLayout({
               Quiniela
             </p>
             <h1 className="font-display text-2xl sm:text-3xl truncate">{tenant.name}</h1>
+            {tenant.tagline && (
+              <p className="text-sm text-muted truncate">{tenant.tagline}</p>
+            )}
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <Link
