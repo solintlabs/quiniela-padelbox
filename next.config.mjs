@@ -18,6 +18,13 @@ const nextConfig = {
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }];
   },
+  async redirects() {
+    return [
+      // La landing pasó de /lanza-tu-quiniela a la raíz. Redirige los enlaces
+      // y SEO viejos para que no den 404.
+      { source: '/lanza-tu-quiniela', destination: '/', permanent: true },
+    ];
+  },
 };
 
 export default nextConfig;

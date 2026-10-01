@@ -1,4 +1,5 @@
 import type { MetadataRoute } from 'next';
+import { GUIAS } from '@/app/(marketing)/guias/guias-data';
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.quinielabox.com';
 
@@ -12,15 +13,29 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 1.0,
     },
     {
-      url: `${siteUrl}/login`,
+      url: `${siteUrl}/demo`,
       lastModified: now,
       changeFrequency: 'monthly',
       priority: 0.9,
     },
+    // Guías públicas: es el contenido indexable que trae tráfico orgánico.
     {
-      url: `${siteUrl}/lanza-tu-quiniela`,
+      url: `${siteUrl}/guias`,
       lastModified: now,
       changeFrequency: 'weekly',
+      priority: 0.8,
+    },
+    // La lista viene de guias-data: añadir una guía allí la mete aquí sola.
+    ...GUIAS.map((g) => ({
+      url: `${siteUrl}/guias/${g.slug}`,
+      lastModified: now,
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
+    })),
+    {
+      url: `${siteUrl}/login`,
+      lastModified: now,
+      changeFrequency: 'monthly',
       priority: 0.9,
     },
     {
@@ -34,6 +49,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: now,
       changeFrequency: 'monthly',
       priority: 0.7,
+    },
+    {
+      url: `${siteUrl}/acerca`,
+      lastModified: now,
+      changeFrequency: 'yearly',
+      priority: 0.6,
     },
     {
       url: `${siteUrl}/privacy`,

@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og';
 
 export const runtime = 'edge';
-export const alt = 'QuinielaBOX — Quiniela del Mundial 2026 PADELBOX × DELISH';
+export const alt = 'QuinielaBOX — Crea la quiniela de tu club, peña o grupo';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
@@ -33,10 +33,14 @@ export default async function OpenGraphImage() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: 36,
             }}
           >
-            ⚽
+            <svg width="52" height="52" viewBox="0 0 100 100">
+              <circle cx="50" cy="48" r="27" fill="none" stroke="#B6FF3C" strokeWidth="12" />
+              <line x1="61" y1="59" x2="76" y2="74" stroke="#B6FF3C" strokeWidth="12" strokeLinecap="round" />
+              <circle cx="50" cy="48" r="12" fill="#B6FF3C" />
+              <polygon points="50,44.33 53.49,46.87 52.16,50.96 47.84,50.96 46.51,46.87" fill="#0A0A0A" />
+            </svg>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             <div
@@ -48,10 +52,10 @@ export default async function OpenGraphImage() {
                 textTransform: 'uppercase',
               }}
             >
-              Quiniela · Mundial 2026
+              Crea tu quiniela
             </div>
             <div style={{ fontSize: 18, color: '#A1A1AA', marginTop: 4 }}>
-              PADELBOX × DELISH
+              QuinielaBOX
             </div>
           </div>
         </div>
@@ -88,7 +92,7 @@ export default async function OpenGraphImage() {
               maxWidth: 900,
             }}
           >
-            La quiniela privada del Mundial 2026 con ranking en vivo, app iOS + Android y premios semanales.
+            Crea la quiniela de tu club, peña o grupo de amigos: pronósticos, ranking en vivo, premios y app.
           </div>
         </div>
 
