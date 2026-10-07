@@ -18,6 +18,8 @@ export interface TenantPlayerCtx {
   tenant: Tenant;
   membershipId: string;
   isAdmin: boolean;
+  /** Dueño del tenant: el único que puede contratar el plan. */
+  isOwner: boolean;
   hasPaid: boolean;
   canPredict: boolean;
 }
@@ -30,6 +32,7 @@ export async function loadTenantPlayer(slug: string): Promise<TenantPlayerCtx> {
     tenant: ctx.tenant,
     membershipId: ctx.membership.id,
     isAdmin,
+    isOwner: ctx.membership.role === 'OWNER',
     hasPaid: ctx.membership.hasPaid,
     // El organizador siempre pronostica; el jugador cuando le confirman el pago.
     canPredict: ctx.membership.hasPaid || isAdmin,

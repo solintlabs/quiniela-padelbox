@@ -2,7 +2,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { prisma } from '@/lib/db';
 import { tenantThemeVars } from '@/lib/saas/theme';
-import { showsBranding, showsAds } from '@/lib/saas/plans';
+import { showsBranding, showsAds, PLANS } from '@/lib/saas/plans';
 import { SaasLegalFooter } from '@/components/SaasLegalFooter';
 import { TenantNav } from '../TenantNav';
 import { saasSignOut } from '../../actions';
@@ -42,7 +42,7 @@ export default async function JugarLayout({
   params: { tenant: string };
   children: React.ReactNode;
 }) {
-  const { tenant, isAdmin } = await loadTenantPlayer(params.tenant);
+  const { tenant, isAdmin, isOwner } = await loadTenantPlayer(params.tenant);
 
   const sponsors = await prisma.sponsor.findMany({
     where: { tenantId: tenant.id },
@@ -153,19 +153,40 @@ export default async function JugarLayout({
             programa. Los anuncios se sirven solo en las páginas públicas
             (portada y guías). Cuando la cuenta esté aprobada se puede revisar
             esta decisión con la documentación de Google en la mano. */}
-        {showsAds(tenant.plan) && (
-          <a
-            href="/"
-            className="block rounded-xl border border-dashed border-line bg-bg-elev p-3 text-center text-xs text-muted hover:border-accent transition-colors"
-          >
-            <span className="text-accent font-semibold">
-              Crea tu propia quiniela gratis en QuinielaBOX →
-            </span>{' '}
-            <span className="block mt-0.5">
-              ¿Organizas esta quiniela? El plan Pro quita esta franja.
-            </span>
-          </a>
-        )}
+        {showsAds(tenant.plan) &&
+          (isOwner ? (
+            // Al ORGANIZADOR se le enseña qué gana pagando: es quien decide y
+            // quien puede hacerlo. Un "crea la tuya" aquí no vende nada.
+            <Link
+              href={`/saas/${tenant.slug}/panel`}
+              className="block rounded-xl border border-accent bg-accent/5 p-4 hover:bg-accent/10 transition-colors"
+            >
+              <span className="text-[10px] uppercase tracking-wide text-muted">Publicidad</span>
+              <span className="block font-display text-lg mt-0.5">
+                Quita los anuncios de tu quiniela con{' '}
+                <span className="text-accent">Pro</span>
+              </span>
+              <span className="block text-xs text-muted mt-1">
+                Tu portada y tu lema · sin anuncios para tus jugadores · hasta{' '}
+                {PLANS.PRO.limits.maxPlayers} jugadores
+              </span>
+              <span className="block text-sm font-semibold text-accent mt-2">
+                ${PLANS.PRO.season?.priceUsd} {PLANS.PRO.season?.label} →
+              </span>
+            </Link>
+          ) : (
+            // Al JUGADOR se le invita a crear la suya: así cada quiniela gratis
+            // trae organizadores nuevos, que son los que pagan.
+            <a
+              href="/"
+              className="block rounded-xl border border-dashed border-line bg-bg-elev p-3 text-center text-xs text-muted hover:border-accent transition-colors"
+            >
+              Publicidad ·{' '}
+              <span className="text-accent font-semibold">
+                Crea tu propia quiniela gratis en QuinielaBOX →
+              </span>
+            </a>
+          ))}
 
         {showsBranding(tenant.plan) && (
           <p className="text-[11px] text-muted text-center pt-4 border-t border-line">
