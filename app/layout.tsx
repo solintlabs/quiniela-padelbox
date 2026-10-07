@@ -92,6 +92,11 @@ export const metadata: Metadata = {
   // https://developer.apple.com/documentation/webkit/promoting_apps_with_smart_app_banners
   other: {
     'apple-itunes-app': 'app-id=6770234104',
+    // Verificación de propiedad de AdSense (metaetiqueta oficial, en el
+    // <head> de todas las páginas — el comprobador no siempre ve el script).
+    ...(process.env.NEXT_PUBLIC_ADSENSE_CLIENT
+      ? { 'google-adsense-account': process.env.NEXT_PUBLIC_ADSENSE_CLIENT }
+      : {}),
   },
 };
 

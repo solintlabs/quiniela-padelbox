@@ -1,0 +1,460 @@
+<title>QuinielaBOX — versión clara</title>
+
+<style>
+  /* ---------------------------------------------------------------
+     Versión CLARA. Comprometida con un solo tema a propósito: es la
+     variante que se compara contra la oscura, no una que se adapta.
+     El mundo es el boleto impreso — papel, rejilla, troquel y tinta.
+     --------------------------------------------------------------- */
+  :root {
+    --paper:    #E9ECE3;   /* papel frío, sesgo verde — no crema */
+    --card:     #FBFCF9;
+    --ink:      #14180F;
+    --ink-soft: #59604F;
+    --rule:     #C6CCB9;
+    --rule-2:   #DDE2D4;
+    --lime:     #4A7A06;   /* lima de marca, oscurecida para contraste sobre papel */
+    --lime-bg:  #DFEFC2;
+    --stamp:    #A03B18;   /* tinta de sello, solo para acentos semánticos */
+
+    --display: "Arial Black", "Archivo Black", Impact, "Helvetica Neue", sans-serif;
+    --body: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
+
+    --step--1: clamp(0.78rem, 0.76rem + 0.1vw, 0.84rem);
+    --step-0:  clamp(1rem, 0.97rem + 0.16vw, 1.09rem);
+    --step-1:  clamp(1.3rem, 1.2rem + 0.5vw, 1.6rem);
+    --step-2:  clamp(1.9rem, 1.6rem + 1.4vw, 2.9rem);
+    --step-3:  clamp(2.7rem, 2rem + 3.4vw, 5.4rem);
+
+    --gutter: clamp(1.15rem, 4vw, 3.5rem);
+    --maxw: 1120px;
+  }
+
+  body {
+    background-color: var(--paper);
+    /* rejilla de papel pautado, muy tenue */
+    background-image:
+      linear-gradient(to right, rgba(20,24,15,0.035) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(20,24,15,0.035) 1px, transparent 1px);
+    background-size: 28px 28px;
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: var(--step-0);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: var(--maxw); margin-inline: auto; padding-inline: var(--gutter); }
+
+  h1, h2, h3 { font-family: var(--display); font-weight: 900; line-height: 0.94;
+               letter-spacing: -0.03em; text-wrap: balance; margin: 0; }
+  h1 { font-size: var(--step-3); text-transform: uppercase; }
+  h2 { font-size: var(--step-2); text-transform: uppercase; }
+  h3 { font-size: var(--step-1); }
+  p { margin: 0; max-width: 62ch; }
+  a { color: inherit; }
+
+  .eyebrow {
+    font-family: var(--mono); font-size: var(--step--1);
+    text-transform: uppercase; letter-spacing: 0.22em; color: var(--lime);
+    display: flex; align-items: center; gap: 0.7rem;
+  }
+  .eyebrow::after { content: ""; flex: 1; height: 1px; background: var(--rule); }
+
+  .lede { font-size: var(--step-1); line-height: 1.35; color: var(--ink-soft); letter-spacing: -0.01em; }
+  .small { font-size: var(--step--1); color: var(--ink-soft); }
+  .num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+  .band { border-top: 1px solid var(--rule); padding-block: clamp(3rem, 7vw, 6rem); }
+  .band--tight { padding-block: clamp(2rem, 4vw, 3rem); }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    font-family: var(--body); font-weight: 700; font-size: var(--step-0);
+    padding: 0.85rem 1.5rem; border: 1px solid var(--lime);
+    background: var(--lime); color: #fff; text-decoration: none; cursor: pointer;
+    transition: transform 0.12s ease, filter 0.12s ease;
+  }
+  .btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+  .btn--ghost { background: transparent; color: var(--ink); border-color: var(--rule); }
+  .btn--ghost:hover { background: var(--lime-bg); border-color: var(--lime); }
+  .btn:focus-visible, .step:focus-visible { outline: 2px solid var(--lime); outline-offset: 3px; }
+
+  .hero { padding-block: clamp(2.5rem, 6vw, 5rem) clamp(3rem, 7vw, 5.5rem); }
+  .hero__grid { display: grid; gap: clamp(2rem, 5vw, 3.5rem); align-items: start; }
+  @media (min-width: 940px) { .hero__grid { grid-template-columns: 1.05fr 0.95fr; } }
+  .hero__copy { display: flex; flex-direction: column; gap: 1.4rem; }
+  .hero__cta { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+  .hero h1 span { color: var(--lime); display: block; }
+
+  /* ---------- el boleto: papel troquelado ---------- */
+  .slip {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    box-shadow: 0 2px 0 var(--rule-2), 0 14px 28px -22px rgba(20,24,15,0.55);
+    position: relative;
+  }
+  /* troquel superior e inferior */
+  .slip::before, .slip::after {
+    content: ""; position: absolute; left: 0; right: 0; height: 6px;
+    background-image: radial-gradient(circle at 5px 3px, var(--paper) 3.2px, transparent 3.4px);
+    background-size: 12px 6px;
+  }
+  .slip::before { top: -3px; }
+  .slip::after { bottom: -3px; }
+
+  .slip__head {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 1rem;
+    padding: 0.9rem 1.1rem; border-bottom: 1px solid var(--rule);
+    font-family: var(--mono); font-size: var(--step--1);
+    text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-soft);
+  }
+  .slip__body { padding: 1.1rem; display: flex; flex-direction: column; gap: 1rem; }
+
+  .match { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 0.6rem; }
+  .team { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+  .team--away { text-align: right; align-items: flex-end; }
+  .team__name { font-weight: 700; letter-spacing: -0.01em; }
+  .team__meta { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.1em;
+                text-transform: uppercase; color: var(--ink-soft); }
+
+  .score { display: flex; align-items: center; gap: 0.35rem; }
+  .score__val {
+    font-family: var(--display); font-size: clamp(1.9rem, 5vw, 2.6rem); line-height: 1;
+    width: 2ch; text-align: center; font-variant-numeric: tabular-nums;
+  }
+  .score__sep { color: var(--ink-soft); font-family: var(--display); font-size: 1.4rem; }
+  .stepper { display: flex; flex-direction: column; gap: 0.2rem; }
+  .stepper button {
+    width: 1.7rem; height: 1.35rem; line-height: 1;
+    border: 1px solid var(--rule); background: var(--paper); color: var(--ink);
+    font-size: 0.8rem; cursor: pointer; padding: 0;
+  }
+  .stepper button:hover { background: var(--lime-bg); border-color: var(--lime); }
+  .stepper button:focus-visible { outline: 2px solid var(--lime); outline-offset: 1px; }
+
+  .result {
+    border-top: 1px dashed var(--rule); padding-top: 0.9rem;
+    display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+  }
+  .result__label { font-family: var(--mono); font-size: var(--step--1);
+                   text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-soft); }
+  .result__pts { display: flex; align-items: baseline; gap: 0.4rem; }
+  .result__n {
+    font-family: var(--display); font-size: clamp(2rem, 6vw, 2.8rem); line-height: 1;
+    color: var(--lime); font-variant-numeric: tabular-nums;
+    transition: transform 0.18s cubic-bezier(0.3, 1.4, 0.6, 1);
+  }
+  .result__n.pop { transform: scale(1.14); }
+  .result__why { font-family: var(--mono); font-size: 0.72rem; color: var(--ink-soft);
+                 text-align: right; max-width: 22ch; }
+  .final { font-family: var(--mono); font-size: var(--step--1); color: var(--ink-soft); text-align: center; }
+  .final b { color: var(--ink); }
+
+  .rules { display: grid; gap: 1px; background: var(--rule); border: 1px solid var(--rule); margin-top: 2.2rem; }
+  @media (min-width: 700px) { .rules { grid-template-columns: repeat(2, 1fr); } }
+  .rule { background: var(--card); padding: 1.1rem 1.2rem; display: flex; gap: 1rem; align-items: baseline; }
+  .rule__pts { font-family: var(--display); font-size: 1.7rem; line-height: 1; color: var(--lime);
+               font-variant-numeric: tabular-nums; min-width: 2.4ch; }
+  .rule__txt strong { display: block; letter-spacing: -0.01em; }
+  .rule__txt span { font-size: var(--step--1); color: var(--ink-soft); }
+
+  .steps { display: grid; gap: 1px; background: var(--rule); border: 1px solid var(--rule); margin-top: 2.2rem; }
+  @media (min-width: 800px) { .steps { grid-template-columns: repeat(3, 1fr); } }
+  .step { background: var(--card); padding: 1.6rem 1.4rem; display: flex; flex-direction: column; gap: 0.6rem; }
+  .step__n { font-family: var(--mono); font-size: var(--step--1); letter-spacing: 0.2em; color: var(--lime); }
+  .step p { font-size: var(--step--1); color: var(--ink-soft); }
+
+  .leagues { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-top: 1.8rem; }
+  .chip {
+    font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.06em;
+    border: 1px solid var(--rule); background: var(--card);
+    padding: 0.35rem 0.7rem; color: var(--ink-soft); white-space: nowrap;
+  }
+  .chip--on { border-color: var(--lime); color: var(--lime); background: var(--lime-bg); }
+
+  .plans { display: grid; gap: 1px; background: var(--rule); border: 1px solid var(--rule); margin-top: 2.2rem; }
+  @media (min-width: 820px) { .plans { grid-template-columns: repeat(3, 1fr); } }
+  .plan { background: var(--card); padding: 1.7rem 1.4rem; display: flex; flex-direction: column; gap: 1rem; }
+  .plan--on { background: var(--lime-bg); }
+  .plan__price { display: flex; align-items: baseline; gap: 0.3rem; }
+  .plan__n { font-family: var(--display); font-size: 2.6rem; line-height: 1; font-variant-numeric: tabular-nums; }
+  .plan ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.45rem;
+             font-size: var(--step--1); color: var(--ink-soft); }
+  .plan li::before { content: "—"; color: var(--lime); margin-right: 0.5rem; }
+
+  .tablewrap { overflow-x: auto; margin-top: 2rem; border: 1px solid var(--rule); background: var(--card); }
+  table { border-collapse: collapse; width: 100%; min-width: 460px; font-size: var(--step--1); }
+  th, td { text-align: left; padding: 0.7rem 1rem; border-bottom: 1px solid var(--rule-2); }
+  th { font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.12em;
+       font-weight: 400; color: var(--ink-soft); }
+  td.n { font-family: var(--mono); font-variant-numeric: tabular-nums; text-align: right; }
+  tbody tr:last-child td { border-bottom: 0; }
+  tbody tr.me { background: var(--lime-bg); }
+
+  footer { border-top: 1px solid var(--rule); padding-block: 2.5rem 3.5rem; }
+
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+
+<header class="wrap band band--tight" style="border-top:0">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap">
+    <strong style="font-family:var(--display);letter-spacing:-0.03em;font-size:1.15rem">QUINIELA<span style="color:var(--lime)">BOX</span></strong>
+    <span class="num small">Versión clara · 221 ligas</span>
+  </div>
+</header>
+
+<section class="wrap hero">
+  <div class="hero__grid">
+    <div class="hero__copy">
+      <p class="eyebrow">Para bares, clubes y grupos de amigos</p>
+      <h1>La quiniela<br>de tu local<span>en 3 pasos</span></h1>
+      <p class="lede">
+        Monta la porra de tu club con las ligas que quieras, tus reglas y tu marca.
+        Tus jugadores entran con un enlace. Los resultados se actualizan solos.
+      </p>
+      <div class="hero__cta">
+        <a class="btn" href="#crear">Crear mi quiniela</a>
+        <a class="btn btn--ghost" href="#reglas">Ver cómo se puntúa</a>
+      </div>
+      <p class="small">Sin tarjeta. Sin instalar nada. El dinero del bote lo gestionas tú, fuera de la app.</p>
+    </div>
+
+    <div class="slip" id="slip">
+      <div class="slip__head">
+        <span>Jornada 1 · LaLiga</span>
+        <span>Boleto de prueba</span>
+      </div>
+      <div class="slip__body">
+        <div class="match">
+          <div class="team">
+            <span class="team__name">Girona</span>
+            <span class="team__meta">Local</span>
+          </div>
+          <div class="score">
+            <div class="stepper">
+              <button type="button" data-d="1" data-t="h" aria-label="Subir goles de Girona">+</button>
+              <button type="button" data-d="-1" data-t="h" aria-label="Bajar goles de Girona">−</button>
+            </div>
+            <span class="score__val" id="h">1</span>
+            <span class="score__sep">–</span>
+            <span class="score__val" id="a">3</span>
+            <div class="stepper">
+              <button type="button" data-d="1" data-t="a" aria-label="Subir goles de Rayo">+</button>
+              <button type="button" data-d="-1" data-t="a" aria-label="Bajar goles de Rayo">−</button>
+            </div>
+          </div>
+          <div class="team team--away">
+            <span class="team__name">Rayo Vallecano</span>
+            <span class="team__meta">Visitante</span>
+          </div>
+        </div>
+
+        <p class="final">Resultado real: <b class="num">1–3</b></p>
+
+        <div class="result">
+          <span class="result__label">Tu puntuación</span>
+          <div style="display:flex;align-items:center;gap:0.9rem">
+            <p class="result__why" id="why">Marcador clavado</p>
+            <div class="result__pts">
+              <span class="result__n" id="pts">5</span>
+              <span class="small">pts</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="wrap band" id="reglas">
+  <p class="eyebrow">Tus reglas</p>
+  <h2 style="margin-top:1rem">Tú decides<br>cuánto vale cada acierto</h2>
+  <p class="lede" style="margin-top:1.2rem">
+    ¿Que en tu peña el marcador exacto vale 5 y no 3? Cámbialo. ¿Que quieres premiar
+    a quien clava la diferencia de goles? Enciéndelo. Se ajusta desde tu panel y
+    se aplica al instante.
+  </p>
+
+  <div class="rules">
+    <div class="rule"><span class="rule__pts">5</span><span class="rule__txt"><strong>Marcador exacto</strong><span>Clavar el resultado. Excluyente: no acumula parciales.</span></span></div>
+    <div class="rule"><span class="rule__pts">2</span><span class="rule__txt"><strong>Acertar el ganador</strong><span>El 1X2 de toda la vida.</span></span></div>
+    <div class="rule"><span class="rule__pts">1</span><span class="rule__txt"><strong>Diferencia de goles</strong><span>Pones 2–0 y acaba 3–1. Sigue siendo mérito.</span></span></div>
+    <div class="rule"><span class="rule__pts">1</span><span class="rule__txt"><strong>Goles de un equipo</strong><span>Por cada equipo cuyo marcador aciertes.</span></span></div>
+    <div class="rule"><span class="rule__pts">3</span><span class="rule__txt"><strong>Clavar un empate</strong><span>Extra opcional: es lo más difícil de acertar.</span></span></div>
+    <div class="rule"><span class="rule__pts">15</span><span class="rule__txt"><strong>Cierre antes del pitido</strong><span>Minutos de margen antes de cada partido. También lo eliges tú.</span></span></div>
+  </div>
+</section>
+
+<section class="wrap band" id="crear">
+  <p class="eyebrow">Cómo se monta</p>
+  <h2 style="margin-top:1rem">Tres pasos<br>y ya está rodando</h2>
+
+  <div class="steps">
+    <article class="step" tabindex="0">
+      <span class="step__n">PASO 01</span>
+      <h3>Tu marca</h3>
+      <p>Nombre del local y color. Tus jugadores ven tu quiniela, no la nuestra.</p>
+    </article>
+    <article class="step" tabindex="0">
+      <span class="step__n">PASO 02</span>
+      <h3>Tu competición</h3>
+      <p>Elige del catálogo y los partidos y resultados entran solos. O créala a mano si es la liga del barrio.</p>
+    </article>
+    <article class="step" tabindex="0">
+      <span class="step__n">PASO 03</span>
+      <h3>Tus jugadores</h3>
+      <p>Pasas un enlace por WhatsApp. Quien entra queda apuntado y tú confirmas quién ha pagado el bote.</p>
+    </article>
+  </div>
+</section>
+
+<section class="wrap band">
+  <p class="eyebrow">El catálogo</p>
+  <h2 style="margin-top:1rem">221 competiciones,<br>actualizadas solas</h2>
+  <p class="lede" style="margin-top:1.2rem">
+    Marcadores en vivo, calendario y clasificación. Tú no tocas nada: cuando acaba
+    el partido, los puntos ya están repartidos.
+  </p>
+  <div class="leagues">
+    <span class="chip chip--on">LaLiga</span>
+    <span class="chip chip--on">Premier League</span>
+    <span class="chip">Serie A</span>
+    <span class="chip">Bundesliga</span>
+    <span class="chip">Ligue 1</span>
+    <span class="chip chip--on">Liga MX</span>
+    <span class="chip">MLS</span>
+    <span class="chip chip--on">Libertadores</span>
+    <span class="chip">Copa América</span>
+    <span class="chip">Champions</span>
+    <span class="chip">Brasileirão</span>
+    <span class="chip">Liga Argentina</span>
+    <span class="chip">Concacaf</span>
+    <span class="chip">Mundial</span>
+    <span class="chip">+ 207 más</span>
+  </div>
+
+  <div class="tablewrap">
+    <table>
+      <caption class="small" style="text-align:left;padding:0.8rem 1rem;color:var(--ink-soft)">
+        Así ve la clasificación tu peña
+      </caption>
+      <thead>
+        <tr><th>#</th><th>Jugador</th><th style="text-align:right">Exactos</th><th style="text-align:right">Puntos</th></tr>
+      </thead>
+      <tbody>
+        <tr class="me"><td class="num">1</td><td>Tú</td><td class="n">5</td><td class="n">28</td></tr>
+        <tr><td class="num">2</td><td>Marta R.</td><td class="n">2</td><td class="n">19</td></tr>
+        <tr><td class="num">2</td><td>Javi del bar</td><td class="n">2</td><td class="n">19</td></tr>
+        <tr><td class="num">4</td><td>Nico</td><td class="n">0</td><td class="n">15</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="small" style="margin-top:0.8rem">Los empatados comparten puesto, como en cualquier clasificación de verdad.</p>
+</section>
+
+<section class="wrap band">
+  <p class="eyebrow">Planes</p>
+  <h2 style="margin-top:1rem">Empieza gratis</h2>
+
+  <div class="plans">
+    <article class="plan">
+      <h3>Gratis</h3>
+      <div class="plan__price"><span class="plan__n">0</span><span class="small">para siempre</span></div>
+      <ul>
+        <li>Hasta 15 jugadores</li>
+        <li>1 competición</li>
+        <li>Partidos a mano o por CSV</li>
+        <li>Con marca QuinielaBOX</li>
+      </ul>
+      <a class="btn btn--ghost" href="#crear">Empezar</a>
+    </article>
+
+    <article class="plan plan--on">
+      <h3>Pro</h3>
+      <div class="plan__price"><span class="plan__n">29</span><span class="small">USD / mes</span></div>
+      <ul>
+        <li>Hasta 500 jugadores</li>
+        <li>5 competiciones a la vez</li>
+        <li>Catálogo de 221 ligas</li>
+        <li>Sin publicidad ni marca ajena</li>
+      </ul>
+      <a class="btn" href="#crear">Elegir Pro</a>
+    </article>
+
+    <article class="plan">
+      <h3>A medida</h3>
+      <div class="plan__price"><span class="plan__n">—</span><span class="small">hablamos</span></div>
+      <ul>
+        <li>Jugadores sin límite</li>
+        <li>Dominio propio</li>
+        <li>White-label completo</li>
+        <li>Soporte directo</li>
+      </ul>
+      <a class="btn btn--ghost" href="#crear">Contactar</a>
+    </article>
+  </div>
+
+  <p class="small" style="margin-top:1.4rem">
+    La suscripción se paga aquí, en la web. El bote de tu quiniela lo cobras tú
+    a tus jugadores como siempre: la app nunca toca ese dinero.
+  </p>
+</section>
+
+<footer class="wrap">
+  <div style="display:flex;justify-content:space-between;gap:1.5rem;flex-wrap:wrap;align-items:baseline">
+    <div>
+      <strong style="font-family:var(--display);letter-spacing:-0.03em">QUINIELA<span style="color:var(--lime)">BOX</span></strong>
+      <p class="small" style="margin-top:0.4rem">Hecho en el club PADELBOX. Ahora, para el tuyo.</p>
+    </div>
+    <p class="small num">es · en · pt</p>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    var RULES = { exact: 5, winner: 2, goalDiff: 1, teamScore: 1, drawBonus: 3 };
+    var ACTUAL = { h: 1, a: 3 };
+    var pick = { h: 1, a: 3 };
+
+    var elH = document.getElementById('h');
+    var elA = document.getElementById('a');
+    var elPts = document.getElementById('pts');
+    var elWhy = document.getElementById('why');
+
+    function outcome(h, a) { return h > a ? 'H' : h < a ? 'A' : 'D'; }
+
+    function score() {
+      var exact = pick.h === ACTUAL.h && pick.a === ACTUAL.a;
+      var drew = ACTUAL.h === ACTUAL.a;
+      if (exact) return { pts: RULES.exact + (drew ? RULES.drawBonus : 0), why: 'Marcador clavado' };
+      var pts = 0, parts = [];
+      if (outcome(pick.h, pick.a) === outcome(ACTUAL.h, ACTUAL.a)) { pts += RULES.winner; parts.push('ganador'); }
+      if (pick.h - pick.a === ACTUAL.h - ACTUAL.a) { pts += RULES.goalDiff; parts.push('diferencia'); }
+      if (pick.h === ACTUAL.h) { pts += RULES.teamScore; parts.push('goles del local'); }
+      if (pick.a === ACTUAL.a) { pts += RULES.teamScore; parts.push('goles del visitante'); }
+      return { pts: pts, why: parts.length ? 'Aciertas: ' + parts.join(' + ') : 'Ningún acierto' };
+    }
+
+    function render() {
+      elH.textContent = pick.h;
+      elA.textContent = pick.a;
+      var r = score();
+      elPts.textContent = r.pts;
+      elWhy.textContent = r.why;
+      elPts.classList.add('pop');
+      setTimeout(function () { elPts.classList.remove('pop'); }, 180);
+    }
+
+    document.getElementById('slip').addEventListener('click', function (e) {
+      var btn = e.target.closest('button[data-d]');
+      if (!btn) return;
+      var t = btn.getAttribute('data-t');
+      var d = parseInt(btn.getAttribute('data-d'), 10);
+      pick[t] = Math.max(0, Math.min(9, pick[t] + d));
+      render();
+    });
+
+    render();
+  })();
+</script>

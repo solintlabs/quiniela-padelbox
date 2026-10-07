@@ -47,3 +47,5 @@ prisma/*.db
 
 .vercel
 .env*.local
+.env*
+.playwright-cli/
