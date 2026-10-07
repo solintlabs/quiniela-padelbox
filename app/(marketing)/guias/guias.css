@@ -106,3 +106,7 @@
 
 .gu__back { display: inline-block; margin-bottom: 1.25rem; color: var(--muted); text-decoration: none; font-size: .88rem; }
 .gu__back:hover { color: var(--ink); }
+
+/* Hueco de anuncio al final del artículo: reserva alto mínimo para que la
+   página no "salte" cuando Google rellena el anuncio. */
+.gu__ad { display: block; min-height: 100px; margin: 2.5rem 0 0; }
