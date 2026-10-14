@@ -1,12 +1,10 @@
 import Link from 'next/link';
-import Script from 'next/script';
 import { BrandMark } from '@/components/BrandMark';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { articleJsonLd, breadcrumbJsonLd, faqJsonLd, type FaqItem } from '@/lib/seo';
 
-/** Con la cuenta de AdSense activa, las guías (contenido público con tráfico
- * orgánico) cargan el loader para que Auto ads pueda servir aquí. Las zonas
- * tras login no lo cargan: los anuncios de las quinielas FREE van por AdSlot. */
+/** El loader de AdSense vive en el layout raíz (todas las páginas). Aquí solo
+ *  se usa el client para montar el hueco de anuncio del final del artículo. */
 const ADSENSE_CLIENT = process.env.NEXT_PUBLIC_ADSENSE_CLIENT;
 const ADSENSE_SLOT = process.env.NEXT_PUBLIC_ADSENSE_SLOT_TENANT;
 
@@ -58,23 +56,6 @@ export function GuiaShell({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(s) }}
         />
       ))}
-      {ADSENSE_CLIENT && (
-        <Script
-          id="adsense-loader"
-          strategy="afterInteractive"
-          crossOrigin="anonymous"
-          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`}
-          onLoad={() => {
-            // Pide que se rellene el hueco de abajo. Sin esto el <ins> se
-            // queda vacío aunque la cuenta esté aprobada.
-            try {
-              ((window as unknown as { adsbygoogle?: unknown[] }).adsbygoogle ||= []).push({});
-            } catch {
-              /* el bloqueador del visitante puede impedirlo */
-            }
-          }}
-        />
-      )}
       <header className="gu__top">
         <Link href="/" className="gu__brand" title="Volver al inicio">
           <BrandMark />

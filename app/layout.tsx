@@ -130,9 +130,24 @@ const jsonLdWebSite = {
   publisher: { '@type': 'Organization', name: 'QuinielaBOX' },
 };
 
+const ADSENSE_CLIENT = process.env.NEXT_PUBLIC_ADSENSE_CLIENT;
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es-ES" suppressHydrationWarning className={`${inter.variable} ${archivoBlack.variable}`}>
+      <head>
+        {/* Código de AdSense en el layout RAÍZ para que esté en TODAS las
+            páginas. Estaba solo en la portada y las guías, y Google rechaza la
+            conexión cuando falta en páginas que se visitan con normalidad
+            (/demo, /terms, /privacy…). Va en <head>, que es donde lo pide. */}
+        {ADSENSE_CLIENT && (
+          <script
+            async
+            crossOrigin="anonymous"
+            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`}
+          />
+        )}
+      </head>
       <body>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
           {children}
