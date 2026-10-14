@@ -3,8 +3,9 @@ import { prisma } from '@/lib/db';
 import { calcPoints } from '@/lib/scoring';
 import { computeRanking } from '@/lib/ranking';
 import { fetchWorldCupFixtures, fetchRegulationScore, type NormalizedFixture } from '@/lib/providers/espn';
-import { sendPushToUsers } from '@/lib/push';
+import { sendPushToUsers, usersWithoutPush } from '@/lib/push';
 import { sendBulkEmail } from '@/lib/email';
+import { recipientsForBulk } from '@/lib/unsubscribe';
 import { buildKnockoutReminderEmail } from '@/lib/emails/ko-reminder';
 
 // Base URL para enlaces/imagenes en emails enviados desde el cron (sin request).
@@ -140,14 +141,23 @@ async function notifyKnockoutRounds(now: number, offsetMs: number): Promise<void
           body: 'En eliminatorias NO hay 0-0 automático: si no rellenas, no sumas. Ve pronosticando los cruces conforme salen. ⏱️ Cuentan los 90 min (sin prórroga).',
           data: { type: 'ko-unlock', stage },
         })).catch((e) => console.error('[push] ko-unlock:', e));
-        // Email (una vez por ronda) recordando rellenar — solo a pagados.
-        const { subject, html, text } = buildKnockoutReminderEmail({ label, origin: APP_ORIGIN });
-        await sendBulkEmail(
-          paid.map((u) => u.email).filter((e): e is string => !!e),
-          subject,
-          html,
-          text,
-        ).catch((e) => console.error('[email] ko-unlock:', e));
+        // Email (una vez por ronda) SOLO a quien no tiene la app: quien ya
+        // recibió el push de arriba no necesita además un correo, y así no se
+        // quema la cuota de Resend con 140 envíos de golpe.
+        const noPush = await usersWithoutPush(paid.map((u) => u.id));
+        // recipientsForBulk descarta a quien se dio de baja y trae su enlace
+        // personal de baja, obligatorio en cualquier envío masivo.
+        const recipients = await recipientsForBulk(noPush);
+        for (const r of recipients) {
+          const { subject, html, text } = buildKnockoutReminderEmail({
+            label,
+            origin: APP_ORIGIN,
+            unsubUrl: r.unsubUrl,
+          });
+          await sendBulkEmail([r.email], subject, html, text).catch((e) =>
+            console.error('[email] ko-unlock:', e),
+          );
+        }
         continue; // ya avisamos esta ronda en este ciclo
       }
     }

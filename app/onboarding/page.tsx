@@ -24,7 +24,7 @@ export default function OnboardingPage() {
     <main className="min-h-screen bg-bg">
       <header className="max-w-4xl mx-auto px-6 py-6 flex items-center justify-between">
         <Logo size={32} />
-        <a href="/lanza-tu-quiniela" className="text-sm text-muted hover:text-ink">← Volver</a>
+        <a href="/" className="text-sm text-muted hover:text-ink">← Volver</a>
       </header>
 
       <section className="max-w-2xl mx-auto px-6 py-12">

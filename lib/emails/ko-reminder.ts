@@ -8,6 +8,8 @@ interface KnockoutReminderParams {
   /** Etiqueta de la ronda, ej. "los octavos de final". */
   label: string;
   origin: string;
+  /** Enlace para dejar de recibir estos avisos (obligatorio en envíos masivos). */
+  unsubUrl?: string;
 }
 
 const PALETTE = {
@@ -20,7 +22,7 @@ const PALETTE = {
   accentFg: '#0A0A0A',
 } as const;
 
-export function buildKnockoutReminderEmail({ label, origin }: KnockoutReminderParams) {
+export function buildKnockoutReminderEmail({ label, origin, unsubUrl }: KnockoutReminderParams) {
   const padelboxLogo = `${origin}/logos/completo-negro.png`;
   const delishLogo = `${origin}/partners/delish.png`;
   const solintLogo = `${origin}/partners/solint.png`;
@@ -47,7 +49,14 @@ export function buildKnockoutReminderEmail({ label, origin }: KnockoutReminderPa
     '',
     'Recibes este email porque participas en la quiniela PADELBOX.',
     `© ${year} PADELBOX Sports Club`,
+    ...(unsubUrl ? ['', `Dejar de recibir estos avisos: ${unsubUrl}`] : []),
   ].join('\n');
+
+  // Enlace de baja: obligatorio en envíos masivos. Sin una salida clara la
+  // gente marca como spam y eso quema el dominio de envío.
+  const unsubLine = unsubUrl
+    ? `<p style="margin:6px 0 0;font-size:11px;color:${PALETTE.muted};"><a href="${unsubUrl}" style="color:${PALETTE.muted};">Dejar de recibir estos avisos</a></p>`
+    : '';
 
   const html = `<!doctype html>
 <html lang="es">
@@ -139,6 +148,7 @@ export function buildKnockoutReminderEmail({ label, origin }: KnockoutReminderPa
                 Recibes este email porque participas en la quiniela PADELBOX.<br />
                 © ${year} PADELBOX · Quiniela patrocinada
               </p>
+              ${unsubLine}
             </td>
           </tr>
         </table>
