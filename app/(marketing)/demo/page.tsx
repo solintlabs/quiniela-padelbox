@@ -100,6 +100,27 @@ export default function DemoPage() {
           QuinielaBOX no gestiona el dinero: el bote lo cobra y reparte el
           organizador como siempre.
         </p>
+
+        <h2 className="dm__footTitle">Qué estás viendo</h2>
+        <p className="dm__sub">
+          La demo usa partidos y jugadores ficticios, pero el funcionamiento es
+          el real. Cada jugador entra con su correo, pronostica los marcadores y
+          deja de poder tocarlos cuando el partido empieza. A partir de ahí los
+          resultados entran solos, los puntos se calculan sin que nadie sume a
+          mano y la clasificación es la misma para todos, sin versiones
+          distintas circulando por el grupo.
+        </p>
+        <p className="dm__sub">
+          Lo que decide el organizador es el reglamento: qué torneo se juega,
+          cuánto vale cada acierto y cómo se reparten los premios. Si estás
+          dándole vueltas a esa parte, empieza por la guía de{' '}
+          <Link href="/guias/como-organizar-una-quiniela">
+            cómo organizar una quiniela paso a paso
+          </Link>{' '}
+          y por la de{' '}
+          <Link href="/guias/sistemas-de-puntos">sistemas de puntos</Link>, que
+          es la decisión que más cambia el torneo.
+        </p>
       </section>
     </main>
   );
