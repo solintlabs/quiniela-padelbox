@@ -1,5 +1,9 @@
 /**
- * Email de magic link de PADELBOX Quiniela.
+ * Email de magic link de QuinielaBOX.
+ *
+ * Marca GENÉRICA: lo recibe cualquier persona que entra a la plataforma, no
+ * solo los socios de PADELBOX. Las únicas marcas permitidas son QuinielaBOX y
+ * Solintlabs (quien lo construyó).
  *
  * Devuelve { subject, html, text }. Cumple:
  *  - Estilos inline (Gmail/Outlook strippean <style>).
@@ -27,24 +31,22 @@ const PALETTE = {
 } as const;
 
 export function buildMagicLinkEmail({ url, origin }: MagicLinkParams) {
-  const padelboxLogo = `${origin}/logos/completo-negro.png`;
-  const delishLogo = `${origin}/partners/delish.png`;
   const solintLogo = `${origin}/partners/solint.png`;
   const year = new Date().getFullYear();
 
-  const subject = 'Tu enlace para entrar · PADELBOX × DELISH';
+  const subject = 'Tu enlace para entrar · QuinielaBOX';
 
   const text = [
-    'Quiniela Mundial 2026 — PADELBOX',
+    'QuinielaBOX',
     '',
-    'Has solicitado entrar a la quiniela.',
+    'Has solicitado entrar a tu quiniela.',
     'Pulsa el siguiente enlace para acceder (caduca en 24 horas y solo funciona una vez):',
     '',
     url,
     '',
     'Si no fuiste tú, ignora este email — nadie podrá entrar sin este enlace.',
     '',
-    `© ${year} PADELBOX Sports Club`,
+    `© ${year} QuinielaBOX · hecho por Solintlabs`,
   ].join('\n');
 
   const html = `<!doctype html>
@@ -67,22 +69,11 @@ export function buildMagicLinkEmail({ url, origin }: MagicLinkParams) {
       <td align="center">
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="560" style="max-width:560px;width:100%;background:${PALETTE.card};border:1px solid ${PALETTE.border};border-radius:14px;overflow:hidden;">
 
-          <!-- Header co-branded PADELBOX × DELISH -->
+          <!-- Marca QuinielaBOX (genérica: vale para cualquier cliente) -->
           <tr>
-            <td align="center" style="padding:40px 32px 16px;">
-              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
-                <tr>
-                  <td valign="middle" style="padding-right:14px;">
-                    <img src="${padelboxLogo}" alt="PADELBOX" width="150" style="display:block;height:auto;max-width:150px;" />
-                  </td>
-                  <td valign="middle" style="font-size:22px;color:${PALETTE.muted};padding:0 8px;">×</td>
-                  <td valign="middle" style="padding-left:14px;">
-                    <img src="${delishLogo}" alt="DELISH" width="80" style="display:block;height:auto;max-width:80px;" />
-                  </td>
-                </tr>
-              </table>
-              <p style="margin:12px 0 0;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:${PALETTE.muted};">
-                Presentan la quiniela
+            <td align="center" style="padding:40px 32px 8px;">
+              <p style="margin:0;font-size:26px;font-weight:900;letter-spacing:-0.03em;color:${PALETTE.ink};">
+                QUINIELA<span style="color:#7BB800;">BOX</span>
               </p>
             </td>
           </tr>
@@ -91,7 +82,7 @@ export function buildMagicLinkEmail({ url, origin }: MagicLinkParams) {
           <tr>
             <td align="center" style="padding:0 32px;">
               <p style="margin:0 0 8px;font-size:12px;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;color:${PALETTE.muted};">
-                Quiniela Mundial 2026
+                Tu quiniela
               </p>
               <h1 style="margin:0 0 16px;font-size:28px;line-height:1.15;font-weight:900;letter-spacing:-0.02em;color:${PALETTE.ink};">
                 Tu enlace para entrar
@@ -174,7 +165,7 @@ export function buildMagicLinkEmail({ url, origin }: MagicLinkParams) {
           <tr>
             <td align="center" style="padding:8px 32px 24px;">
               <p style="margin:0;font-size:11px;line-height:1.5;color:${PALETTE.muted};letter-spacing:0.04em;">
-                © ${year} PADELBOX · Quiniela patrocinada
+                © ${year} QuinielaBOX
               </p>
             </td>
           </tr>

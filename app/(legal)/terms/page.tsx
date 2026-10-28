@@ -38,7 +38,7 @@ export default function TermsPage() {
         <p className="text-sm text-muted mt-2">
           Las reglas detalladas (puntuación, cierres, fases, ranking, desempate) están publicadas
           en{' '}
-          <a href="/reglas" className="text-accent underline">/reglas</a>{' '}
+          <a href="/public/reglas" className="text-accent underline">/public/reglas</a>{' '}
           y pueden modificarse antes del primer partido. Cualquier cambio posterior se anunciará
           por email a todos los participantes.
         </p>
@@ -59,7 +59,7 @@ export default function TermsPage() {
         <p className="text-sm text-muted mt-2">
           Los premios se entregan a los ganadores en el plazo de <strong className="text-ink">30 días</strong> tras la
           final del Mundial. Los importes y desglose se publican en{' '}
-          <a href="/inscripcion" className="text-accent underline">/inscripcion</a>.
+          <a href="/public/inscripcion" className="text-accent underline">/public/inscripcion</a>.
           La entrega se hace en PADELBOX o por transferencia, a elección del ganador.
         </p>
       </section>
